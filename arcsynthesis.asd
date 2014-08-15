@@ -29,7 +29,12 @@ written in Common Lisp using cl-sdl2 and cl-opengl" ;; yeah it uses cl-sdl2, tha
 	    :components ((:file "fragment-color")
 			 (:file "vertex-color")))
    (:module "3-chapter/"
+<<<<<<< HEAD
 	    :components ((:file "moving-triangle")))
+=======
+	    :components ((:file "moving-triangle")
+			 (:file "vert-position-offset")))
+>>>>>>> first commit
    ))
 
 

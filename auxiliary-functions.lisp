@@ -67,7 +67,11 @@ will be COERCEd to SINGLE-FLOAT"
 
 (defun create-program (shader-list)
    ;;TODO: is this bad style to gl:use it as well?
+<<<<<<< HEAD
   "Create program and gl:use-program it."
+=======
+  "Create program and gl:use it"
+>>>>>>> first commit
   (let ((program (%gl:create-program)))
     ;; "attach" all of the created shader objects to the program object
     (loop for shader-object in shader-list
@@ -88,7 +92,34 @@ will be COERCEd to SINGLE-FLOAT"
     (%gl:use-program program)
     ))
 
+<<<<<<< HEAD
 ;; stolen from cbaggers
+=======
+(defun create-program-and-return-it (shader-list)
+   ;;TODO: is this bad style to gl:use it as well?
+  "Create program and RETURN it"
+  (let ((program (%gl:create-program)))
+    ;; "attach" all of the created shader objects to the program object
+    (loop for shader-object in shader-list
+       do (%gl:attach-shader program shader-object))
+    ;; I guess links all the attached shaders to actually form a program object
+    (%gl:link-program program)
+    (if (gl:get-program program :link-status)
+	(print "Linking successful! (program object)")
+	(print (gl:get-program-info-log program)))
+    ;; remove shader objects from program:
+    (loop for shader-object in shader-list
+       do (%gl:detach-shader program shader-object))
+    ;; finally we need to tell OpenGL that rendering commands should use
+    ;; our program object instead of its default rendering state:
+    ;; arcsyntheses: "it, glUseProgram, is later called with 0 to indicate that no
+    ;;                program will be used for rendering
+    program
+    ))
+
+;; stolen from cbaggers ;;TODO: aha, give an &optional asdf/system:system-source-directory !!
+;; and let it merge it with <path> !!
+>>>>>>> first commit
 (defun file-to-string (path)
   "Sucks up an entire file from PATH into a freshly-allocated
 string, returning two values: the string and the number of

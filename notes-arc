@@ -213,4 +213,33 @@ AS EXPECTED/(interesting!!!)
 the ominous parameter to glBufferData() :static-draw tells OpenGL that we only
 intend to set the data in this buffer ONCE.
 Opposite: :stream-draw. API wise THEY MEAN NOTHING though they're just hints for
+<<<<<<< HEAD
 the implementors where to work on performance wise!!!
+=======
+the implementors where to work on performance wise!!!
+--------------------------------------------------------------------------------
+uniforms,
+unlike 'in' variables, these shader variables do not change every time the
+vertex shader is called. Instead theychange only between rendering call executions!
+And even then they only change if they're set explicitly!!
+
+Also 'in' variables of vertex shaders receive their input via :array-buffers etc.
+uniforms, however, receive it by directly setting them via program objects
+Remember: program object = linked shader object
+Unlike 'in' variables, we can't set the location ourselves, we NEED TO QUERY it:
+offsetLocation = glGetUniformLocation(theProgram, "<varName-in-shader-program>"
+                                                   ^^^ wa-wa-wi-wa
+This gives us the uniform location for a GIVEN <varName..>!!!
+
+We can then set the value using (gl:uniform-2f <varName..> value1 value2)
+provided in our glsl we used a vec2 uniform ^  ;D
+that is in our *.glsl file:
+    uniform vec2 offset --------------------------------------.
+corresposing code:                                            v
+    (setf offset-location (gl:get-uniform-location program "offset")
+    ...                                              |
+    (gl:use-program program) <------------------------
+    ...
+    (gl:uniform-2f offset-location 88.0 99.0)
+--------------------------------------------------------------------------------
+>>>>>>> first commit

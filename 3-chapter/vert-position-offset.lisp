@@ -1,4 +1,4 @@
-(in-package #:arc-3)
+(in-package #:arc-3.1)
 
 (defvar *glsl-directory*
   (merge-pathnames #p "3-chapter/" (asdf/system:system-source-directory :arcsynthesis)))
@@ -20,20 +20,6 @@
 (defparameter position-buffer-object nil) ; buffer object handle
 (defparameter x-offset 0) (defparameter y-offset 0)
 
-(defparameter *curr-sdl-ticks* 0)
-(defparameter *frame-counter* 0)
-
-;;TODO: into auxiliary-functions.lisp ? probably problems due to use of (sdl2:get-ticks)
-(defun framelimit (fps)
-  (let* ((time-passed (- (sdl2:get-ticks) *curr-sdl-ticks*))
-	 (should-pass (/ 1000.0 fps))
-	 (wait-time (round (- should-pass time-passed ))))
-;    (format t "time-passed:~a should-pass:~a wait-time:~a~%" time-passed should-pass wait-time)
-    (when (> wait-time 0)
-      (sdl2:delay wait-time)))
-  (setf *curr-sdl-ticks* (sdl2:get-ticks)))
-  
-
 (defun compute-positions-offset () ;wow, we don't even need x-offset, y-offset (lol!)
   "Return a list containing values which oscilate every 5 seconds"
   (let* ((loop-duration 5.0)
@@ -44,6 +30,7 @@
 	 (curr-time-through-loop (mod elapsed-time loop-duration)))
     ;; in the following "0.5" shrinks the cos/sin oscilation from 1 to -1 to 0.5 to -0.5
     ;; in effect creating a "circle of diameter 1 (from 0.5 to -0.5 = diameter 1)
+    ;; great fun: substitute with cos,sin,tan and see how it beautifully moves in its patterns!
     (setf x-offset (* (cos (* curr-time-through-loop scale)) 0.5))
     (setf y-offset (* (sin (* curr-time-through-loop scale)) 0.5))))
 
@@ -72,6 +59,8 @@
        
 
 
+(defparameter offset-location nil)
+
 (defun init-shader-program ()
   (let ((shader-list (list)))
     ;;oh c'mon how to make it local
@@ -79,16 +68,23 @@
      (arc:create-shader
       :vertex-shader
       (arc:file-to-string
-       (merge-pathnames "vertex-shader-3.glsl" *glsl-directory*)))
+       (merge-pathnames "vs-position-offset.glsl" *glsl-directory*)))
      shader-list)
-    (push
-     (arc:create-shader
-      :fragment-shader
-      (arc:file-to-string
-       (merge-pathnames "fragment-shader-3.glsl" *glsl-directory* )))
-     shader-list)
+    ;; (push
+    ;;  (arc:create-shader
+    ;;   :fragment-shader
+    ;;   (arc:file-to-string
+    ;;    (merge-pathnames "fragment-shader-3.glsl" *glsl-directory* )))
+    ;;  shader-list)
     ;; TODO:fragment shader
-    (arc:create-program shader-list)
+    ;; TODO: HOT SHIT: create-program now returns program
+    (let ((program (arc:create-program-and-return-it shader-list)))
+      ;; TODO:"will return -1 if the uniform has no location ...? wut."
+      ;; ah ok, when we give it a variable we didn't really declare in the
+      ;; shader
+      (setf offset-location (gl:get-uniform-location program "offset"))
+      (%gl:use-program program)
+      )
     (loop for shader-object in shader-list
        do (%gl:delete-shader shader-object))))
 
@@ -113,24 +109,21 @@
   ;;strange arcsynthesis repeadetly calls "glUseProgram" hmm
   (gl:clear :color-buffer-bit)
   (compute-positions-offset)
-  (adjust-vertex-data)
-<<<<<<< HEAD
-
-=======
->>>>>>> first commit
+;;  (adjust-vertex-data) ; this time we use the shader!
+  ;; now we can set some uniforms using the location "handle" offset-location!!
+  (%gl:uniform-2f offset-location x-offset y-offset)
   (%gl:draw-arrays :triangles 0 3)
   )
 
 (defun main ()
   (sdl2:with-init (:everything)
     (progn (setf *standard-output* out) (setf *debug-io* dbg) (setf *error-output* err))
-    (setf *curr-sdl-ticks* (sdl2:get-ticks)) ;for framelimit calculation
     (sdl2:with-window (win :w 400 :h 400 :flags '(:shown :opengl))
       (sdl2:with-gl-context (gl-context win)
 	(gl:clear-color 0 0 0.2 1)
 	(gl:clear :color-buffer-bit)
         (set-up-opengl-state)
-	(init-shader-program)	    ; implicitly gl:use-program :I
+	(init-shader-program)
 	(sdl2:with-event-loop (:method :poll)
 	  (:keyup
 	   (:keysym keysym)
@@ -143,15 +136,6 @@
 	  (:idle ()
 		 ;;main-loop:
 		 (rendering-code)
-		 ;;TODO: hm if tearing occurs try (gl:flush) (gl:finish) ..
-		 ;; it makes the whole animation jitter though
-		 ; (gl:finish) hmmmm i bet its due to batshit crazy high framerate
-		 ;; from lazyfoo tutorial:
-		 ;; SDL_Delay( ( 1000 / FRAMES_PER_SECOND ) - fps.get_ticks() ) ;
-                 ;; TODO write framelimiter using sdl2:get-ticks -.-" i need them fo
-		 ;; WOW, still doesn't solve tearing problem, it is even possible that this problem
-		 ;; occurs at a even higher level than I can modify in my application
-                 (framelimit 60)
 		 (sdl2:gl-swap-window win) ; wow, this can be forgotten easily -.-
 		 ))))))
 
