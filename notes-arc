@@ -1,0 +1,216 @@
+adding vectors  v1 + v2 = v3
+-positions: 
+ first go v1 then go v2 then you arrive at v3
+-direction
+ v3 is the direction between v1 and v2
+
+negation:
+-postion: backwards
+-direction: 180-degree turn
+ 
+substracting: like addition but v2 is negated before adding it to v1
+-position:
+ first go v1 then go v2 backwards
+-direction
+ very interesting it seems to be a 90-degree angle of vector addition ~~**
+
+multiplication:
+no geometric equivalent. Just component-wise multiplication.
+
+vector-scalar multiplication:
+results in longer/shorter vector
+
+length: sqrt(x^2,y^2,z^2...) of any dimension
+
+unit-vecotr: ^ atop vector name   v^ = v1 * 1/length(v1)
+
+--------------------------------------------------------------------------------
+image = 2d-array of pixels
+model,mesh,geometry = object made of many triangles
+
+triangles -> [rasterization] -> (2d) image
+              ^^^^accessed by OpenGL
+OpenGL is an API for accessing the hardware-based rasterizer
+
+Rasterization:
+1.triangle goes in
+2.is it even in "clip space"? (region of the world we want to render)
+3.It resides in "clip space" and has "clip coordinates" (always 4:x,y,z,w)
+  Each vertex of a trinagle  in clip space has its own clip space cube of range [-w,w]
+4.Triangles outside clip space aren't operated upon further on
+  Triangles partially in clip space will be broken down into smaller triangles which
+  are entirely within clip space. This process is called clipping, hence the name clip
+  space. "noclip" or "clip through the ground" are then misnomer regarding cheats/bugs
+5.clip space is transformed into "normalized device coordinates": x,y,z is divided by w!
+  Now the range of x,y,z are [-1,1]
+6.window transformation: coordinates relative to window that "OpenGL" is running within
+  Z is [0,1] so a game world must be mapped depth-wise to a scale from 0 to 1 ??
+7.scan conversion:
+  which window-pixels overlay with the triangle? -> creates blocky triangle!
+  "sample": are of pixel determining if triangle overlapping said pixel will produce a
+  "fragment"
+  Guarantees: a) shared edges between triangles will never have sample gaps
+              b) same input trianlgle will always result in the same pixel-art fragments
+  Fragments still have a z value, not only x,y!!!
+8.Fragment processing:
+  transform fragment into color + depth value
+  note of understanding: fragments from differnt triangle can overlap UNDERSTAND??
+  Fragments from one triangle must be all processed before another triangle is processed
+  >>Direct3D calls this step: "pixel processing" or "pixel shading"... MISNOMER!!
+9.Fragment Writing: These mosaics of depth fragments which can overlap with other triangle
+  fragments are written to the destination image
+  It may combine its color and depth with colors that are already in the image!
+
+Shaders, programs run on GPU.
+shader-stages: at certain points in the rendering(rasterization)-process, we can program
+arbitrary algorithms to create a specific visual effect.
+Shader-stage examples: fragment writing, putting triangle vertex into clip space.
+>>shaders run on the actual rendering hardware!! -> no cpu time wasted!!!!1
+  therefore downside: they have certain limits cpu code wouldn't have
+
+GLSL, the language used to write shaders.
+
+--------------------------------------------------------------------------------
+OpenGL API:
+bunch of typedefs:
+      (renamed variable types, but still just the basic int, float etc:
+      typedef int points;
+      points current_score; // points is like int; this line is like: "int current_score"
+      show_Score(points my-points); invocation: show_Score(current_score)
+      equivalent to:
+      int current_score
+      EXAMPLES: GLint, GLfloat defined to have a specific bit depth
+
+enumerators:
+  constants of specific names. They serve as identifiers but are in in C just constants
+  of type int mostly and maybe exclusively.
+  Outside OpenGL example: enumerator: Boolean, value: true/false representation:
+  :true :false
+
+functions: you know who you are!
+
+Complex data types are never directly exposed in OpenGL, e.g. structs in C++
+struct Object { int count; float opacity; char *name; };
+/* create storage: */ Object newObject;
+/* Put data into object: */ newObject.count = 5; newObject.opacits = 0.4f; ....
+
+In OpenGL this would look like this:
+// create storage for the object:
+GLuint objectName;
+glGenObject(1, &objectName)
+// Put data into the object:
+glBindObject(GL_MODIFY, objectName);  //Cooool !!
+glObjectParameteri(GL_MODIFY, GL_OBJECT_COUNT, 5);     
+glObjectParameterf(GL_MODIFY, GL_OBJECT_OPACITY, 0.4f); 
+glObjectParameters(GL_MODIFY, GL_OBJECT_NAME, "Some String");  
+
+NONDE OF THESE ARE ACTUALL OPENGL COMMANDS, they're just here to give you an idea!!!
+and its a cool idea alright!! ^_^
+
+OpenGL owns the storage for all OpenGL objects, so the user must access those objects
+through unsigned integers (the GLuint) (teehee!)
+
+Objects are created by functions of the form: glGen* (* is the type of the objts)
+the first parameter to glGen* is the number of objects to create! and the second a
+GLuint* array that receives the newly created object names.
+
+modify Objects:
+first they need to be bound to different a location in the context (targets!) all objects
+have a _list of valid targets_
+
+fields in the Object:
+enumerators GL_OBJECT_* all name fields in the objet that can be set!!
+
+Once an objects is generated, bound to a target, we can set parameter with in the object
+using the glObjectParameter family (like in the above example!)
+Since OpenGL is a C API, it has to name each differently typed variation differently:
+"Parameteri for integer parameters, "Parameterf for float ... etc.
+
+--------------------------------------------------------------------------------
+OpenGL context:
+the API is defined as a state machine, hence we either read states , change state
+or render the scene using the state info.
+If you were to create  multiple windows for rendering, each would have its own
+OpenGL context (get it?)
+--------------------------------------------------------------------------------
+Referring to objects needs GLuint handlers, as mentions above. 0 is the equivalent
+of a NULL pointer.
+Hence binding an object to 0 means unbinding the currently bound object!
+--------------------------------------------------------------------------------
+buffer objects, data storages that OpenGL can "see", we fill them with our data
+(triangle vertex, picture on hdd..)
+--------------------------------------------------------------------------------
+Shaders are executed over a set of inputs and converts them into a set of outputs
+Example vertex shader:
+
+#version 330  //must alway state version
+              // 1. the inputs:
+              // variable position of type: vec4 (4-dim vector of float values);
+              // layout will be explained later
+layout(location = 0) in vec4 position;
+void main()   // shaders execution always start with main() 
+{
+              // assign the BUILT-IN variable gl_position the value
+              // ALL built-in variables start with "gl_"!!
+    gl_Position = position;
+}
+
+This built-in gl_Position is defined as:
+
+out vec4 gl_Position
+
+The minimum a vertex shader must do is create a clip-space position. That is what
+gl_Position is: the clip-space position of the vertex
+--------------------------------------------------------------------------------
+But where does "positions", the input, gets its data from. Inputs to a vertex
+shader are calleed "vertex attributes"
+
+Vertex attributes, are the inputs to a shader. They have a index location called
+"attribute index". The vertex attribute was definied with:
+layout(location = 0) in vec4 position;
+^^^ the layout part assigns the attribute index 0 to position!!
+It was first hardcoded here:
+(gl:enable-vertex-attrib-array 0) !
+And our "format-of-buffer-object-describing-function" deals with this exact index:
+(gl:vertex-attrib-pointer <index> 4 :float :false 0 0) ; namely 0 !!!
+^^^^In effect it describes where the data for an attribute comes from
+
+Interesting OpenGL-state-machine fact:
+The order in whcih gl:enable-vertex-attrib-array and gl:vertex-attrib-pointer is
+called doesn't matter. All that matters is that they are called before rendering
+takes place (gl:draw-arrays..) because we just set state in OpenGL!!
+--------------------------------------------------------------------------------
+Fragment Shader,
+the inputs are: window-space xyz position of fragments and also user-defined data:
+
+#version 330
+
+out vec4 outputColor; //this time its an "out" (output)!
+void main
+{
+    outputColor = vec4(1.0f, 1.0f, 1.0f, 1.0f);
+}
+--------------------------------------------------------------------------------
+A SHADER STRING gets compiled into a shader object; analogous to C object file
+(when a c program is compiled it a object file is created)
+One or more SHADER OBJECT can be linked into a: PROGRAM OBJECT.
+
+These program objects contain aaaal the shaders to be used for rendering!
+--------------------------------------------------------------------------------
+a Float consists of 4 bytes
+in GLSL a vec4 is a sequence of 4 floats (vec4 = size 16 bytes)
+--------------------------------------------------------------------------------
+We try to "move" a triangle,
+we change the data of inside our gl:gl-array *vertex-positions* by using
+glBufferSubData(). The difference to glBufferData() is that the latter ALLOCATES
+memoryspecifically of a certain size.
+glBufferSubData() transvers data to ALREADY existing memory!!
+
+The C pro should think of glBufferData as combination of malloc + memcpy
+whlile glBufferSubData is just memcpy ;> TODO
+
+AS EXPECTED/(interesting!!!)
+the ominous parameter to glBufferData() :static-draw tells OpenGL that we only
+intend to set the data in this buffer ONCE.
+Opposite: :stream-draw. API wise THEY MEAN NOTHING though they're just hints for
+the implementors where to work on performance wise!!!
