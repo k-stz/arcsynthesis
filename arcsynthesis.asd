@@ -31,7 +31,8 @@ written in Common Lisp using cl-sdl2 and cl-opengl" ;; yeah it uses cl-sdl2, tha
    (:module "3-chapter/"
    	    :components ((:file "moving-triangle")
    			 (:file "vert-calc-offset")
-   			 (:file "vert-position-offset")))
+   			 (:file "vert-position-offset")
+			 (:file "frag-change-color")))
    ))
 
 

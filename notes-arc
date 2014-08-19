@@ -2,7 +2,7 @@ adding vectors  v1 + v2 = v3
 -positions: 
  first go v1 then go v2 then you arrive at v3
 -direction
- v3 is the direction between v1 and v2
+ v3 is the direction between v1's origin and v2's tip
 
 negation:
 -postion: backwards
@@ -242,4 +242,12 @@ corresposing code:                                            v
     ...
     (gl:uniform-2f offset-location 88.0 99.0)
 --------------------------------------------------------------------------------
->>>>>>> first commit
+Fragment shaders though store the position of a fragment, cannot change it!
+they can only change the color of it.
+--------------------------------------------------------------------------------
+Globals in shaders!
+As you will remember "uniforms" are shared between all shader stages and GLSL
+won't even allow to use their name for differntly typed variables.
+
+Other globals WHICH ARE SHARED BETWEEN SHADER STAGES include:
+in, out and uniforms
