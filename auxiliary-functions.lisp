@@ -67,11 +67,7 @@ will be COERCEd to SINGLE-FLOAT"
 
 (defun create-program (shader-list)
    ;;TODO: is this bad style to gl:use it as well?
-<<<<<<< HEAD
   "Create program and gl:use-program it."
-=======
-  "Create program and gl:use it"
->>>>>>> first commit
   (let ((program (%gl:create-program)))
     ;; "attach" all of the created shader objects to the program object
     (loop for shader-object in shader-list
@@ -92,9 +88,7 @@ will be COERCEd to SINGLE-FLOAT"
     (%gl:use-program program)
     ))
 
-<<<<<<< HEAD
 ;; stolen from cbaggers
-=======
 (defun create-program-and-return-it (shader-list)
    ;;TODO: is this bad style to gl:use it as well?
   "Create program and RETURN it"
@@ -119,7 +113,6 @@ will be COERCEd to SINGLE-FLOAT"
 
 ;; stolen from cbaggers ;;TODO: aha, give an &optional asdf/system:system-source-directory !!
 ;; and let it merge it with <path> !!
->>>>>>> first commit
 (defun file-to-string (path)
   "Sucks up an entire file from PATH into a freshly-allocated
 string, returning two values: the string and the number of

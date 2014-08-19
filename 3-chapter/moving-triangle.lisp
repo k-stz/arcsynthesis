@@ -114,10 +114,6 @@
   (gl:clear :color-buffer-bit)
   (compute-positions-offset)
   (adjust-vertex-data)
-<<<<<<< HEAD
-
-=======
->>>>>>> first commit
   (%gl:draw-arrays :triangles 0 3)
   )
 

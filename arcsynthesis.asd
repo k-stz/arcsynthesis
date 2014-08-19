@@ -18,7 +18,7 @@ written in Common Lisp using cl-sdl2 and cl-opengl" ;; yeah it uses cl-sdl2, tha
   ;; :serial is very useful, as it imposes a load hierarchy of the :component in the order
   ;; in which they are written, hence the current :component replaces the one commented
   ;; out below! -- :depends-on isn't needed anymore, probably sign of simplicity?
-  :serial t		       ; now: :file order in :components order is also dependency order
+  :serial t		  ; now: :file order in :components order is also dependency order
   :components
   ((:file "package")
    (:file "auxiliary-functions")
@@ -29,12 +29,9 @@ written in Common Lisp using cl-sdl2 and cl-opengl" ;; yeah it uses cl-sdl2, tha
 	    :components ((:file "fragment-color")
 			 (:file "vertex-color")))
    (:module "3-chapter/"
-<<<<<<< HEAD
-	    :components ((:file "moving-triangle")))
-=======
-	    :components ((:file "moving-triangle")
-			 (:file "vert-position-offset")))
->>>>>>> first commit
+   	    :components ((:file "moving-triangle")
+   			 (:file "vert-calc-offset")
+   			 (:file "vert-position-offset")))
    ))
 
 
