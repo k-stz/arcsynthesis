@@ -49,3 +49,8 @@
   (:documentation "fragChangeColor.cpp") ;;TODO: good organizational idea?
   (:use :cl)
   (:export #:main))
+
+(defpackage #:arc-4
+  (:documentation "OrthoCube.cpp")
+  (:use :cl)
+  (:export #:main))

@@ -13,8 +13,8 @@ uniform float time;
 // already (/ sdl2:get-ticks 1000.0
 uniform float frag_loop_duration;
 
-const vec4 firstColor = vec4(1.0f, 1.0f, 1.0f, 1.0f);
-const vec4 secondColor = vec4(0.0f, 1.0f, 0.0f, 1.0f);
+const vec4 firstColor = vec4(0.0f, 1.0f, 1.0f, 1.0f);
+const vec4 secondColor = vec4(1.0f, 0.0f, 0.0f, 1.0f);
 
 void main() {
   float currTime = mod(time, frag_loop_duration);
@@ -24,5 +24,7 @@ void main() {
   // depending on its third parameter (currLerp) which must be on the range [0.0,1.0]
   // or the outcome will be undefined!
   // also mix has the added benefit on being able to operate on vec4 types!
-  outputColor = mix(firstColor, secondColor, currLerp);
+
+  // Bonus: oscilate between 0 and 1, with tricky sin 2*pi call
+  outputColor = mix(firstColor, secondColor, sin(3.141592 * 2 * currLerp));
 }

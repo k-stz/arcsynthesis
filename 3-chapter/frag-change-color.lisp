@@ -38,8 +38,9 @@
     ))
        
 
-
+;;globals
 (defparameter time-uniform 0.0)
+(defparameter loop-duration-uniform 0)
 
 (defun init-shader-program ()
   (let ((shader-list (list)))
@@ -57,8 +58,9 @@
        (merge-pathnames "fs-frag-color.glsl" *glsl-directory* )))
      shader-list)
     (let ((program (arc:create-program-and-return-it shader-list))
-	  (loop-duration-uniform)
-	  (frag-loop-duration-uniform))
+	 ; (loop-duration-uniform)
+	  (frag-loop-duration-uniform)
+	  )
       ;; here be uniform locations handlels
       (setf time-uniform (gl:get-uniform-location program "time"))
       (setf loop-duration-uniform (gl:get-uniform-location program "loop_duration"))
@@ -66,7 +68,7 @@
 	    (gl:get-uniform-location program "frag_loop_duration"))
       (%gl:use-program program)
       (%gl:uniform-1f loop-duration-uniform 5.0)
-      (%gl:uniform-1f frag-loop-duration-uniform 10.0)
+      (%gl:uniform-1f frag-loop-duration-uniform 3.0)
       ;;(gl:use-program 0)
       )
     (loop for shader-object in shader-list
@@ -101,7 +103,15 @@
   
   (gl:clear :color-buffer-bit)
   (%gl:uniform-1f time-uniform (/ (sdl2:get-ticks) 1000.0))
+
+  ;; this cool neat effect gets you thinking more clearly how the rendering happens
+  (%gl:uniform-1f loop-duration-uniform 5.0)
   (%gl:draw-arrays :triangles 0 3)
+  (%gl:uniform-1f loop-duration-uniform 2.5)
+  (%gl:draw-arrays :triangles 0 3)
+
+
+  
   )
 
 (defun main ()

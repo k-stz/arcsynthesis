@@ -33,6 +33,8 @@ written in Common Lisp using cl-sdl2 and cl-opengl" ;; yeah it uses cl-sdl2, tha
    			 (:file "vert-calc-offset")
    			 (:file "vert-position-offset")
 			 (:file "frag-change-color")))
+   (:module "4-chapter"
+	    :components ((:file "ortho-cube")))
    ))
 
 
@@ -44,4 +46,6 @@ written in Common Lisp using cl-sdl2 and cl-opengl" ;; yeah it uses cl-sdl2, tha
   ;; 		      :depends-on ("package"))
   ;; 	       (:file "1-chapter/hello-triangle"
   ;; 		      :depends-on ("1-chapter/auxiliary-functions")
-  
+
+;;TODO: bad design?  
+(asdf:load-system :arcsynthesis)

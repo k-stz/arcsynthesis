@@ -251,3 +251,21 @@ won't even allow to use their name for differntly typed variables.
 
 Other globals WHICH ARE SHARED BETWEEN SHADER STAGES include:
 in, out and uniforms
+--------------------------------------------------------------------------------
+CPU vs. GPU performance,
+Our sin()/cos() offset computation is rather fascinating. Our inital CPU process
+computes the offsets once and iterate over all the vertices to apply them, whereas
+the shader computes the SAME OFFSET every shader call, which must be called the number
+of vertices in the :array-buffer!
+
+We need therefore to weigh the operations performes in a shader and decide if computing
+the same computation times the vertices in a shader vs. computing them once and on the CPU.
+
+Indeed, performance-wise usually the common practice solution is to compute the
+value on the CPU and pass it as a uniform to the shader.
+--------------------------------------------------------------------------------
+gl:cull-face, don't render triangles classified as :back or front for performance
+boost... "cull 'em out of the rendering!"
+
+Interesting: what classifies as back, depends on the vertex data. The outer faces
+of any object should have such property when viewed from outside!!! 
