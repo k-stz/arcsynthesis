@@ -8,6 +8,7 @@
 
 (defparameter *vertex-positions* nil)
 
+;;; TODODODODOODOD WHY COLORS NOT LIKE IN ARCSYNTHESIS EXAMPLE???
 ;; >_> elegant succinct code
 ;; the first 36 values are vertex the next 36 colors
   (defparameter *verts* #(
@@ -146,8 +147,8 @@
   (%gl:enable-vertex-attrib-array 0) ; vertex array-buffer
   (%gl:enable-vertex-attrib-array 1) ; color array-buffer
   (%gl:vertex-attrib-pointer 0 4 :float :false 0 0)
-  ;; this works :I, so does simply '48' as well :x
-  (%gl:vertex-attrib-pointer 1 4 :float :false 0 (/ (length *verts*) 2))
+  ;; duh, we need to multiply with 4 as every *verts* component is 4 bytes long
+  (%gl:vertex-attrib-pointer 1 4 :float :false 0 (/ (* 4 (length *verts*)) 2))
 
   ;; new hot code:
   ;;enables "face culling" i.e. certain triangles won't be rendered -- performace boostaaa
