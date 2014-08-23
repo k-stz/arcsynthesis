@@ -268,4 +268,105 @@ gl:cull-face, don't render triangles classified as :back or front for performanc
 boost... "cull 'em out of the rendering!"
 
 Interesting: what classifies as back, depends on the vertex data. The outer faces
-of any object should have such property when viewed from outside!!! 
+of any object should have such property when viewed from outside!!!
+--------------------------------------------------------------------------------
+"projection",
+is a term in the rendering pipeline, which describes a way to transform a world from
+done dimensionality to another.
+
+"orthographic projection",
+e.g.: project a 2d world perpendicular to a 1d line
+
+"perspective projection",
+how human eyes model the world as a picture in the mind.
+In OpenGL our eye is the:
+
+Fristum,
+a pyriamid with a choped of head. Instead of a cone, as the eye would use it, in
+OpenGL we use a fristum to project the 3d world on a "rectangular" image.
+
+Perspective Computation:
+the following vectors:
+R = projection on "plane of projection"
+E = distance from Eye to perpendicular "plane of projection"
+Pz= distance from Eye to perpendicular plane containing vertex to be projected
+P = to be projected vertex (this value is the one stored in :array-buffer for example)
+
+then:
+R = (E/R)*P
+
+Imagine P being on a straight line with Eye. Then E/R*P would of course result
+in P having the length of E to the projection plane. Now as we move P left and right
+(perpendicular to the projection plane!!)
+we just create a diagonal line from P to E intersecting the plane of projection left
+and right. It should be possible now to imagine that the ration of E/P multiplied with
+P will result in that projection!!
+Which is in effect not a resource heavy computation at all!
+
+Which leaves one loose loop: how to attain these perpendidularities!
+TODO: (I think dot product and the likes are designed for this)
+
+Now comes the super duper awesome part:
+R =  P * (E/Pz)
+can be expressed as a division (MULTIPLICATION BY THE RECIPROCAL)
+R = P / (Pz/E)
+
+and now guess what? NORMALIZED DEVICE COORDINATES?? W??
+yep, (x,y,z, w) <- this w when using NORMA..lized device coordinates does this:
+divide each component x,y,z by w and
+
+NOW ALL WE NEED TO DO IS SET W to this in EACH vertex:
+
+       w = E/Pz
+
+and normalized device coordinates will yield a PERSPECTIVE PROJECTION!!!!!!
+
+E is a constant, only Pz can be an unknown if viewed from just any angle
+but I bet there is some mathamatical trick to yield proper perpedicularities!
+
+========================================================================================
+#     This conversion from clip-space to normalied device coordinate is called         #
+# "PERSPECTIVE DIVIDE" exactly because it is usually used for perspective projection!! #
+#=======================================================================================
+
+Up until now our vertex shaders received clip space coordinates and output clip space
+coordinates as well hence:
+gl_Positions = positions // a no brainer for the VERTEX shader
+
+Now we want to change the inputs of our vertex shader, probably so that it will get
+a proper W value for NDC's perspective devide.
+
+We therefore define a new space for positions which leisurely call: CAMERA SPACE
+
+projection plane,
+part of the Fristum, on which all the projection will take place. It extends in
+[-1,1] on x and y and is fixed at Z = -1. The projection will be from vertices
+from the -Z direction!! We assume the "eye" to be at the origin
+[0,0,0].
+
+aaaanywho:
+The frustum is already finitely bound in the x and y directions now Z needs a
+finite boundery in camera space, we call them
+
+camera zFar,
+the maximum distance a vertex can be before it is considered "not in view"
+
+camera zNear,
+the minimum distance from the eye, before we decide it's not in view.
+
+Those are the definitions for camera space, later we will reuse these words
+connoting other meanings :I
+--------------------------------------------------------------------------------
+swizzle selection,
+access multiple components of a vector and return them as a proper dimensional
+vertex:
+  vertex.zy => returns: vec2(vertex.z, vertex.y)
+
+Note how you can dictate the order (the .zy)! Also vector.zzx is possible
+(two times the same value) etc.
+You may not select more than 4 values (vec4 is the limit!).
+  
+This swizzle selection is very efficient, arcsynthesis even states it has probably
+has NO performance penalties.
+--------------------------------------------------------------------------------
+

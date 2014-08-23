@@ -54,3 +54,8 @@
   (:documentation "OrthoCube.cpp")
   (:use :cl)
   (:export #:main))
+
+(defpackage #:arc-4.1
+  (:documentation "First Perspective Projection")
+  (:use :cl)
+  (:export #:main))
