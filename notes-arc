@@ -369,4 +369,16 @@ You may not select more than 4 values (vec4 is the limit!).
 This swizzle selection is very efficient, arcsynthesis even states it has probably
 has NO performance penalties.
 --------------------------------------------------------------------------------
+The Matrix has You,
+though a vector * matrix multiplication may perform 16 float multiplications and
+12 float additions it is still very efficient: graphics hardware is designed to make
+these operations very fast!
 
+Also: each of these multiplications can be done INDEPENDENTLY which opens the doors
+for parallel processing, which is exactly the kind of thing graphics hardware does
+fast (SANIC, he's the fastest thing aliiiiiiiiiiii-)
+Also each addition operations are partially independent. Ultimately each
+vector-matrix multiplication usually generates only 4 instructions in the GPU's
+machine language!
+
+(gl:uniform-matrix ...) very useful function!

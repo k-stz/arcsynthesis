@@ -35,7 +35,8 @@ written in Common Lisp using cl-sdl2 and cl-opengl" ;; yeah it uses cl-sdl2, tha
 			 (:file "frag-change-color")))
    (:module "4-chapter"
 	    :components ((:file "ortho-cube")
-			 (:file "perspective-projection")))
+			 (:file "perspective-projection")
+			 (:file "perspective-matrix")))
    ))
 
 
