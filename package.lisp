@@ -64,3 +64,8 @@
   (:documentation "Perspective projection using projection Matrix")
   (:use :cl)
   (:export #:main))
+
+(defpackage #:arc-4.3
+  (:documentation "Aspect of the World")
+  (:use :cl)
+  (:export #:main))

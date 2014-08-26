@@ -1,6 +1,6 @@
-;; TODO: review this soonly!
+;; TODO: capture resizing by reshape-event code!!!
 
-(in-package #:arc-4.2)
+(in-package #:arc-4.3)
 
 (defvar *glsl-directory*
   (merge-pathnames #p "4-chapter/" (asdf/system:system-source-directory :arcsynthesis)))
@@ -126,6 +126,8 @@
 (defparameter matrix-uniform nil)
 (defparameter perspective-matrix nil)
 
+(defparameter frustum-scale 0)
+
 (defun init-shader-program ()
   (let ((shader-list (list)))
     ;;oh c'mon how to make it local
@@ -190,10 +192,23 @@
   (%gl:draw-arrays :triangles 0 36)
   )
 
+(defun resize (win)
+  (format t "resizing event emulation executed. ")
+
+  (setf frustum-scale 1.0) ; TODO: hardcode baaaad
+  (multiple-value-bind (w h) (sdl2:get-window-size win)
+   (list w h)
+   (setf (aref perspective-matrix 0) (/ frustum-scale (/ w h))) ;coerce to 'single-float?
+   (setf (aref perspective-matrix 5) frustum-scale)
+   (gl:uniform-matrix matrix-uniform 4 (vector perspective-matrix) :false)
+   (gl:viewport 0 0 w h)
+   (format t "Prism:\"Hi there\"~%")
+    ))
+
 (defun main ()
   (sdl2:with-init (:everything)
     (progn (setf *standard-output* out) (setf *debug-io* dbg) (setf *error-output* err))
-    (sdl2:with-window (win :w 500 :h 500 :flags '(:shown :opengl))
+    (sdl2:with-window (win :w 500 :h 500 :flags '(:shown :opengl :resizable))
       (sdl2:with-gl-context (gl-context win)
 	(gl:clear-color 0 0 0.2 1)
 	(gl:clear :color-buffer-bit)
@@ -203,7 +218,10 @@
 	  (:keyup
 	   (:keysym keysym)
 	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-e)
-             (gl:disable :cull-face))
+	     ;;experimental code
+	     ;(gl:disable :cull-face)
+	     ;; TODO!!! HOW TO CATCH RESIZE EVENTS??
+	     (resize win))
 	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-escape)
 	     (sdl2:push-event :quit)))
 	  (:quit () t)

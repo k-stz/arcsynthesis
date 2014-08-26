@@ -1,11 +1,10 @@
 ;; TODO: review this soonly!
-
-(in-package #:arc-4.2)
+(in-package #:arc-4.3)
 
 (defvar *glsl-directory*
   (merge-pathnames #p "4-chapter/" (asdf/system:system-source-directory :arcsynthesis)))
-;;TODO: what with this garbage here >_>, or should I really build the habit of looking
-;; at the terminal
+
+
 (defvar out *standard-output*)  (defvar dbg *debug-io*) (defvar err *error-output*)
 
 (defparameter *vertex-positions* nil)
@@ -123,9 +122,6 @@
 (defparameter z-far-uniform 0)
 (defparameter frustum-scale-uniform 0)
 
-(defparameter matrix-uniform nil)
-(defparameter perspective-matrix nil)
-
 (defun init-shader-program ()
   (let ((shader-list (list)))
     ;;oh c'mon how to make it local
@@ -140,7 +136,7 @@
     	  shader-list)
     (setf program (arc:create-program-and-return-it shader-list))
     (let ((s 1.0) (n 0.5) (f 3.0)	;frustum-scale, zNear, zFar
-	  )
+	  (matrix-uniform) (perspective-matrix))
       (setf matrix-uniform (gl:get-uniform-location program "perspective_matrix"))
       (print matrix-uniform)
       (setf perspective-matrix
@@ -193,7 +189,7 @@
 (defun main ()
   (sdl2:with-init (:everything)
     (progn (setf *standard-output* out) (setf *debug-io* dbg) (setf *error-output* err))
-    (sdl2:with-window (win :w 500 :h 500 :flags '(:shown :opengl))
+    (sdl2:with-window (win :w 500 :h 500 :flags '(:shown :opengl :resizable))
       (sdl2:with-gl-context (gl-context win)
 	(gl:clear-color 0 0 0.2 1)
 	(gl:clear :color-buffer-bit)
@@ -203,9 +199,12 @@
 	  (:keyup
 	   (:keysym keysym)
 	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-e)
-             (gl:disable :cull-face))
+	     ;;experimental code
+	     (gl:disable :cull-face)
+	     )
 	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-escape)
 	     (sdl2:push-event :quit)))
+	  (:mousemotion () (print "omg did you just resize?"))
 	  (:quit () t)
 	  (:idle ()
 		 ;;main-loop:

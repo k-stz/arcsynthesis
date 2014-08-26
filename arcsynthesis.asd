@@ -36,7 +36,8 @@ written in Common Lisp using cl-sdl2 and cl-opengl" ;; yeah it uses cl-sdl2, tha
    (:module "4-chapter"
 	    :components ((:file "ortho-cube")
 			 (:file "perspective-projection")
-			 (:file "perspective-matrix")))
+			 (:file "perspective-matrix")
+			 (:file "aspect-of-the-world")))
    ))
 
 
