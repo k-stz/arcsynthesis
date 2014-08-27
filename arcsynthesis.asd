@@ -37,7 +37,7 @@ written in Common Lisp using cl-sdl2 and cl-opengl" ;; yeah it uses cl-sdl2, tha
 	    :components ((:file "ortho-cube")
 			 (:file "perspective-projection")
 			 (:file "perspective-matrix")
-			 (:file "aspect-of-the-world")))
+			 (:file "aspect-ratio")))
    ))
 
 

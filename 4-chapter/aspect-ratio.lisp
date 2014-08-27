@@ -188,22 +188,65 @@
 
 (defun rendering-code ()
   (gl:clear :color-buffer-bit)
-  (%gl:uniform-2f offset-uniform 0.5 0.5)
+  (%gl:uniform-2f offset-uniform -0.5 0.5)
   (%gl:draw-arrays :triangles 0 36)
   )
 
 (defun resize (win)
   (format t "resizing event emulation executed. ")
-
+  ;; changing frustum-scale makes vertices grow fonder or ill of their origin :]
   (setf frustum-scale 1.0) ; TODO: hardcode baaaad
   (multiple-value-bind (w h) (sdl2:get-window-size win)
    (list w h)
+   ;; this is quite cool: if width becomes bigger than h we effectively multiply the x
+   ;; values with the ration h/w where w > h hence it fits less then 1 time in h and
+   ;; the multiplication causes shrinkin!
+   ;; on the other hand if width is smaller than h then h/w will create a value bigger
+   ;; than 1 hence cause a x-enlarging effect!!
    (setf (aref perspective-matrix 0) (/ frustum-scale (/ w h))) ;coerce to 'single-float?
-   (setf (aref perspective-matrix 5) frustum-scale)
+   (setf (aref perspective-matrix 5) frustum-scale) 
    (gl:uniform-matrix matrix-uniform 4 (vector perspective-matrix) :false)
    (gl:viewport 0 0 w h)
-   (format t "Prism:\"Hi there\"~%")
+   (format t "w: ~a h: ~a ~%" w h)
     ))
+
+
+(defparameter qux 0)
+(defparameter eye-x 0.0)
+(defparameter eye-y 1.0)
+
+(defun change-eye ()
+  ;; TODO: could just use the 'w' in perspective-matrix as it receives
+  ;; just 1.0, so: (* 1.0 x) = x from the vertex and will be added to
+  ;; the row of any vertex we want to modify by adding values!
+  (let* ((matrix (make-array 16 :element-type 'single-float
+			     :initial-contents perspective-matrix))
+	 ;; (eye-x 1.0)
+	 (eye-y 0.0)
+	 (eye-z -1.0)
+	 (loop-duration 5.0)
+	 (scale (coerce (/ (* pi 2) loop-duration) 'single-float))
+	 (elapsed-time (/ (sdl2:get-ticks) 1000.0))
+	 (curr-time-through-loop (mod elapsed-time loop-duration))
+	 )
+    ;;for experimentation:
+    ;;TODO: strange flipping effect; hypothesis: triangle winding isn't on the
+    ;;surface everywhere with :cw winding? hence some get culled they shouldn't
+    ;;and at the point of flipping we see the backside of the triangle on the
+    ;;inside of the prism
+    ;;Or that's just the kind of distortion that occurs because the eye moves
+    ;;but not the projection plane :I
+    ;(setf eye-x (1-  (cos (* curr-time-through-loop scale))))
+    (setf eye-y (1-  (sin (* curr-time-through-loop scale))))
+    ;(setf eye-z (1-  (cos (* curr-time-through-loop scale))))
+
+
+    (incf (aref matrix 0) eye-x)	;x
+    (incf (aref matrix 5) eye-y)	;y
+    (setf (aref matrix 14) (/ (aref matrix 14) (- eye-z)))
+    (gl:uniform-matrix matrix-uniform 4 (vector matrix) :false))
+
+  )
 
 (defun main ()
   (sdl2:with-init (:everything)
@@ -221,12 +264,16 @@
 	     ;;experimental code
 	     ;(gl:disable :cull-face)
 	     ;; TODO!!! HOW TO CATCH RESIZE EVENTS??
-	     (resize win))
+	     (resize win)
+	     ;(change-eye)
+	     )
 	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-escape)
 	     (sdl2:push-event :quit)))
 	  (:quit () t)
 	  (:idle ()
 		 ;;main-loop:
 		 (rendering-code)
+		 ;; nice experiments with change-eye 
+		 (change-eye)
 		 (sdl2:gl-swap-window win) ; wow, this can be forgotten easily -.-
 		 ))))))
