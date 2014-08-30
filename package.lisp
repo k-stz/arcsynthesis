@@ -69,3 +69,10 @@
   (:documentation "Aspect of the World")
   (:use :cl)
   (:export #:main))
+
+;; chapter 5
+
+(defpackage #:arc-5
+  (:documentation "Objects in Depth")
+  (:use :cl)
+  (:export #:main))

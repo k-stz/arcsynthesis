@@ -45,6 +45,38 @@ will be COERCEd to SINGLE-FLOAT"
     (fill-gl-array gl-array vector-of-floats)
     gl-array))
 
+;;not fully implemented
+(defun create-gl-array-of-type-from-vector (v type)
+  (flet ((fill-gl-array ()
+           ;; TODO: how to fill it with arbitrary type?
+	   )))
+  (let* ((array-length (length v))
+	 (gl-array (gl:alloc-gl-array type array-length)))
+    (fill-gl-array gl-array v)
+    gl-array))
+
+;;TODO: replace this function by a general purpose one:
+(defun create-gl-array-of-short-from-vector (vector-of-shorts)
+  (flet ((fill-gl-array-of-short (gl-array)
+	   (dotimes (i (length vector-of-shorts))
+	     (setf
+	      (gl:glaref gl-array i)
+	      (coerce (aref vector-of-shorts i) '(signed-byte 16))))))
+    (let* ((array-length (length vector-of-shorts))
+	   (gl-array (gl:alloc-gl-array :short array-length)))
+      (fill-gl-array-of-short gl-array)
+      gl-array)))
+
+(defun create-gl-array-of-unsigned-short-from-vector (vector-of-unsigned-shorts)
+  (flet ((fill-gl-array-of-short (gl-array)
+	   (dotimes (i (length vector-of-unsigned-shorts))
+	     (setf
+	      (gl:glaref gl-array i) (aref vector-of-unsigned-shorts i)))))
+    (let* ((array-length (length vector-of-unsigned-shorts))
+	   (gl-array (gl:alloc-gl-array :unsigned-short array-length)))
+      (fill-gl-array-of-short gl-array)
+      gl-array)))
+
 
 ;;TODO: combine many shader objects just by repeatedly calling this?
 ;;      why (list const-string-shader-file), is it for program of multiple string or

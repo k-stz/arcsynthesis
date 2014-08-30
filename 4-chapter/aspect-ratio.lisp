@@ -1,4 +1,7 @@
 ;; TODO: capture resizing by reshape-event code!!!
+;; TODO: WHAT is happening here??? how can it show the back side of the object just by
+;;       moving eye up and down PERPENDICULAR to FRONT side???? this code must have
+;;       a semantic error!
 
 (in-package #:arc-4.3)
 
@@ -188,7 +191,7 @@
 
 (defun rendering-code ()
   (gl:clear :color-buffer-bit)
-  (%gl:uniform-2f offset-uniform -0.5 0.5)
+  (%gl:uniform-2f offset-uniform 0.5 0.5)
   (%gl:draw-arrays :triangles 0 36)
   )
 

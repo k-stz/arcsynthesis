@@ -382,3 +382,73 @@ vector-matrix multiplication usually generates only 4 instructions in the GPU's
 machine language!
 
 (gl:uniform-matrix ...) very useful function!
+--------------------------------------------------------------------------------
+VAO,
+up until now we had to draw using the following steps: generate buffer object handle,
+use it to bind it to a target in OpenGL, use it to put data into OpenGL, specify
+the format its in, extract an attribute index from it and finally use it in a
+shader and gl:draw* the data it represents.
+the VERTEX ARRAY OBJECT (VAO) is here to alleviate us of this burden!
+
+It essentially stores all the states needed, we set them implicitly, so our code
+looks cryptic and voodoo to the uninitiated and also we use real voodoo code
+ourselves because of API cruft! Aaaaanywho, it gets complicated but we still
+can get through it using the state-machine methaphor.
+
+The end-product will be a VAO-object which we will (gl:bind-vertex-array *vao-obj*)
+and call (gl:draw-* ..) then we will set the next VAO-obj to draw a second object.
+The abstraction of "drawing an object" is explained by Mr. McKesson as:
+"An object, in terms of what you draw, can be considered the results of a single
+drawing call."
+That drawing call is what we do after we (gl:bind-vertex-array *vao-obj) to the
+context, as just described.
+--------------------------------------------------------------------------------
+Check this out:
+Mr McKesson suggests in a pseudo code for gl:draw-arrays, that they loop over some
+given range using indexed within it to call:
+
+  VertexShader(position-attibute-array[some-index]
+
+(!) We're calling some "VertexShader" function implicitly!! (!)
+--------------------------------------------------------------------------------
+ARRAY DRAWING,
+use the array as a movie-tape and run it sequentially to draw stuff.
+
+
+ELEMENT ARRAY (also index array),
+cheat sheet from a periodic table and random access what element you want to draw.
+All you have to do is use your INDEX finger to get at the elements!
+
+element-arrays are stored in buffer objects and need to be bound to the
+:element-array-buffer target!
+The functions gl:buffer-data gl:buffer-sub-data will operate on it, hence.
+
+Now this "random access" of element buffer drawing needs to be put in the desired
+sequence of "random access" which are stored in the element-array! Then they
+are read and there elements are indices to position/color-attrib-arrays!!
+--------------------------------------------------------------------------------
+Notes on C++ feature: #define directives
+They are preprossor commands, before the .cpp file is compiled any #-preceding
+line is interpreted as a preperation command before actuall compilation takes place
+it is simple:
+#define FOO 22
+int 1 + FOO;
+
+will first translate the file to:
+int 1 + 22; then compile it
+
+so it's just textual replacement, and as I've read it is considered a "macro" and an
+issue which involves the association/confusion of Lisp macro and C++ #define directive
+macro.
+
+An Arcsynthesis example:
+#define ARRAY_COUNT( array ) (sizeof( array ) / (sizeof( array[0] )
+* (sizeof( array ) != sizeof(void*) || sizeof( array[0] ) <= sizeof(void*))))
+// note the above must be inline, newline should actually involve a '\' chatacter
+
+ARRAY_COUNT(foo)
+
+translates to
+( foo ) (sizeof( foo ) / (sizeof( foo[0] ) * (sizeof( foo ) != sizeof(void*) ||
+sizeof( foo[0] ) <= sizeof(void*))))
+--------------------------------------------------------------------------------
