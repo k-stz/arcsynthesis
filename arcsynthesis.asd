@@ -39,7 +39,8 @@ written in Common Lisp using cl-sdl2 and cl-opengl" ;; yeah it uses cl-sdl2, tha
 			 (:file "perspective-matrix")
 			 (:file "aspect-ratio")))
    (:module "5-chapter"
-	    :components ((:file "overlap-no-depth")))
+	    :components ((:file "overlap-no-depth")
+			 (:file "base-vertex-with-overlap")))
    ))
 
 
