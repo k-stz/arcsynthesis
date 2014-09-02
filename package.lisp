@@ -81,3 +81,8 @@
   (:documentation "Optimization: Base Vertex")
   (:use :cl)
   (:export #:main))
+
+(defpackage #:arc-5.2
+  (:documentation "Overlap and Depth Buffering")
+  (:use :cl)
+  (:export #:main))

@@ -265,10 +265,15 @@
 	   (:keysym keysym)
 	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-e)
 	     ;;experimental code
-	     ;(gl:disable :cull-face)
+	     ;;(gl:disable :cull-face)
 	     ;; TODO!!! HOW TO CATCH RESIZE EVENTS??
 	     (resize win)
-	     ;(change-eye)
+	     ;;      (gl:enable :depth-test)
+	     ;; (gl:depth-mask :true)
+	     ;; (%gl:depth-func :lequal)
+	     ;; (%gl:depth-range 0.0 1.0)
+
+					;(change-eye)
 	     )
 	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-escape)
 	     (sdl2:push-event :quit)))

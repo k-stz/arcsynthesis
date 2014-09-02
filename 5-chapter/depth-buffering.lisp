@@ -1,4 +1,7 @@
-(in-package #:arc-5.1)
+;; TODO: where does sdl2 decide to create a OpenGL with a depth buffer upon
+;; initialization?
+
+(in-package #:arc-5.2)
 
 (defvar *glsl-directory*
   (merge-pathnames #p "5-chapter/" (asdf/system:system-source-directory :arcsynthesis)))
@@ -226,22 +229,18 @@
 
 (defun rendering-code ()
   (gl:clear-color 0 0 0.2 1)
-  (gl:clear :color-buffer-bit :depth-buffer-bit )
+  (gl:clear-depth 1.0)
+  (gl:clear :color-buffer-bit :depth-buffer-bit)
 
   (%gl:use-program *program*)
 
   (gl:bind-vertex-array *vao*)
-  (%gl:uniform-3f *offset-uniform* 0.0 0.0 0.0)
+  ;; maximum overlapping!
+  (%gl:uniform-3f *offset-uniform* 0.0 0.0 -1.0)
   (%gl:draw-elements :triangles (gl::gl-array-size *index-data*) :unsigned-short 0)
   
   (%gl:uniform-3f *offset-uniform* 0.0 0.0 -1.0)
 
-  ;; add offset to indices in *index-data* when reading out and before using them to
-  ;; (we do NOT change *index-data* itself!)
-  ;; draw-elements, Advantage: use less actuall indices (staying with :unsigned-short type)
-  ;; as opposed to :integer 
-  ;; saves huge amount of space (2x), the other reason is organizational and to be intuitively
-  ;; understood in the future (when using multiple meshes probably), according to Mr. McKesson
   (%gl:draw-elements-base-vertex :triangles (gl::gl-array-size *index-data*)
 				 :unsigned-short 0 (/ *number-of-vertices* 2))
   (gl:bind-vertex-array 0)
@@ -264,6 +263,18 @@
 	(%gl:cull-face :back)
 	(%gl:front-face :cw)
 	(gl:viewport 0 0 500 500)
+
+	;;depth buffer please indulge us with your presence!
+	;;TODO: (gl:enable :depth-test) already suffices for the visual effect, why
+	(gl:enable :depth-test)
+	;; write depth value from fragment to depth-buffer
+	(gl:depth-mask :true)
+	(%gl:depth-func :lequal)
+	;; ndc -> window-space mapping of Z-values (!) ndc [-1,1] values outside
+	;; 0.0 1.0 will be mapped directly to the border values themselves, they
+	;; shot over. if zNear > zFar mapping will be reversed => furthest fragment
+	;; from eye will be drawn
+	(gl:depth-range 0.0 1.0)
 
 	(sdl2:with-event-loop (:method :poll)
 	  (:keyup

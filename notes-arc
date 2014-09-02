@@ -452,3 +452,57 @@ translates to
 ( foo ) (sizeof( foo ) / (sizeof( foo[0] ) * (sizeof( foo ) != sizeof(void*) ||
 sizeof( foo[0] ) <= sizeof(void*))))
 --------------------------------------------------------------------------------
+hidden surface elimination,
+What anticipated all along: The rasterizer just draws triangles on the screen:
+The last thing drawn, regardless of if is geometrically behind inside an object,
+is always drawn on top!
+The rasterizer is "stupid" it knows nothing other than drawing triangles, but
+it does it very efficiently.
+
+depth sorting,
+the naive solution, like bubblesort it is the first solution that comes to mind
+and it is inefficient and even incomplete(!):
+We sort objects from closest to farthest from the screen, then render them back
+to front, hence no overlapping of stuff actually in front can happen, right?
+
+Just imagine two triangles intersecting, or three overlapping eaach other
+domino-style we have no definite "front" candidate.
+
+The next naive solution naturally builds on the idea, and is still quite armchair
+feasable: we do the same thing with individual fragments: after all, there
+are no intersecting fragments. The only problem is when multiple share the same
+z-value on a huge contiguous array of pixels on the screen. Then we get unique
+problems like: "z-fighting".
+
+tagging fragments,
+associate with every fragment its window-space z-value, compare which value is
+the smallest, hence closes to eye) and only draw those fragmetns! We store those
+z-values in a:
+
+depth buffer,
+also called a the z-buffer, since it stores z-values!
+
+Interesting: Colors output from a fragmetn shader are stored in the:
+color image buffer, which together with the z-buffer is CREATED BY OPENGL
+automatically when it is initialized already!!
+
+depth test,
+Stop the fragment from being written to the screen if it fails this test.
+We enable it with (gl:enable :depth-test), him so the rasterizer is smarter then
+we gave it credit?
+Also we need to call gl:depth-func to set the relation of the depth test. This
+relation can be :always (always write the fragmetn), :never now it gets interesting:
+:less, :greater :lequal :gequal :equal :notequal
+It's always the same (read left to right relation):
+          1.                      2.                        3.
+    fragment depth <relation-set-in-gl:depth-func> depth-buffer value
+
+e.g.:  0.2  :less 0.5  => fragment gets written!
+
+gl:depth-mask causes the fragments depth to be written to the depth buffer
+
+Finally, clearing the depth values is the same as clearing color values in the
+corresponding buffers: we set the bits, :depth-buffer-bit, and gl:clear them
+(gl:clear-color x y z w) 
+(gl:clear-depth 1.0)
+(gl:clear :color-buffer-bit :depth-buffer-bit)

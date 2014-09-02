@@ -8,16 +8,12 @@
 (defsystem #:arcsynthesis
   :description "Modern OpenGL example code from the book 'Learning Modern 3D Graphics Programming'
 by Jason L. McKesson (website:'www.arcsynthesis.org/gltut')
-written in Common Lisp using cl-sdl2 and cl-opengl" ;; yeah it uses cl-sdl2, that's a big deal alright
+written in Common Lisp using cl-sdl2 and cl-opengl"
   :version "0.0.1"
   :author "k-stz"
   ;; :licence  TODO
   :depends-on (:cl-opengl
 	       :sdl2)
-  ;; :pathname "src"
-  ;; :serial is very useful, as it imposes a load hierarchy of the :component in the order
-  ;; in which they are written, hence the current :component replaces the one commented
-  ;; out below! -- :depends-on isn't needed anymore, probably sign of simplicity?
   :serial t		  ; now: :file order in :components order is also dependency order
   :components
   ((:file "package")
@@ -40,7 +36,8 @@ written in Common Lisp using cl-sdl2 and cl-opengl" ;; yeah it uses cl-sdl2, tha
 			 (:file "aspect-ratio")))
    (:module "5-chapter"
 	    :components ((:file "overlap-no-depth")
-			 (:file "base-vertex-with-overlap")))
+			 (:file "base-vertex-with-overlap")
+			 (:file "depth-buffering")))
    ))
 
 
