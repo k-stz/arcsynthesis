@@ -37,7 +37,8 @@ written in Common Lisp using cl-sdl2 and cl-opengl"
    (:module "5-chapter"
 	    :components ((:file "overlap-no-depth")
 			 (:file "base-vertex-with-overlap")
-			 (:file "depth-buffering")))
+			 (:file "depth-buffering")
+			 (:file "vertex-clipping")))
    ))
 
 

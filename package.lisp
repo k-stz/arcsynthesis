@@ -86,3 +86,8 @@
   (:documentation "Overlap and Depth Buffering")
   (:use :cl)
   (:export #:main))
+
+(defpackage #:arc-5.3
+  (:documentation "Boundaries and Clipping")
+  (:use :cl)
+  (:export #:main))
