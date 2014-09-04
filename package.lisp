@@ -91,3 +91,8 @@
   (:documentation "Boundaries and Clipping")
   (:use :cl)
   (:export #:main))
+
+(defpackage #:arc-5.4
+  (:documentation "Depth Clamping")
+  (:use :cl)
+  (:export #:main))
