@@ -15,6 +15,18 @@
    #:file-to-string
    #:gl-array-content))
 
+(defpackage #:glm
+  (:use :cl)
+  (:export
+   #:make-mat4
+   #:mat4-place
+   #:set-mat4
+   #:set-mat4-row
+   #:vec3
+   #:vec4-from-vec3
+   )
+  )
+
 (defpackage #:arc-1
   (:documentation "1. tutorial")
   (:use #:cl #:arcsynthesis)
@@ -96,3 +108,9 @@
   (:documentation "Depth Clamping")
   (:use :cl)
   (:export #:main))
+
+(defpackage #:arc-6
+  (:documentation "Trnaslation")
+  (:use :cl)
+  (:export #:main))
+

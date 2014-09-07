@@ -506,3 +506,29 @@ corresponding buffers: we set the bits, :depth-buffer-bit, and gl:clear them
 (gl:clear-color x y z w) 
 (gl:clear-depth 1.0)
 (gl:clear :color-buffer-bit :depth-buffer-bit)
+--------------------------------------------------------------------------------
+Translation,
+Use the origin of one space, and place it somewhere in another, the vertecis will
+follow relative to the new origin..
+or "how to offset -- vertex graphics programming style". We will be using matrices
+now because of advantages, yet to be explained. So we need a "offset" matrix, that
+once the vertex vector multiplies with it will offset some of its values.
+
+The identity matrix,
+will help, it is like 1, in multiplication, anything multiplied with it will return
+whatever was multiplied (identity element). math-combination(identity-element, xyz) = xyz
+Here's how it looks like:
+ [1, 0, 0, 0 
+  0, 1, 0, 0
+  0, 0, 1, 0
+  0, 0, 0, 1]
+Now remember the special properties of OpenGL matrices: The 'w'-row is 1.0 by default,
+so if we want to offset a vector, we just need to put in the offset in there
+
+ [1, 0, 0, x      [2    2 + 0 + 0 + x  =  [2+x
+  0, 1, 0, y   X   4  = 0 + 4 + 0 + y  =   4+y
+  0, 0, 1, z       3    0 + 0 + 3 + z  =   3+z
+  0, 0, 0, 1]      1]   0 + 0 + 0 + 1  =    1 ]
+
+Now I hope this visual doesn't confuse the you into thinking matrix multiplication works
+horizontally! But muliplying with a indentity-matrix sure makes it look like it!

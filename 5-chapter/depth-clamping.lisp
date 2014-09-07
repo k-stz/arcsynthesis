@@ -268,12 +268,19 @@
 	;; write depth value from fragment to depth-buffer
 	(gl:depth-mask :true)
 	(%gl:depth-func :lequal)
-	;; ndc -> window-space mapping of Z-values (!) ndc [-1,1] values outside
-	;; 0.0 1.0 will be mapped directly to the border values themselves, they
-	;; shot over. if zNear > zFar mapping will be reversed => furthest fragment
-	;; from eye will be drawn
-	;; The over shoting values get bound to the corresponding border only takes visual
-	;; effect if (gl:enable :depth-clamping) !!!
+	;; ndc -> window-space mapping of Z-values (!) ndc [-1,1]. If :depth-clamping is
+	;; enabled values outside 0.0 1.0 will be mapped directly to the border values
+	;; themselves, they shot over. if zNear > zFar mapping will be reversed => furthest
+	;; fragment from eye will be drawn The over shoting values get bound to the
+	;; corresponding border only takes visual effect if (gl:enable :depth-clamping) !!!
+	;; To sum up:
+	;; -1 in clip-space will map to zNear in window-space; +1 in clip-space will map to zFar
+	;; in window-space. zNear and zFar must be [0,1] as this is window-space. Values in between
+	;; will be interplated accordingly (this is what "mapping" implies)
+	;; yeah... TODO: no changes seem to affect depth-range :I
+	;; TODO: Also the zNear set here, will be used as reference for the depth-buffer, so tests could
+	;; include not clearing the depth-buffer, changing the mapping and then draw again, as differnt
+	;; max-depth values (for example due to clamping) could be stored in the depth-buffer?
 	(gl:depth-range 0.0 1.0)
 
 	(sdl2:with-event-loop (:method :poll)

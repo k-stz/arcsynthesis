@@ -18,6 +18,7 @@ written in Common Lisp using cl-sdl2 and cl-opengl"
   :components
   ((:file "package")
    (:file "auxiliary-functions")
+   (:file "glm")
    ;; the following solves the "src in subdirectories" problem nicely!
    (:module "1-chapter/"
    	    :components ((:file "hello-triangle")))
@@ -40,6 +41,8 @@ written in Common Lisp using cl-sdl2 and cl-opengl"
 			 (:file "depth-buffering")
 			 (:file "vertex-clipping")
 			 (:file "depth-clamping")))
+   (:module "6-chapter"
+	    :components ((:file "translation")))
    ))
 
 
