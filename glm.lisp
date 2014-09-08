@@ -20,8 +20,8 @@
 	    (:x 0) (:y 1) (:z 2) (:w 3))))
     `(aref ,mat4 ,(+ (* 4 col)  c))))
 
-(defmacro set-mat4 (mat4 row coordinate set-value)
-  `(setf (mat4-place ,mat4 ,row ,coordinate) ,set-value))
+(defmacro set-mat4 (mat4 col coordinate set-value)
+  `(setf (mat4-place ,mat4 ,col ,coordinate) ,set-value))
 
 
 ;; this can't work as a macro, because a macro can't have runtime
@@ -57,7 +57,16 @@
 	  (setf (mat4-place ,mat4 ,col :w) (aref ,vec4 3)))
   )
 
-(defun vec3 (x y z)
+
+(defmacro set-mat4-diagonal (mat4 vec4)
+  `(progn (setf (mat4-place ,mat4 0 :x) (aref ,vec4 0))
+	  (setf (mat4-place ,mat4 1 :y) (aref ,vec4 1)) 
+	  (setf (mat4-place ,mat4 2 :z) (aref ,vec4 2)) 
+	  (setf (mat4-place ,mat4 3 :w) (aref ,vec4 3))))
+
+
+
+(defun vec3 (x &optional (y x) (z x))
   (let ((x (float x))
 	(y (float y))
 	(z (float z)))
@@ -72,14 +81,24 @@
     (make-array 4 :element-type 'single-float
 		:initial-contents (list x y z 1.0))))
 
+
+(defun mix (x y a)
+  ;; from OpenGL description, probably this is only for a being [0,1]. Yep:
+  ;; 'a' is the distance between x and y as if mapped to 0 to 1.0. The rest abides
+  ;; to linear interpolation
+  "linearly interpolate between two values x,y using a to weight between them"
+  (+ (* x (1- a))
+     (* y a))
+  )
+
+
+
+;;Experimental------------------------------------------------------------------
 ;; TODO: experiment later using a class :I, maybe just use it to have a neat
 ;; print representation of the array (new-line every 4 values)?
 (defclass mat4 ()
   ((mat4 :initarg :mat4-contents
 	 :accessor get-matrix)))
-
-
-
 
 (defun create-mat4 (init-diagonal-values)
   (let ((idv init-diagonal-values))	;bad style?

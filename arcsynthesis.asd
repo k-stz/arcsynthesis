@@ -42,7 +42,8 @@ written in Common Lisp using cl-sdl2 and cl-opengl"
 			 (:file "vertex-clipping")
 			 (:file "depth-clamping")))
    (:module "6-chapter"
-	    :components ((:file "translation")))
+	    :components ((:file "translation")
+			 (:file "scale")))
    ))
 
 

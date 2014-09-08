@@ -1,18 +1,4 @@
-;;TODO: the distance/scaling is not like on the picture in arcsynthesis :I
-;;      (calc-frustum-scale ..) was tested already. Maybe tutorial changed window size?
-
-;; use the translation matrix:
-;; translation (x, y, z)
-;;  [1, 0, 0, x
-;;   0, 1, 0, y
-;;   0, 0, 1, z
-;;   0, 0, 0, 1]
-;; and multiply it with the vertecis of an object which we want to put in another
-;; space, relative to a certain origin (which resides at the x, y and z provided!)
-;; again kind of a cool yet simple thing: we plant "origins" in a space of our
-;; choosing! how awesome is that!?
-
-(in-package #:arc-6)
+(in-package #:arc-6.1)
 
 (defvar *glsl-directory*
   (merge-pathnames #p "6-chapter/" (asdf/system:system-source-directory :arcsynthesis)))
@@ -27,7 +13,10 @@
 (defparameter *camera-to-clip-matrix* (glm:make-mat4 0.0))
 (defvar *camera-to-clip-matrix-unif*)
 
-(defvar *model-to-camera-matrix-unif* 0)
+(defvar *model-to-camera-matrix-unif*)
+
+(defvar *scale-clip-matrix-unif*)
+
 
 (defun calc-frustum-scale (f-fov-deg)
   "the field-of-view (fov) is the angle between the forward direction and the direction
@@ -40,7 +29,9 @@ the projection plane)"
 	(tan (/ f-fov-rad 2.0)))
      'single-float)))
 
-(defparameter *frustum-scale* (calc-frustum-scale 45.0))
+;; TODO: why looks does it look smaller than the screenshots?
+;; provisional solution to scale problem
+(defparameter *frustum-scale* (calc-frustum-scale 25.0)) 
 
 (defun initialize-program ()
   (let ((shader-list (list)))
@@ -62,8 +53,8 @@ the projection plane)"
     (setf *camera-to-clip-matrix-unif*
 	  (gl:get-uniform-location *program* "camera_to_clip_matrix"))
 
-    (format t "a:~a b:~a" *model-to-camera-matrix-unif* *camera-to-clip-matrix-unif* )
-    
+    (format t "a:~a b:~a" *model-to-camera-matrix-unif* *camera-to-clip-matrix-unif*)
+
     (let ((fz-near 1.0)
 	  (fz-far 45.0))
       (glm:set-mat4 *camera-to-clip-matrix* 0 :x *frustum-scale*)
@@ -75,6 +66,7 @@ the projection plane)"
 						    (- fz-near fz-far)))
       
       (%gl:use-program *program*)
+      
       (gl:uniform-matrix *camera-to-clip-matrix-unif*  4 (vector *camera-to-clip-matrix*)
 			 :false))
     (%gl:use-program 0)
@@ -187,31 +179,36 @@ the projection plane)"
 
 (defvar *elapsed-time*)
 
-(defparameter *stationary-offset* (glm:vec3 0.0 0.0 -20.0))
+(defun null-scale ()
+  (glm:vec3 1.0 1.0 1.0))
 
-(defun oval-offset (elapsed-time)
-  (let* ((loop-duration 3.0)
-	 (scale (/ (* pi 2.0) loop-duration))
-	 (curr-time-through-loop (mod elapsed-time loop-duration))
-	 (x (coerce
-	     (* (cos (* curr-time-through-loop scale)) 4.0) 'single-float))
-	 (y (coerce
-	     (* 6.0  (sin (* curr-time-through-loop scale))) 'single-float))
-	 (z -20.0))
-    (glm:vec3 x y z)
-    )
-)
+(defun static-uniform-scale ()
+  (glm:vec3 4.0 4.0 4.0))
 
-(defun bottom-circle-offset (elapsed-time)
-  (let* ((loop-duration 12.0)
-	 (scale (/ (* 3.1415927 2.0) loop-duration))
-	 (curr-time-through-loop (mod elapsed-time loop-duration))
-	 (x (coerce (* (cos (* curr-time-through-loop scale)) 5.0)
-		    'single-float))
-	 (y -3.5)
-	 (z (coerce
-	     (- (* (sin (* curr-time-through-loop scale)) 5.0) 20.0) 'single-float)))
-    (glm:vec3 x y z)))
+(defun static-nun-uniform-scale ()
+  (glm:vec3 0.5 1.0 10.0))
+
+(defun calc-lerp-factor (loop-duration)
+  (let ((f-value (/ (mod *elapsed-time* loop-duration)
+		      loop-duration)))
+    (when (> f-value 0.5)
+    	(setf f-value (- 1.0 f-value)))
+    (coerce (* 2.0 f-value) 'single-float)))
+
+;;TODO: why is it "pulsating"?
+;; experimentation indicate that the implementation of mix might be wrong, as the pulsating
+;; looks like we can see the inverse of the object for a moment (negative values must be
+;; used for scale). Using 0.0 4.0 shows a neat shriking/growing animation
+(defun dynamic-uniform-scale ()
+  (let ((loop-duration 3.0))
+    (glm:vec3 (glm:mix 1.0 4.0 (calc-lerp-factor loop-duration)))))
+
+(defun dynamic-non-uniform-scale ()
+  (let ((fx-loop-duration 3.0)
+	(fz-loop-duration 5.0))
+    (glm:vec3 (glm:mix 1.0 0.5 (calc-lerp-factor fx-loop-duration))
+	      1.0
+	      (glm:mix 1.0 10.0 (calc-lerp-factor fz-loop-duration)))))
 
 (defvar *g-instance-list*)
 
@@ -225,35 +222,36 @@ the projection plane)"
   (gl:bind-vertex-array *vao*)
 
   (setf *elapsed-time* (float  (/ (sdl2:get-ticks) 1000.0)))
-  ;; the c++ code uses a struct taking an offset function from an array of the same type
-  ;; applying it by internally calling ConstructMatrix() to create a transform matrix,
-  ;; calling the offset function. Said offset function is passed to the struct "Instance"
-  ;; upon initiation: Instance &currInst = g_instanceList[iLoop];
-  ;; This syntax is tricky as the first element in the struct stores the value
-  ;; g_instanceList[iLoop] returns (it contains the offset function).
-  ;; The first element in the Instance struct is presumably a function pointer.
-  ;; yeah.. that's where we don't want to directly translate the code and just use
-  ;; this simple list of vec3 values, which we later iterate through and create a
-  ;; transform matrix to feed into gl:draw-elements. The implementation of the
-  ;; offset functions are in the spirit of the one used in 3-chapter/moving-triangle.lisp
-  (labels ((init-g-instance-list (elapsed-time)
+  (labels ((init-g-instance-list ()
+	     ;; TODO: is it bad style not rely on all these functions to fetch
+	     ;; *elapsed-time* globally?
 	     (setf *g-instance-list*
-		   (list *stationary-offset*
-			 (oval-offset elapsed-time)
-			 (bottom-circle-offset elapsed-time)))))
-    (init-g-instance-list *elapsed-time*)
+		   (list
+		    (list (null-scale) (glm:vec3 +00.0 +00.0 -45.0))
+		    (list (static-uniform-scale) (glm:vec3 -10.0 -10.0 -45.0))
+		    (list (static-nun-uniform-scale) (glm:vec3 -10.0 +10.0 -45.0))
+		    (list (dynamic-uniform-scale ) (glm:vec3 +10.0 +10.0 -45.0))
+		    (list (dynamic-non-uniform-scale) (glm:vec3 +10.0 -10.0 -45.0))))))
+    (init-g-instance-list)
 
     )
   (let ((transform-matrix (glm:make-mat4 1.0)))
-    ;; this is where we take the offset-vec3 and put them in the last row of
-    ;; the identity matrix. So that the shader may use it (gl:uniform-matrix ..)
-    ;; and internally multiply it with the position-vertices to plant a new origin
-    ;; in clip-space to draw our object relative to it
+    ;; here we marry the identity matrix with the translation matrix AND
+    ;; the scale matrix, so they can plant origins in a space AND grow them
+    ;; at will!
     (loop for i from 0 below (length *g-instance-list*)
-	 do
+	 ;; very interesting: using 'with var = value' gets us a variable that
+	 ;; stays unchanged throughout the entire loop. Using 'for var = value'
+	 ;; however, gets us a on iteration assigned variable!!
+       for scale-vec3 = (first (elt *g-instance-list* i))
+       for translation-vec3 = (second (elt *g-instance-list* i)) do
 	 (progn
+	   ;; set translation in 'w'-column
 	   (glm:set-mat4-row
-	    transform-matrix 3 (glm:vec4-from-vec3 (elt *g-instance-list* i)))
+	    transform-matrix 3 (glm:vec4-from-vec3 translation-vec3))
+	   ;; set scaling values into diagonal values of transform-matrix
+	   ;; so much fun to code this =^.^=
+	   (glm:set-mat4-diagonal transform-matrix (glm:vec4-from-vec3 scale-vec3))
 	   (gl:uniform-matrix
 	    *model-to-camera-matrix-unif* 4 (vector transform-matrix))
 	   (%gl:draw-elements

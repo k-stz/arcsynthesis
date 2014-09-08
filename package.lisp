@@ -24,6 +24,8 @@
    #:set-mat4-row
    #:vec3
    #:vec4-from-vec3
+   #:set-mat4-diagonal
+   #:mix
    )
   )
 
@@ -110,7 +112,12 @@
   (:export #:main))
 
 (defpackage #:arc-6
-  (:documentation "Trnaslation")
+  (:documentation "Translation")
+  (:use :cl)
+  (:export #:main))
+
+(defpackage #:arc-6.1
+  (:documentation "Scale")
   (:use :cl)
   (:export #:main))
 
