@@ -1,4 +1,4 @@
-(in-package #:arc-6.1)
+(in-package #:arc-6.2)
 
 (defvar *glsl-directory*
   (merge-pathnames #p "6-chapter/" (asdf/system:system-source-directory :arcsynthesis)))
@@ -64,7 +64,6 @@ the projection plane)"
       (glm:set-mat4 *camera-to-clip-matrix* 2 :w -1.0)
       (glm:set-mat4 *camera-to-clip-matrix* 3 :z (/ (* 2 fz-far fz-near)
 						    (- fz-near fz-far)))
-      
       (%gl:use-program *program*)
       
       (gl:uniform-matrix *camera-to-clip-matrix-unif*  4 (vector *camera-to-clip-matrix*)
@@ -210,6 +209,75 @@ the projection plane)"
 	      1.0
 	      (glm:mix 1.0 10.0 (calc-lerp-factor fz-loop-duration)))))
 
+;; Rotation code:
+(defun null-rotation ()
+  (glm:make-mat3 1.0))
+
+(defun compute-angle-rad (loop-duration)
+  (let ((scale (/ (* pi 2.0)
+		  loop-duration))
+	(curr-time-through-loop (mod *elapsed-time* loop-duration)))
+    (coerce (* curr-time-through-loop scale)
+	    'single-float)))
+
+(defun rotate-x ()
+  (let* ((ang-rad (compute-angle-rad 3.0))
+	 (f-cos (cos ang-rad))
+	 (f-sin (sin ang-rad))
+	 (matrix (glm:make-mat3 1.0)))
+    (glm:set-mat3 matrix 1 :y f-cos) (glm:set-mat3 matrix 2 :y (- f-sin)) 
+    (glm:set-mat3 matrix 1 :z f-sin) (glm:set-mat3 matrix 2 :z f-cos)
+    matrix
+    ))
+
+(defun rotate-y ()
+  (let* ((ang-rad (compute-angle-rad 2.0))
+	 (f-cos (cos ang-rad))
+	 (f-sin (sin ang-rad))
+	 (matrix (glm:make-mat3 1.0)))
+    (glm:set-mat3 matrix 0 :x f-cos)     (glm:set-mat3 matrix 2 :x f-sin) 
+    (glm:set-mat3 matrix 0 :z (- f-sin)) (glm:set-mat3 matrix 2 :z f-cos)
+    matrix
+    ))
+
+(defun rotate-z ()
+  (let* ((ang-rad (compute-angle-rad 2.0))
+	 (f-cos (cos ang-rad))
+	 (f-sin (sin ang-rad))
+	 (matrix (glm:make-mat3 1.0)))
+    (glm:set-mat3 matrix 0 :x f-cos) (glm:set-mat3 matrix 1 :x (- f-sin)) 
+    (glm:set-mat3 matrix 0 :y f-sin) (glm:set-mat3 matrix 1 :y f-cos)
+    matrix
+    ))
+
+
+;;TODO FIND TYPO
+;; Rotate along arbitrary axis!
+(defun rotate-axis (axis-x axis-y axis-z)
+  (let* ((ang-rad (compute-angle-rad 2.0))
+	 (f-cos (cos ang-rad))
+	 (f-inv-cos (- 1.0 f-cos))
+	 (f-sin (sin ang-rad))
+;	 (f-inv-sin (- 1.0 f-sin))
+
+	 (axis (glm:vec3 axis-x axis-y axis-z))
+	 (a-x (aref axis 0)) (a-y (aref axis 1)) (a-z (aref axis 2))
+	 (matrix (glm:make-mat3 1.0)))
+    (glm:set-mat3 matrix 0 :x (+ (* a-x a-x) (* (- 1 (* a-x a-x)) f-cos)))
+    (glm:set-mat3 matrix 1 :x (- (* a-x a-y f-inv-cos) (* a-z f-sin)))
+    (glm:set-mat3 matrix 2 :x (+ (* a-x a-z f-inv-cos) (* a-y f-sin)))
+
+    (glm:set-mat3 matrix 0 :y (+ (* a-x a-y f-inv-cos) (* a-z f-sin)))
+    (glm:set-mat3 matrix 1 :y (+ (+ a-y a-y) (* (- 1 (* a-y a-y)) f-cos)))
+    (glm:set-mat3 matrix 2 :y (- (* a-y a-z f-inv-cos) (* a-x f-sin)))
+
+    (glm:set-mat3 matrix 0 :z (- (* a-x a-z f-inv-cos) (* a-y f-sin)))
+    (glm:set-mat3 matrix 1 :z (+ (* a-y a-z f-inv-cos) (* a-x f-sin)))
+    (glm:set-mat3 matrix 2 :z (+ (* a-z a-z) (* (- 1 (* a-z a-z)) f-cos)))
+
+    matrix
+    ))
+
 (defvar *g-instance-list*)
 
 (defun display ()
@@ -227,11 +295,12 @@ the projection plane)"
 	     ;; *elapsed-time* globally?
 	     (setf *g-instance-list*
 		   (list
-		    (list (null-scale) (glm:vec3 +00.0 +00.0 -45.0))
-		    (list (static-uniform-scale) (glm:vec3 -10.0 -10.0 -45.0))
-		    (list (static-nun-uniform-scale) (glm:vec3 -10.0 +10.0 -45.0))
-		    (list (dynamic-uniform-scale ) (glm:vec3 +10.0 +10.0 -45.0))
-		    (list (dynamic-non-uniform-scale) (glm:vec3 +10.0 -10.0 -45.0))))))
+		    (list (null-rotation) (glm:vec3 +00.0 +00.0 -25.0))
+		    (list (rotate-x) (glm:vec3 -5.0 -5.0 -25.0))
+		    (list (rotate-y) (glm:vec3 -5.0 +5.0 -25.0))
+		    (list (rotate-z) (glm:vec3 +5.0 +5.0 -25.0))
+		    (list (rotate-axis 1.0 1.0 1.0) (glm:vec3 +5.0 -5.0 -25.0))
+		    ))))
     (init-g-instance-list)
 
     )
@@ -240,18 +309,15 @@ the projection plane)"
     ;; the scale matrix, so they can plant origins in a space AND grow them
     ;; at will!
     (loop for i from 0 below (length *g-instance-list*)
-	 ;; very interesting: using 'with var = value' gets us a variable that
-	 ;; stays unchanged throughout the entire loop. Using 'for var = value'
-	 ;; however, gets us a on iteration assigned variable!!
-       for scale-vec3 = (first (elt *g-instance-list* i))
+       for rotation-mat3 = (first (elt *g-instance-list* i))
        for translation-vec3 = (second (elt *g-instance-list* i)) do
 	 (progn
+	   ;; set transform-matrix to rotation
+	   (setf transform-matrix (glm:mat4-from-mat3 rotation-mat3))  
 	   ;; set translation in 'w'-column
 	   (glm:set-mat4-col
 	    transform-matrix 3 (glm:vec4-from-vec3 translation-vec3))
-	   ;; set scaling values into diagonal values of transform-matrix
-	   ;; so much fun to code this =^.^=
-	   (glm:set-mat4-diagonal transform-matrix (glm:vec4-from-vec3 scale-vec3))
+
 	   (gl:uniform-matrix
 	    *model-to-camera-matrix-unif* 4 (vector transform-matrix))
 	   (%gl:draw-elements

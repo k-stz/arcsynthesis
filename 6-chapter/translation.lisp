@@ -252,7 +252,7 @@ the projection plane)"
     (loop for i from 0 below (length *g-instance-list*)
 	 do
 	 (progn
-	   (glm:set-mat4-row
+	   (glm:set-mat4-col
 	    transform-matrix 3 (glm:vec4-from-vec3 (elt *g-instance-list* i)))
 	   (gl:uniform-matrix
 	    *model-to-camera-matrix-unif* 4 (vector transform-matrix))

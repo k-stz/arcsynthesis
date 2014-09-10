@@ -22,9 +22,13 @@
    #:mat4-place
    #:set-mat4
    #:set-mat4-row
+   #:set-mat4-col
    #:vec3
    #:vec4-from-vec3
    #:set-mat4-diagonal
+   #:make-mat3
+   #:set-mat3
+   #:mat4-from-mat3
    #:mix
    )
   )
@@ -121,3 +125,7 @@
   (:use :cl)
   (:export #:main))
 
+(defpackage #:arc-6.2
+  (:documentation "Rotation")
+  (:use :cl)
+  (:export #:main))

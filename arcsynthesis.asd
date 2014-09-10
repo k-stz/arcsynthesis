@@ -43,7 +43,8 @@ written in Common Lisp using cl-sdl2 and cl-opengl"
 			 (:file "depth-clamping")))
    (:module "6-chapter"
 	    :components ((:file "translation")
-			 (:file "scale")))
+			 (:file "scale")
+			 (:file "rotation")))
    ))
 
 

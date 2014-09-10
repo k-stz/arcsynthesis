@@ -1,7 +1,3 @@
-;;TODO: how is sb-cga pretty printing its matrix ?
-;;     (deftype matrix (simple-array ..)) then implement print-object
-;;     function on it??
-
 ;; This code tries to emulate the GLM-library
 ;; TODO: readermacro? *matrix*0.x => (mat4-place *matrix* 0 :x)
 
@@ -98,54 +94,22 @@
 		:initial-contents (list x y z 1.0))))
 
 ;;simple implementation
-
 (defun col-vec4-from-mat4 (col mat4)
-  (let ((x col)
-	(y (+ col 4))
-	(z (+ col (* 4 2)))
-	(w (+ col (* 4 3))))
-    (vec4 (aref mat4 x )
-	  (aref mat4 y )
-	  (aref mat4 z )
-	  (aref mat4 w ))))
-
-(defmacro switch-mat4-col (col-1 col-2 mat4)
-  `(let ((c1 (col-vec4-from-mat4 ,col-1 ,mat4))
-	(c2 (col-vec4-from-mat4 ,col-2 ,mat4)))
-    (set-mat4-col ,mat4 ,col-1 c2)
-    (set-mat4-col ,mat4 ,col-2 c1)
+  (let ((key (ecase col
+	       (0 :x) (1 :y) (2 :z) (3 :w))))
+    ;; TODO: hm, this isn't simple
+    (let ((col-vec (vec4 (eval `(mat4-place ,mat4 0 ,key))
+		    (eval `(mat4-place ,mat4 1 ,key))
+		    (eval `(mat4-place ,mat4 2 ,key))
+		    (eval `(mat4-place ,mat4 3 ,key)))))
+      col-vec)
     ))
 
-(defun make-mat3 (init-diagonal-values)
-  (let ((idv init-diagonal-values))
-    (make-array 9 :element-type 'single-float
-		:initial-contents
-		(list idv 0.0 0.0
-		      0.0 idv 0.0    
-		      0.0 0.0 idv))))
-
-(defun mat4-from-mat3 (mat3)
-  "Put mat3 into top-left corner of an identity mat4"
-  (make-array 16 :element-type 'single-float
-	      :initial-contents
-	      (append 
-	       (loop for i across mat3
-		  for x = 1 then (1+ x)
-		  if (= (mod x 3) 0)
-		  collect i and collect 0.0
-		  else collect i)
-	       '(0.0 0.0 0.0 1.0))))
-
-(defmacro mat3-place (mat3 row coordinate)
-  (let ((c (ecase coordinate
-	    (:x 0) (:y 1) (:z 2))))
-    `(aref ,mat3 ,(+ (* 3 row)  c))))
-
-(defmacro set-mat3 (mat3 row coordinate set-value)
-  ;; wow, this setf doesn't work unless mat4-place is a macro expanding
-  ;; an AREF
-  `(setf (mat3-place ,mat3 ,row ,coordinate) ,set-value))
-
+(defun switch-mat4-col (col-1 col-2 mat4)
+  (let ((c1 (col-vec4-from-mat4 col-1 mat4))
+	(c2 (col-vec4-from-mat4 col-2 mat4)))
+    (eval `(set-mat4-col ,mat4 ,col-1 ,c2))
+    (eval `(set-mat4-col ,mat4 ,col-2 ,c1))))
 
 ;;;TODO: more macro experiments needed, what do with nested macros?
 ;; (defun col-vec4-from-mat4 (col mat4)

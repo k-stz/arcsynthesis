@@ -532,3 +532,49 @@ so if we want to offset a vector, we just need to put in the offset in there
 
 Now I hope this visual doesn't confuse the you into thinking matrix multiplication works
 horizontally! But muliplying with a indentity-matrix sure makes it look like it!
+--------------------------------------------------------------------------------
+Finally the grand Matrix mystery is solved!!
+The matrix is a numerical representation of a coordinate system! Its columns
+left to right are the basis vectors of the coordinate system. The final column
+is the offset applied to the it all, the origin.
+Taking the identity matrix:
+ [1, 0, 0, 0 
+  0, 1, 0, 0
+  0, 0, 1, 0
+  0, 0, 0, 1]
+We have the usual coordinate system with x right [1 0 0 0] y up [0 1 0 0]
+changing x to [2 0 0 0] hence means that when we put this coordinate system in
+another (namely through transformation matrix multiplication with all vertices)
+all the x-values will be stretched along this basis vector by 2!
+Switching the basis vectors:
+ [0, 1, 0, 0 
+  1, 0, 0, 0
+  0, 0, 1, 0
+  0, 0, 0, 1]
+Results in the intuitive observation, the object is rotated by 90-degree in the
+output coordinate system.
+
+This also means that we can distort our objects like crazy!
+
+And most importantly:
+The problem of rotation along an axis is reduced to moving the basis vectors
+in a circular fashion!!
+Rotation along the z-axis can be done using:
+ [cos(rad), -sin(rad), 0, 0 
+  sin(rad), cos(rad)   0, 0
+     0,        0,      1, 0
+     0,        0,      0, 1]
+We want to move the x and y basis vectors. If we don't move them: rad = 0
+we get the identity matrix as cos(0) = 1; sin(0) = 0
+"slowly" rotating will decrease e.g. cos(0.01) = 0.9 and increase sin
+We can make the mental image of the x-basis-vector to increase in its y value
+(look at the sin(rad) placement in the rotation matrix, it is at the 'y' for
+the x-basis vector) and decrese in its x value (...).
+And again the magic of the oscillating sinus and cosinus functions enchant us
+as the inputs venture towards infinity the bounds persist: [-1, 1] which the rotation
+matrix captures by rotating our basis vectors!
+Though we want to restrain the inputs by taking the modulo of some global elapsed
+time and an arbitrary loop duration.
+
+We plant origins in another space and let it unfold along its basis vectors.
+--------------------------------------------------------------------------------
