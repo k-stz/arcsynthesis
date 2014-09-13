@@ -13,7 +13,8 @@ written in Common Lisp using cl-sdl2 and cl-opengl"
   :author "k-stz"
   ;; :licence  TODO
   :depends-on (:cl-opengl
-	       :sdl2)
+	       :sdl2
+	       :sb-cga)
   :serial t		  ; now: :file order in :components order is also dependency order
   :components
   ((:file "package")
@@ -44,7 +45,9 @@ written in Common Lisp using cl-sdl2 and cl-opengl"
    (:module "6-chapter"
 	    :components ((:file "translation")
 			 (:file "scale")
-			 (:file "rotation")))
+			 (:file "rotation")
+			 (:file "test")
+			 (:file "hierarchy")))
    ))
 
 

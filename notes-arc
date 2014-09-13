@@ -578,3 +578,39 @@ time and an arbitrary loop duration.
 
 We plant origins in another space and let it unfold along its basis vectors.
 --------------------------------------------------------------------------------
+Why Matrices,
+The main reason to use matrices is that they can store a complex transformation,
+and all it takes is for a vertex to be multiplied with it once for it to work.
+This is due to matrices, though not commutative are distributive:
+
+A scale Matrix can be combined with a translation matrix (as we did in the first
+place) and even with a rotation matrix, into a single matrix. This amalgam matrix
+can be computed by the CPU and then uniform-handled to the shader and be used by
+all vertices.
+
+commutative:
+while 2*3*4 = 4*2*3  for matrices this is not true
+distributive:
+while 2*3*4 = 2*(3*4) = (2*3)*4 IS TRUE for matrices, hence:
+translation-matrix * scale-matrix * vertex
+is the same as
+CPU-compute(translation-matrix * scale-matrix) = amalgam-matrix
+shader-upload-and-compute(amalgam-matrix * vertex)!
+
+As the order of matrices are concerned we should first translate the point
+then scale or rotate. Scales should happen before rotation or else the scaling will
+be relative to the rotation axis! What one normally wants is to scale relative
+to the model space (given vertices).
+
+Hierarchical model,
+very awesome stuff:
+ when we abide to the order: translation * rotation * scaling
+ we can perform relative transformation as is the intent of the
+ hierarchical model.
+  Therefore new transformation must always abide this order:
+  tm * new-tm * old-s even-newer-s new-s
+  Where t=transform s=scale -matrix
+ abiding to this rule exposes a minor extend of commutative behavior:
+ matrices of the same kind can be multiplied in any order
+ its own kind are these: translation, scale, rotation -matrices!!
+

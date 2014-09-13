@@ -89,6 +89,25 @@
     (make-array 4 :element-type 'single-float
 		:initial-contents (list x y z w))))
 
+(defun normalize (vec)
+  (let ((length))
+    ;; get vector length using pythagoras
+    (setf length
+	  (sqrt
+	   (apply #'+ (loop for i across vec
+			 collect
+			   (expt i 2)))))
+
+    ;; LOOP's starting to aid me intuitively
+    (loop for element across vec
+       and i from 0
+	 do
+	 (setf (aref vec i) (/ element length)))
+    vec)
+
+  )
+
+
 (defun vec4-from-vec3 (vec3)
   "Fills vec4 with vec3 ending in w:1.0!"
   (let ((x (aref vec3 0))
@@ -145,6 +164,72 @@
   ;; wow, this setf doesn't work unless mat4-place is a macro expanding
   ;; an AREF
   `(setf (mat3-place ,mat3 ,row ,coordinate) ,set-value))
+
+
+;;; transformations:
+(defun ang-rad-from-ang-deg (ang-deg)
+  (let ((rad-deg-ratio (/ (float pi 1.s0) 180.0)))
+    (* rad-deg-ratio ang-deg)))
+
+(defun rotate-x (ang-deg)
+  (let* ((ang-rad (ang-rad-from-ang-deg ang-deg))
+	 (f-cos (cos ang-rad))
+	 (f-sin (sin ang-rad))
+	 (matrix (glm:make-mat3 1.0)))
+    (glm:set-mat3 matrix 1 :y f-cos) (glm:set-mat3 matrix 2 :y (- f-sin)) 
+    (glm:set-mat3 matrix 1 :z f-sin) (glm:set-mat3 matrix 2 :z f-cos)
+    (glm:mat4-from-mat3 matrix)
+    ))
+
+(defun rotate-y (ang-deg)
+  (let* ((ang-rad (ang-rad-from-ang-deg ang-deg))
+	 (f-cos (cos ang-rad))
+	 (f-sin (sin ang-rad))
+	 (matrix (glm:make-mat3 1.0)))
+    (glm:set-mat3 matrix 0 :x f-cos)     (glm:set-mat3 matrix 2 :x f-sin) 
+    (glm:set-mat3 matrix 0 :z (- f-sin)) (glm:set-mat3 matrix 2 :z f-cos)
+    (glm:mat4-from-mat3 matrix)
+    ))
+
+(defun rotate-z (ang-deg)
+  (let* ((ang-rad (ang-rad-from-ang-deg ang-deg))
+	 (f-cos (cos ang-rad))
+	 (f-sin (sin ang-rad))
+	 (matrix (glm:make-mat3 1.0)))
+    (glm:set-mat3 matrix 0 :x f-cos) (glm:set-mat3 matrix 1 :x (- f-sin)) 
+    (glm:set-mat3 matrix 0 :y f-sin) (glm:set-mat3 matrix 1 :y f-cos)
+    (glm:mat4-from-mat3 matrix)
+    ))
+
+
+(defun rotate-axis (axis-x axis-y axis-z ang-deg)
+  (let* ((ang-rad (ang-rad-from-ang-deg ang-deg))
+	 (f-cos (cos ang-rad))
+	 (f-inv-cos (- 1.0 f-cos))
+	 (f-sin (sin ang-rad))
+;	 (f-inv-sin (- 1.0 f-sin))
+
+	 (axis (glm:vec3 axis-x axis-y axis-z))
+	 ;; Oh, wow it needs to be normalized.
+	 ;; I assume the vector then must be changing length?
+	 (axis (glm:normalize axis))
+	 (a-x (aref axis 0)) (a-y (aref axis 1)) (a-z (aref axis 2))
+	 (matrix (glm:make-mat3 1.0)))
+    (glm:set-mat3 matrix 0 :x (+ (* a-x a-x) (* (- 1 (* a-x a-x)) f-cos)))
+    (glm:set-mat3 matrix 1 :x (- (* a-x a-y f-inv-cos) (* a-z f-sin)))
+    (glm:set-mat3 matrix 2 :x (+ (* a-x a-z f-inv-cos) (* a-y f-sin)))
+
+    (glm:set-mat3 matrix 0 :y (+ (* a-x a-y f-inv-cos) (* a-z f-sin)))
+    (glm:set-mat3 matrix 1 :y (+ (* a-y a-y) (* (- 1 (* a-y a-y)) f-cos)))
+    (glm:set-mat3 matrix 2 :y (- (* a-y a-z f-inv-cos) (* a-x f-sin)))
+
+    (glm:set-mat3 matrix 0 :z (- (* a-x a-z f-inv-cos) (* a-y f-sin)))
+    (glm:set-mat3 matrix 1 :z (+ (* a-y a-z f-inv-cos) (* a-x f-sin)))
+    (glm:set-mat3 matrix 2 :z (+ (* a-z a-z) (* (- 1 (* a-z a-z)) f-cos)))
+
+    (glm:mat4-from-mat3 matrix)
+    ))
+
 
 
 ;;;TODO: more macro experiments needed, what do with nested macros?

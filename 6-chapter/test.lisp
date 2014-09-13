@@ -1,4 +1,5 @@
-(in-package #:arc-6.2)
+;; TODO: Oh wow the REPL displays the package name as just "TEST"
+(in-package #:arc-6.test)
 
 (defvar *glsl-directory*
   (merge-pathnames #p "6-chapter/" (asdf/system:system-source-directory :arcsynthesis)))
@@ -13,10 +14,7 @@
 (defparameter *camera-to-clip-matrix* (glm:make-mat4 0.0))
 (defvar *camera-to-clip-matrix-unif*)
 
-(defvar *model-to-camera-matrix-unif*)
-
-(defvar *scale-clip-matrix-unif*)
-
+(defvar *model-to-camera-matrix-unif* 0)
 
 (defun calc-frustum-scale (f-fov-deg)
   "the field-of-view (fov) is the angle between the forward direction and the direction
@@ -29,9 +27,7 @@ the projection plane)"
 	(tan (/ f-fov-rad 2.0)))
      'single-float)))
 
-;; TODO: why does it look smaller than the screenshots?
-;; provisional solution to scale problem using 25.0
-(defparameter *frustum-scale* (calc-frustum-scale 25.0)) 
+(defparameter *frustum-scale* (calc-frustum-scale 10.0))
 
 (defun initialize-program ()
   (let ((shader-list (list)))
@@ -39,7 +35,7 @@ the projection plane)"
     (push (arc:create-shader
 	   :vertex-shader
 	   (arc:file-to-string
-	    (merge-pathnames "pos-color-local-transformation.vert" *glsl-directory*)))
+	    (merge-pathnames "test.vert" *glsl-directory*)))
 	  shader-list)
     (push (arc:create-shader
     	   :fragment-shader
@@ -53,8 +49,8 @@ the projection plane)"
     (setf *camera-to-clip-matrix-unif*
 	  (gl:get-uniform-location *program* "camera_to_clip_matrix"))
 
-    (format t "a:~a b:~a" *model-to-camera-matrix-unif* *camera-to-clip-matrix-unif*)
-
+    (format t "a:~a b:~a" *model-to-camera-matrix-unif* *camera-to-clip-matrix-unif* )
+    
     (let ((fz-near 1.0)
 	  (fz-far 45.0))
       (glm:set-mat4 *camera-to-clip-matrix* 0 :x *frustum-scale*)
@@ -64,8 +60,8 @@ the projection plane)"
       (glm:set-mat4 *camera-to-clip-matrix* 2 :w -1.0)
       (glm:set-mat4 *camera-to-clip-matrix* 3 :z (/ (* 2 fz-far fz-near)
 						    (- fz-near fz-far)))
-      (%gl:use-program *program*)
       
+      (%gl:use-program *program*)
       (gl:uniform-matrix *camera-to-clip-matrix-unif*  4 (vector *camera-to-clip-matrix*)
 			 :false))
     (%gl:use-program 0)
@@ -73,7 +69,7 @@ the projection plane)"
        do (%gl:delete-shader shader-object))))
 
 
-(defparameter *number-of-vertices* 8)
+(defparameter *number-of-vertices* 3)
 
 (defparameter +green-color+ '(0.0 1.0 0.0 1.0))
 (defparameter +blue-color+  '(0.0 0.0 1.0 1.0))
@@ -84,40 +80,20 @@ the projection plane)"
 (defparameter *vertex-data*
   (arc:create-gl-array-from-vector 
 `#(
-	+1.0  +1.0  +1.0  
-	-1.0  -1.0  +1.0  
-	-1.0  +1.0  -1.0  
-	+1.0  -1.0  -1.0  
-
-	-1.0  -1.0  -1.0  
-	+1.0  +1.0  -1.0  
-	+1.0  -1.0  +1.0  
-	-1.0  +1.0  +1.0  
+	+0.0  +1.0  +1.0
+	+1.0  0.0  +1.0  
+   	+0.0  +0.0  +1.0  
 
 	,@+green-color+ 
 	,@+blue-color+ 
 	,@+red-color+ 
-	,@+brown-color+ 
-
-	,@+green-color+ 
-	,@+blue-color+ 
-	,@+red-color+ 
-	,@+brown-color+ 
-
   )))
 
 (defparameter *index-data*
   (arc::create-gl-array-of-unsigned-short-from-vector
    #(
      0  1  2 
-     1  0  3 
-     2  3  0 
-     3  2  1 
-
-     5  4  6 
-     4  5  7 
-     7  6  4 
-     6  7  5 							
+     3  4  5
      )))
 
 (defvar *vertex-buffer-object*)
@@ -178,108 +154,31 @@ the projection plane)"
 
 (defvar *elapsed-time*)
 
-(defun null-scale ()
-  (glm:vec3 1.0 1.0 1.0))
+(defparameter *stationary-offset* (glm:vec3 0.0 0.0 -20.0))
 
-(defun static-uniform-scale ()
-  (glm:vec3 4.0 4.0 4.0))
+(defun oval-offset (elapsed-time)
+  (let* ((loop-duration 3.0)
+	 (scale (/ (* pi 2.0) loop-duration))
+	 (curr-time-through-loop (mod elapsed-time loop-duration))
+	 (x (coerce
+	     (* (cos (* curr-time-through-loop scale)) 4.0) 'single-float))
+	 (y (coerce
+	     (* 6.0  (sin (* curr-time-through-loop scale))) 'single-float))
+	 (z -20.0))
+    (glm:vec3 x y z)
+    )
+)
 
-(defun static-nun-uniform-scale ()
-  (glm:vec3 0.5 1.0 10.0))
-
-(defun calc-lerp-factor (loop-duration)
-  (let ((f-value (/ (mod *elapsed-time* loop-duration)
-		      loop-duration)))
-    (when (> f-value 0.5)
-    	(setf f-value (- 1.0 f-value)))
-    (coerce (* 2.0 f-value) 'single-float)))
-
-;;TODO: why is it "pulsating"?
-;; experimentation indicate that the implementation of mix might be wrong, as the pulsating
-;; looks like we can see the inverse of the object for a moment (negative values must be
-;; used for scale). Using 0.0 4.0 shows a neat shriking/growing animation
-(defun dynamic-uniform-scale ()
-  (let ((loop-duration 3.0))
-    (glm:vec3 (glm:mix 1.0 4.0 (calc-lerp-factor loop-duration)))))
-
-(defun dynamic-non-uniform-scale ()
-  (let ((fx-loop-duration 3.0)
-	(fz-loop-duration 5.0))
-    (glm:vec3 (glm:mix 1.0 0.5 (calc-lerp-factor fx-loop-duration))
-	      1.0
-	      (glm:mix 1.0 10.0 (calc-lerp-factor fz-loop-duration)))))
-
-;; Rotation code:
-(defun null-rotation ()
-  (glm:make-mat3 1.0))
-
-(defun compute-angle-rad (loop-duration)
-  (let ((scale (/ (* pi 2.0)
-		  loop-duration))
-	(curr-time-through-loop (mod *elapsed-time* loop-duration)))
-    (coerce (* curr-time-through-loop scale)
-	    'single-float)))
-
-(defun rotate-x ()
-  (let* ((ang-rad (compute-angle-rad 3.0))
-	 (f-cos (cos ang-rad))
-	 (f-sin (sin ang-rad))
-	 (matrix (glm:make-mat3 1.0)))
-    (glm:set-mat3 matrix 1 :y f-cos) (glm:set-mat3 matrix 2 :y (- f-sin)) 
-    (glm:set-mat3 matrix 1 :z f-sin) (glm:set-mat3 matrix 2 :z f-cos)
-    matrix
-    ))
-
-(defun rotate-y ()
-  (let* ((ang-rad (compute-angle-rad 2.0))
-	 (f-cos (cos ang-rad))
-	 (f-sin (sin ang-rad))
-	 (matrix (glm:make-mat3 1.0)))
-    (glm:set-mat3 matrix 0 :x f-cos)     (glm:set-mat3 matrix 2 :x f-sin) 
-    (glm:set-mat3 matrix 0 :z (- f-sin)) (glm:set-mat3 matrix 2 :z f-cos)
-    matrix
-    ))
-
-(defun rotate-z ()
-  (let* ((ang-rad (compute-angle-rad 2.0))
-	 (f-cos (cos ang-rad))
-	 (f-sin (sin ang-rad))
-	 (matrix (glm:make-mat3 1.0)))
-    (glm:set-mat3 matrix 0 :x f-cos) (glm:set-mat3 matrix 1 :x (- f-sin)) 
-    (glm:set-mat3 matrix 0 :y f-sin) (glm:set-mat3 matrix 1 :y f-cos)
-    matrix
-    ))
-
-
-;;TODO FIND TYPO
-;; Rotate along arbitrary axis!
-(defun rotate-axis (axis-x axis-y axis-z)
-  (let* ((ang-rad (compute-angle-rad 0.4))
-	 (f-cos (cos ang-rad))
-	 (f-inv-cos (- 1.0 f-cos))
-	 (f-sin (sin ang-rad))
-;	 (f-inv-sin (- 1.0 f-sin))
-
-	 (axis (glm:vec3 axis-x axis-y axis-z))
-	 ;; Oh, wow it needs to be normalized.
-	 ;; I assume the vector then must be changing length?
-	 (axis (glm:normalize axis))
-	 (a-x (aref axis 0)) (a-y (aref axis 1)) (a-z (aref axis 2))
-	 (matrix (glm:make-mat3 1.0)))
-    (glm:set-mat3 matrix 0 :x (+ (* a-x a-x) (* (- 1 (* a-x a-x)) f-cos)))
-    (glm:set-mat3 matrix 1 :x (- (* a-x a-y f-inv-cos) (* a-z f-sin)))
-    (glm:set-mat3 matrix 2 :x (+ (* a-x a-z f-inv-cos) (* a-y f-sin)))
-
-    (glm:set-mat3 matrix 0 :y (+ (* a-x a-y f-inv-cos) (* a-z f-sin)))
-    (glm:set-mat3 matrix 1 :y (+ (* a-y a-y) (* (- 1 (* a-y a-y)) f-cos)))
-    (glm:set-mat3 matrix 2 :y (- (* a-y a-z f-inv-cos) (* a-x f-sin)))
-
-    (glm:set-mat3 matrix 0 :z (- (* a-x a-z f-inv-cos) (* a-y f-sin)))
-    (glm:set-mat3 matrix 1 :z (+ (* a-y a-z f-inv-cos) (* a-x f-sin)))
-    (glm:set-mat3 matrix 2 :z (+ (* a-z a-z) (* (- 1 (* a-z a-z)) f-cos)))
-
-    matrix
-    ))
+(defun bottom-circle-offset (elapsed-time)
+  (let* ((loop-duration 12.0)
+	 (scale (/ (* 3.1415927 2.0) loop-duration))
+	 (curr-time-through-loop (mod elapsed-time loop-duration))
+	 (x (coerce (* (cos (* curr-time-through-loop scale)) 5.0)
+		    'single-float))
+	 (y -3.5)
+	 (z (coerce
+	     (- (* (sin (* curr-time-through-loop scale)) 5.0) 20.0) 'single-float)))
+    (glm:vec3 x y z)))
 
 (defvar *g-instance-list*)
 
@@ -293,34 +192,18 @@ the projection plane)"
   (gl:bind-vertex-array *vao*)
 
   (setf *elapsed-time* (float  (/ (sdl2:get-ticks) 1000.0)))
-  (labels ((init-g-instance-list ()
-	     ;; TODO: is it bad style not rely on all these functions to fetch
-	     ;; *elapsed-time* globally?
+  (labels ((init-g-instance-list (elapsed-time)
 	     (setf *g-instance-list*
-		   (list
-		    (list (null-rotation) (glm:vec3 +00.0 +00.0 -25.0))
-		    (list (rotate-x) (glm:vec3 -5.0 -5.0 -25.0))
-		    (list (rotate-y) (glm:vec3 -5.0 +5.0 -25.0))
-		    (list (rotate-z) (glm:vec3 +5.0 +5.0 -25.0))
-		    (list (rotate-axis 1.0 1.0 1.0) (glm:vec3 +5.0 -5.0 -25.0))
-		    ))))
-    (init-g-instance-list)
+		   (list *stationary-offset*))))
+    (init-g-instance-list *elapsed-time*)
 
     )
   (let ((transform-matrix (glm:make-mat4 1.0)))
-    ;; here we marry the identity matrix with the translation matrix AND
-    ;; the scale matrix, so they can plant origins in a space AND grow them
-    ;; at will!
     (loop for i from 0 below (length *g-instance-list*)
-       for rotation-mat3 = (first (elt *g-instance-list* i))
-       for translation-vec3 = (second (elt *g-instance-list* i)) do
+	 do
 	 (progn
-	   ;; set transform-matrix to rotation
-	   (setf transform-matrix (glm:mat4-from-mat3 rotation-mat3))  
-	   ;; set translation in 'w'-column
 	   (glm:set-mat4-col
-	    transform-matrix 3 (glm:vec4-from-vec3 translation-vec3))
-
+	    transform-matrix 3 (glm:vec4-from-vec3 (elt *g-instance-list* i)))
 	   (gl:uniform-matrix
 	    *model-to-camera-matrix-unif* 4 (vector transform-matrix))
 	   (%gl:draw-elements
@@ -357,3 +240,4 @@ the projection plane)"
 		 
                  (sdl2:gl-swap-window win) ; wow, this can be forgotten easily -.-
 		 ))))))
+
