@@ -181,6 +181,8 @@
     (glm:mat4-from-mat3 matrix)
     ))
 
+;;TODO: all these function probably need some sensible rounding so as that
+;; applying two times a 180 degree turn would result in the old position
 (defun rotate-y (ang-deg)
   (let* ((ang-rad (ang-rad-from-ang-deg ang-deg))
 	 (f-cos (cos ang-rad))

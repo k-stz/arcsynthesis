@@ -251,39 +251,135 @@ the projection plane)"
     matrix))
 
 
-(defun translate (vec3)
-  (let ((tm (translate-matrix-from-vec3 vec3)))))
-
 
 ;;TODO: implement matrix-stack methods, change and fully implemet (draw) and (display) code
+;; TODO: creating clas overkill? Simpler solution?
 (defclass matrix-stack ()
-  ((m-curr-mat :initform (glm:make-mat4 1.0))))
+  ;; Hierarchy.cpp really uses these to as "private" 
+  ((m-curr-mat :initform (glm:make-mat4 1.0)
+	       :accessor m-curr-mat)
+   ;; is supposed to be a simple stack, so it is just a list here
+   (m-matrices :initform (list)
+	       :accessor m-matrices)))
 
-(defparameter *model-to-camera-stack* (make-instance 'matrix-stack))
+(defgeneric top-ms (matrix-stack))
+(defmethod top-ms ((ms matrix-stack))
+  "Returns the current-matrix"
+  (m-curr-mat ms))
+
+;; TODO: lock on "push" even though it is cl:push is a function not a generic method
+(defgeneric push-ms (matrix-stack))
+(defmethod push-ms ((ms matrix-stack))
+  "PUSH the current-matrix on the internal stack"
+  (push (m-curr-mat ms) (m-matrices ms)))
+
+(defgeneric pop-ms (matrix-stack))
+(defmethod pop-ms ((ms matrix-stack))
+  "POP last PUSHed matrix and set it to the current-matrix"
+  ;; (first (m-matrices ms)) = m-matrices.top() note: m-matrices is supposed to be a
+  ;; simple stack!
+  (setf (m-curr-mat ms) (first (m-matrices ms)))
+  (pop (m-matrices ms)))
+
+;;all of these visible parameters have their classes as names?
+(defgeneric translate (matrix-stack simple-array))
+(defmethod translate ((ms matrix-stack) (offset-vec3 simple-array))
+  "Trasnlate transform the current-matrix by given vec3"
+  (let ((translate-mat4 (glm:make-mat4 1.0))
+	(vec4 (glm:vec4-from-vec3 offset-vec3)))
+    (glm:set-mat4-col translate-mat4 3 vec4)
+    (setf (m-curr-mat ms) (sb-cga:matrix* translate-mat4
+					  (m-curr-mat ms)))))
+
+
+(defgeneric rotate-x (matrix-stack float))
+(defmethod rotate-x ((ms matrix-stack) (ang-deg float))
+  (let ((translate-mat4 (glm:rotate-x ang-deg)))
+    (setf (m-curr-mat ms) (sb-cga:matrix* translate-mat4
+					  (m-curr-mat ms)))))
+;;TODO: test
+(defgeneric rotate-y (matrix-stack float))
+(defmethod rotate-y ((ms matrix-stack) (ang-deg float))
+  (let ((translate-mat4 (glm:rotate-y ang-deg)))
+    (setf (m-curr-mat ms) (sb-cga:matrix* translate-mat4
+					  (m-curr-mat ms)))))
+
+(defgeneric rotate-z (matrix-stack float))
+(defmethod rotate-z ((ms matrix-stack) (ang-deg float))
+  (let ((translate-mat4 (glm:rotate-x ang-deg)))
+    (setf (m-curr-mat ms) (sb-cga:matrix* translate-mat4
+					  (m-curr-mat ms)))))
+
+
+(defgeneric scale (matrix-stack simple-array))
+(defmethod scale ((ms matrix-stack) (scale-vec simple-array))
+  (let ((scale-mat4 (glm:make-mat4 1.0)))
+    (glm:set-mat4-diagonal scale-mat4
+  			   (glm:vec4-from-vec3 scale-vec))
+    (setf (m-curr-mat ms) (sb-cga:matrix* scale-mat4
+					  (m-curr-mat ms)))))
+
+
+;(defparameter *model-to-camera-stack* (make-instance 'matrix-stack))
+(defvar *model-to-camera-stack*)
+
+(defun matrix-stack-top-to-shader-and-draw (matrix-stack)
+      (gl:uniform-matrix *model-to-camera-matrix-unif* 4
+			 (vector (top matrix-stack)))
+      (%gl:draw-elements :triangles (gl::gl-array-size *index-data*)
+			 :unsigned-short 0))
+
+(defmacro with-transform (matrix-stack &body body)
+  "Creates PUSH-MS POP-MS wrapper around its input, so many with-transform can
+be nested to facilitate the hierarchical model."
+  `(progn
+     (push-ms ,matrix-stack)
+     ,@body ;; put another with-transform here
+     (pop-ms ,matrix-stack)))
+
+
+(defparameter ang-base -45.0)
+(defparameter *for-w-s-key* 0.0)
+(defparameter *for-a-d-key* 0.0)
+(defparameter *for-q-e-key* 0.0)
 
 (defun draw ()
   (let ((pos-base (glm:vec3 3.0 -5.0 -40.0))
-	(ang-base -45.0)
-	(scale-base-z 3.0)
-	(pos-base-left (glm:vec3 2.0 0.0 0.0))
-	(pos-base-right (glm:vec3 -2.0 0.0 0.0))
-	)
+	;;TODO it seems to look on the picture like 45.0 is right, maybe
+	;;rotate-y implementation is wrong?
+;  	(ang-base -45.0)
+;	(ang-base -90.0)
+  	(scale-base-z 3.0)
+  	(pos-base-left (glm:vec3 2.0 0.0 0.0))
+  	(pos-base-right (glm:vec3 -2.0 0.0 0.0))
+  	)
+    (list pos-base ang-base scale-base-z pos-base-left pos-base-right)
 
-    (setf (first *model-to-camera-stack*) (translate-matrix-from-vec3 pos-base))
-    (setf (first *model-to-camera-stack*) (glm:rotate-y ang-base))
+    ;;OOOOH we really need to "create" a new stack on every iteration, don't
+    ;;we create a lot of "garbage" this way?
+    (setf *model-to-camera-stack* (make-instance 'matrix-stack))
 
+    ;;TODO CONTINUE: implement arcsynthesis armature
+    (translate *model-to-camera-stack* pos-base)
+    (rotate-y *model-to-camera-stack* *for-q-e-key*)
 
-    (setf *armature-list*
-	  ;; translate-matrix rotation-matrix scale-matrix
-	  (list
-	   ;; Left base
-	   (list :translate (translate-matrix-from-vec3 pos-base)
-		 :rotation (rotate-y ang-base))
-	   ;; right base
-	   (list :translate (translate-matrix-from-vec3 pos-base-left)
-		 :scale (scale-matrix-from-vec3 (glm:vec3 1.0 1.0 scale-base-z)))
-	   )
-	  )))
+    ;; Draw left base
+    (with-transform *model-to-camera-stack*
+      (translate *model-to-camera-stack* pos-base-left)
+      (scale *model-to-camera-stack* (glm:vec3 1.0 1.0 scale-base-z))
+      (matrix-stack-top-to-shader-and-draw *model-to-camera-stack*))
+      (with-transform *model-to-camera-stack*
+	(translate *model-to-camera-stack* (glm:vec3 0.0 4.0 0.0))
+	(scale *model-to-camera-stack* (glm:vec3 1.0 4.0 1.0))
+	(rotate-z *model-to-camera-stack* 90.0)
+	(matrix-stack-top-to-shader-and-draw *model-to-camera-stack*)
+	(with-transform *model-to-camera-stack*
+	  (translate *model-to-camera-stack* (glm:vec3 -2.0 0.0 1.0))
+	  (rotate-x *model-to-camera-stack* *for-a-d-key*)
+	  (rotate-y *model-to-camera-stack* *for-w-s-key*)
+	  (matrix-stack-top-to-shader-and-draw *model-to-camera-stack*)
+	  ))
+    ))
 
 (defun display ()
   (gl:clear-color 0 0 0.2 1)
@@ -293,23 +389,7 @@ the projection plane)"
   (%gl:use-program *program*)
   (gl:bind-vertex-array *vao*)
 
-  (init-armture-list)
-  
-  (loop for matrix in *armature-list*
-     with id = (glm:make-mat4 1.0) 
-     for tm = (or (getf matrix :translate) id)
-     for rm = (or (getf matrix :rotation) id) ;TODO
-     for sm = (or (getf matrix :scale) id)
-  
-     ;; strangly sb-cga:matrix* seems to multiply right to left
-     for transform-matrix = (sb-cga:matrix* sm rm tm)
-     do
-       (gl:uniform-matrix
-
-	*model-to-camera-matrix-unif* 4 (vector transform-matrix))
-       (%gl:draw-elements
-	:triangles (gl::gl-array-size *index-data*) :unsigned-short 0))
-       
+  (draw)
   (gl:bind-vertex-array 0)
   (gl:use-program *program*)
   ;;swap buffers: in main loop 
@@ -323,10 +403,23 @@ the projection plane)"
 	;; INIT code:
 	(init)
 	(sdl2:with-event-loop (:method :poll)
-	  (:keyup
+	  (:keydown
 	   (:keysym keysym)
+   	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-w)
+	     (incf *for-w-s-key* 10.0))
+	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-s)
+	     (decf *for-w-s-key* 10.0))
+	   
+	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-a)
+	     (incf *for-a-d-key* 10.0))
+	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-d)
+	     (decf *for-a-d-key* 10.0))
+
+	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-q)
+	     (decf *for-q-e-key* 10.0))
 	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-e)
 	     ;; experimental code
+	     (incf *for-q-e-key* 10.0)
 	     )
 	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-escape)
 	     (sdl2:push-event :quit)))

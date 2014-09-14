@@ -1,18 +1,11 @@
 (in-package #:arc)
 
-;;TODO: difference to CONTINUABLE?
-(defmacro restartable (&body body)
-  "helper macro since we use continue restarts a lot
- (remember to hit C in slime or pick the restart so errors don't kill the app)"
-  `(restart-case
-      (progn ,@body)
-    (continue () :report "Continue"  )))
-
 (defmacro continuable (&body body)
   "Helper macro that we can use to allow us to continue from an
   error. Remember to hit C in slime or pick the restart so errors don't kill the
   app."
-  `(restart-case (progn ,@body) (continue () :report "Continue")))
+  `(restart-case
+       (progn ,@body) (continue () :report "Continue")))
 
 (defun update-swank ()
   "Called from within the main loop, this keep the lisp repl

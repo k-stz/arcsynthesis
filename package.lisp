@@ -7,6 +7,7 @@
   (:use :cl)
   (:nicknames :arc)
   (:export ;; helper functions from auxiliary-functions.lisp:
+   #:continuable
    #:fill-gl-array
    #:create-gl-array-from-vector
    #:create-shader
