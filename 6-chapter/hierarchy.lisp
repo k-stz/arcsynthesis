@@ -1,7 +1,4 @@
-;; We need to create stack containing 3 matrices:
-;; 1. scale-matrix already containing all its predecessors scale-matrix
-;; 2. rotation 3. translation.
-;;; Or does this waste too much space? 
+;; TODO: about
 
 (in-package #:arc-6.3)
 
@@ -281,7 +278,8 @@ the projection plane)"
   (setf (m-curr-mat ms) (first (m-matrices ms)))
   (pop (m-matrices ms)))
 
-;;all of these visible parameters have their classes as names?
+;; TODO: defmethod lambda-list displayed with class-name instead of "offset-vec3"
+;; its "simple-array"
 (defgeneric translate (matrix-stack simple-array))
 (defmethod translate ((ms matrix-stack) (offset-vec3 simple-array))
   "Trasnlate transform the current-matrix by given vec3"
@@ -325,7 +323,7 @@ the projection plane)"
 
 (defun matrix-stack-top-to-shader-and-draw (matrix-stack)
       (gl:uniform-matrix *model-to-camera-matrix-unif* 4
-			 (vector (top matrix-stack)))
+			 (vector (top-ms matrix-stack)))
       (%gl:draw-elements :triangles (gl::gl-array-size *index-data*)
 			 :unsigned-short 0))
 
