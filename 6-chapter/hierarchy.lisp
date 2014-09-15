@@ -327,57 +327,125 @@ the projection plane)"
       (%gl:draw-elements :triangles (gl::gl-array-size *index-data*)
 			 :unsigned-short 0))
 
-(defmacro with-transform (matrix-stack &body body)
+;;TODO: actually using :drawp nil, causes the code to expand the WHEN to a NIL
+;;      try to remove that
+(defmacro with-transform ((&key (drawp t)) matrix-stack &body body)
   "Creates PUSH-MS POP-MS wrapper around its input, so many with-transform can
 be nested to facilitate the hierarchical model."
   `(progn
      (push-ms ,matrix-stack)
      ,@body ;; put another with-transform here
+     ,(when drawp
+	    `(matrix-stack-top-to-shader-and-draw ,matrix-stack))
      (pop-ms ,matrix-stack)))
 
-
-(defparameter ang-base -45.0)
 (defparameter *for-w-s-key* 0.0)
 (defparameter *for-a-d-key* 0.0)
 (defparameter *for-q-e-key* 0.0)
 
+(defparameter *pos-base* (glm:vec3 3.0 -5.0 -40.0))
+(defparameter *ang-base* 45.0) 
+(defparameter *pos-base-left* (glm:vec3 2.0 0.0 0.0))
+(defparameter *pos-base-right* (glm:vec3 -2.0 0.0 0.0))
+(defparameter *scale-base-z* 3.0)
+(defparameter *ang-upper-arm* 33.75)
+(defparameter *size-upper-arm* 9.0)
+(defparameter *pos-lower-arm* (glm:vec3 0.0 0.0 8.0))
+(defparameter *ang-lower-arm* -146.25)
+(defparameter *len-lower-arm* 5.0)
+(defparameter *width-lower-arm* 1.5)
+(defparameter *pos-wrist* (glm:vec3 0.0 0.0 5.0))
+(defparameter *ang-wrist-roll* 0.0)
+(defparameter *ang-wrist-pitch* -67.5)
+(defparameter *len-wrist* 2.0)
+(defparameter *width-wrist* 2.0)
+(defparameter *pos-left-finger* (glm:vec3 1.0 0.0 1.0))
+(defparameter *pos-right-finger* (glm:vec3 -1.0 0.0 1.0))
+(defparameter *ang-finger-open* -180.0)
+(defparameter *len-finger* 2.0)
+(defparameter *width-finger* 0.5)
+(defparameter *ang-lower-finger* -45.0)
+
 (defun draw ()
-  (let ((pos-base (glm:vec3 3.0 -5.0 -40.0))
-	;;TODO it seems to look on the picture like 45.0 is right, maybe
-	;;rotate-y implementation is wrong?
-;  	(ang-base -45.0)
-;	(ang-base -90.0)
-  	(scale-base-z 3.0)
-  	(pos-base-left (glm:vec3 2.0 0.0 0.0))
-  	(pos-base-right (glm:vec3 -2.0 0.0 0.0))
-  	)
-    (list pos-base ang-base scale-base-z pos-base-left pos-base-right)
+  ;;OOOOH we really need to "create" a new stack on every iteration, don't
+  ;;we create a lot of "garbage" this way?
+  (setf *model-to-camera-stack* (make-instance 'matrix-stack))
 
-    ;;OOOOH we really need to "create" a new stack on every iteration, don't
-    ;;we create a lot of "garbage" this way?
-    (setf *model-to-camera-stack* (make-instance 'matrix-stack))
+  ;;TODO CONTINUE: implement arcsynthesis armature
+  (translate *model-to-camera-stack* *pos-base*)
+  (rotate-y *model-to-camera-stack* *ang-base*)
 
-    ;;TODO CONTINUE: implement arcsynthesis armature
-    (translate *model-to-camera-stack* pos-base)
-    (rotate-y *model-to-camera-stack* *for-q-e-key*)
+  ;; The lesson here is that SCALE is a distorting function and transform containing
+  ;; it should bear no children! While, TRANSLATE and ROTATE-* are additive in and
+  ;; hence intuitive in their behaviour
 
-    ;; Draw left base
-    (with-transform *model-to-camera-stack*
-      (translate *model-to-camera-stack* pos-base-left)
-      (scale *model-to-camera-stack* (glm:vec3 1.0 1.0 scale-base-z))
-      (matrix-stack-top-to-shader-and-draw *model-to-camera-stack*))
-      (with-transform *model-to-camera-stack*
-	(translate *model-to-camera-stack* (glm:vec3 0.0 4.0 0.0))
-	(scale *model-to-camera-stack* (glm:vec3 1.0 4.0 1.0))
-	(rotate-z *model-to-camera-stack* 90.0)
-	(matrix-stack-top-to-shader-and-draw *model-to-camera-stack*)
-	(with-transform *model-to-camera-stack*
-	  (translate *model-to-camera-stack* (glm:vec3 -2.0 0.0 1.0))
-	  (rotate-x *model-to-camera-stack* *for-a-d-key*)
-	  (rotate-y *model-to-camera-stack* *for-w-s-key*)
-	  (matrix-stack-top-to-shader-and-draw *model-to-camera-stack*)
-	  ))
-    ))
+  ;; Draw left base
+  (with-transform () *model-to-camera-stack*
+    (translate *model-to-camera-stack* *pos-base-left*)
+    (scale *model-to-camera-stack* (glm:vec3 1.0 1.0 *scale-base-z*)))
+  ;; Draw right base
+  (with-transform () *model-to-camera-stack*
+    (translate *model-to-camera-stack* *pos-base-right*)
+    (scale *model-to-camera-stack* (glm:vec3 1.0 1.0 *scale-base-z*)))
+
+  ;; Draw main arm; DrawUpperArm(modelToCameraStack);
+  (with-transform () *model-to-camera-stack*
+    (rotate-x *model-to-camera-stack* *ang-upper-arm*)
+    (with-transform () *model-to-camera-stack*
+      (translate *model-to-camera-stack*
+		 (glm:vec3 0.0 0.0 (- (/ *size-upper-arm* 2.0) 1.0)))
+      (scale *model-to-camera-stack* (glm:vec3 1.0 1.0 (/ *size-upper-arm* 2.0))))
+
+    ;; DrawLowerArm(...)
+    (with-transform () *model-to-camera-stack*
+      (translate *model-to-camera-stack* *pos-lower-arm*)
+      (rotate-x *model-to-camera-stack* *ang-lower-arm* )
+
+      (with-transform () *model-to-camera-stack*
+	(translate *model-to-camera-stack* (glm:vec3 0.0 0.0 (/ *len-lower-arm* 2.0)))
+	(scale *model-to-camera-stack* (glm:vec3 (/ *width-lower-arm* 2.0)
+						 (/ *width-lower-arm* 2.0)
+						 (/ *len-lower-arm* 2.0))))
+      ;; DrawWrist(...)
+      (with-transform (:drawp nil) *model-to-camera-stack*
+	  (translate *model-to-camera-stack* *pos-wrist*)
+	  (rotate-z *model-to-camera-stack* *ang-wrist-roll*)
+	  (rotate-x *model-to-camera-stack* *ang-wrist-pitch*)
+
+	  (with-transform () *model-to-camera-stack*
+	    (scale *model-to-camera-stack* (glm:vec3 (/ *width-wrist* 2.0)
+	  					     (/ *width-wrist* 2.0)
+	  					     (/ *len-wrist* 2.0))))
+	  ;; DrawFingers(...)
+	  (with-transform (:drawp nil) *model-to-camera-stack*
+	    ;; Draw left finger
+	    (translate *model-to-camera-stack* *pos-left-finger*)
+	    (rotate-y *model-to-camera-stack* *ang-finger-open*)
+
+	    (with-transform () *model-to-camera-stack*
+	      (translate *model-to-camera-stack* (glm:vec3 0.0 0.0 (/ *len-finger* 2.0)))
+	      (scale *model-to-camera-stack* (glm:vec3 (/ *width-finger* 2.0)
+						       (/ *width-finger* 2.0)
+						       (/ *len-finger* 2.0))))
+	    ;;Draw left lower finger
+	    (with-transform (:drawp nil) *model-to-camera-stack*
+	      (translate *model-to-camera-stack* (glm:vec3 0.0 0.0 *len-finger*))
+	      (rotate-y *model-to-camera-stack* (- *ang-lower-finger*))
+	      (with-transform () *model-to-camera-stack*
+		(translate *model-to-camera-stack* (glm:vec3 0.0 0.0
+							     (/ *len-finger* 2.0)))
+		(scale *model-to-camera-stack* (glm:vec3 (/ *width-finger* 2.0)
+							 (/ *width-finger* 2.0)
+							 (/ *len-finger* 2.0))))
+	      );;/lower left finger
+	    )
+	  ;;Draw right finger
+	  ;; TODO CONTINUE + REVERSE ANGLES FIX
+	  );;/DrawWrist
+      ) ;;/DrawLowerArm
+    ) ;;/Draw main arm
+  
+  )
 
 (defun display ()
   (gl:clear-color 0 0 0.2 1)
@@ -393,6 +461,24 @@ be nested to facilitate the hierarchical model."
   ;;swap buffers: in main loop 
        )
 
+;; teehee, just found a #define substitute
+;; TODO: do symbol-macro somehow still clutter up space at runtime or after compilation?
+(define-symbol-macro standard-angle-increment 11.25)
+(define-symbol-macro small-angle-increment 9.0)
+
+(defun clamp (x lower-bound upper-bound)
+  (cond ((< x lower-bound)
+	 lower-bound)
+	((> x upper-bound)
+	 upper-bound)
+	(t ;;else
+	 x)))
+
+;; TODO: test
+(defmacro adj-* (var inc-by bound-fn)
+  `(progn (incf ,var ,inc-by)
+	  ( setf ,var ,bound-fn)))
+
 (defun main ()
   (sdl2:with-init (:everything)
     (progn (setf *standard-output* out) (setf *debug-io* dbg) (setf *error-output* err))
@@ -403,15 +489,29 @@ be nested to facilitate the hierarchical model."
 	(sdl2:with-event-loop (:method :poll)
 	  (:keydown
 	   (:keysym keysym)
-   	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-w)
-	     (incf *for-w-s-key* 10.0))
-	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-s)
-	     (decf *for-w-s-key* 10.0))
-	   
+	   ;; TODO: capture in macro
 	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-a)
-	     (incf *for-a-d-key* 10.0))
+	     (incf *ang-base* standard-angle-increment)
+	     ;; ensures *ang-base* always stays withing [0,360]
+	     (setf *ang-base* (mod *ang-base* 360.0)))
 	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-d)
-	     (decf *for-a-d-key* 10.0))
+	     (decf *ang-base* standard-angle-increment)
+	     (setf *ang-base* (mod *ang-base* 360.0)))
+
+	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-w)
+	     (incf *ang-upper-arm* standard-angle-increment)
+	     (setf *ang-upper-arm* (clamp *ang-upper-arm* 0.0 90.0)))
+	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-s)
+	     (decf *ang-upper-arm* standard-angle-increment)
+	     (setf *ang-upper-arm* (clamp *ang-upper-arm* 0.0 90.0)))
+
+	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-r)
+	     (incf *ang-lower-arm* standard-angle-increment)
+	     (setf *ang-lower-arm* (clamp *ang-lower-arm* -146.25 0.0)))
+	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-f)
+	     (decf *ang-lower-arm* standard-angle-increment)
+	     (setf *ang-lower-arm* (clamp *ang-lower-arm* -146.25 0.0)))
+
 
 	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-q)
 	     (decf *for-q-e-key* 10.0))

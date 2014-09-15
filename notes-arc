@@ -589,7 +589,7 @@ can be computed by the CPU and then uniform-handled to the shader and be used by
 all vertices.
 
 commutative:
-while 2*3*4 = 4*2*3  for matrices this is not true
+while 2*3*4 = 4*2*3  for matrices this is NOT true
 distributive:
 while 2*3*4 = 2*(3*4) = (2*3)*4 IS TRUE for matrices, hence:
 translation-matrix * scale-matrix * vertex
@@ -604,13 +604,13 @@ to the model space (given vertices).
 
 Hierarchical model,
 very awesome stuff:
- when we abide to the order: translation * rotation * scaling
- we can perform relative transformation as is the intent of the
- hierarchical model.
-  Therefore new transformation must always abide this order:
-  tm * new-tm * old-s even-newer-s new-s
-  Where t=transform s=scale -matrix
- abiding to this rule exposes a minor extend of commutative behavior:
- matrices of the same kind can be multiplied in any order
- its own kind are these: translation, scale, rotation -matrices!!
-
+ when we abide to the order: translation * rotation * scaling.
+ Because we prepare an amalgam-matrix for incoming points we multiply left-to-right
+ because (((translation * rotation) * scaling) * points)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^= amalgam-matrix
+	 and because scaling is distorting we perform it last
+	 
+As an intuitive rule-of-thumb: We can perform translation whenever we please.
+But when we use scaling we should not let that transform bear any children
+as they will be deformed! (Well just that one object may be rendered being
+multiplied with it)

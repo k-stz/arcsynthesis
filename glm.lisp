@@ -187,7 +187,12 @@
   (let* ((ang-rad (ang-rad-from-ang-deg ang-deg))
 	 (f-cos (cos ang-rad))
 	 (f-sin (sin ang-rad))
-	 (matrix (glm:make-mat3 1.0)))
+	 (matrix (glm:make-mat3 1.0))
+	 )
+    ;; since even this function calculates rotation unlike arcsynthesis I will leave
+    ;; this function the way it is (arcsynthesis rotates counter-clockwise with positive
+    ;; angles given, positve axis pointing into eye)
+    ;; (sb-cga:rotate-around (sb-cga:vec 0.0 1.0 0.0) ang-rad)
     (glm:set-mat3 matrix 0 :x f-cos)     (glm:set-mat3 matrix 2 :x f-sin) 
     (glm:set-mat3 matrix 0 :z (- f-sin)) (glm:set-mat3 matrix 2 :z f-cos)
     (glm:mat4-from-mat3 matrix)
