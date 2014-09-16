@@ -250,7 +250,7 @@ the projection plane)"
 
 
 ;;TODO: implement matrix-stack methods, change and fully implemet (draw) and (display) code
-;; TODO: creating clas overkill? Simpler solution?
+;; TODO: creating class overkill? Simpler solution?
 (defclass matrix-stack ()
   ;; Hierarchy.cpp really uses these to as "private" 
   ((m-curr-mat :initform (glm:make-mat4 1.0)
@@ -279,7 +279,7 @@ the projection plane)"
   (pop (m-matrices ms)))
 
 ;; TODO: defmethod lambda-list displayed with class-name instead of "offset-vec3"
-;; its "simple-array"
+;; it's "simple-array"
 (defgeneric translate (matrix-stack simple-array))
 (defmethod translate ((ms matrix-stack) (offset-vec3 simple-array))
   "Trasnlate transform the current-matrix by given vec3"
@@ -328,7 +328,9 @@ the projection plane)"
 			 :unsigned-short 0))
 
 ;;TODO: actually using :drawp nil, causes the code to expand the WHEN to a NIL
-;;      try to remove that
+;;      try to remove that. Add macrolet, to expose local variable to capture given
+;;      matrix-stack. Instead of passing (translate ..) use :translate
+;;      instead of (glm:vec3..) use :vec3. Try to make intuitive like LOOP?
 (defmacro with-transform ((&key (drawp t)) matrix-stack &body body)
   "Creates PUSH-MS POP-MS wrapper around its input, so many with-transform can
 be nested to facilitate the hierarchical model."
@@ -436,11 +438,29 @@ be nested to facilitate the hierarchical model."
 							     (/ *len-finger* 2.0)))
 		(scale *model-to-camera-stack* (glm:vec3 (/ *width-finger* 2.0)
 							 (/ *width-finger* 2.0)
-							 (/ *len-finger* 2.0))))
-	      );;/lower left finger
-	    )
-	  ;;Draw right finger
-	  ;; TODO CONTINUE + REVERSE ANGLES FIX
+							 (/ *len-finger* 2.0))))))
+	  ;;/ Draw left finger
+	  
+          ;; Draw right finger
+	  (with-transform (:drawp nil) *model-to-camera-stack*
+	    (translate *model-to-camera-stack* *pos-right-finger*)
+	    (rotate-y *model-to-camera-stack* (- *ang-finger-open*))
+	    (with-transform () *model-to-camera-stack*
+	      (translate *model-to-camera-stack* (glm:vec3 0.0 0.0 (/ *len-finger* 2.0)))
+	      (scale *model-to-camera-stack* (glm:vec3 (/ *width-finger* 2.0)
+						       (/ *width-finger* 2.0)
+						       (/ *len-finger* 2.0))))
+	    ;; Draw right lower finger
+	    (with-transform (:drawp nil) *model-to-camera-stack*
+	      (translate *model-to-camera-stack* (glm:vec3 0.0 0.0 *len-finger*))
+	      (rotate-y *model-to-camera-stack* *ang-lower-finger*)
+	      (with-transform () *model-to-camera-stack*
+		(translate *model-to-camera-stack* (glm:vec3 0.0 0.0 (/ *len-finger* 2.0)))
+		(scale *model-to-camera-stack* (glm:vec3 (/ *width-finger* 2.0)
+							 (/ *width-finger* 2.0)
+							 (/ *len-finger* 2.0)))))
+	    );;/Draw right finger
+	  
 	  );;/DrawWrist
       ) ;;/DrawLowerArm
     ) ;;/Draw main arm
@@ -490,6 +510,7 @@ be nested to facilitate the hierarchical model."
 	  (:keydown
 	   (:keysym keysym)
 	   ;; TODO: capture in macro
+	   ;; AdjBase()
 	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-a)
 	     (incf *ang-base* standard-angle-increment)
 	     ;; ensures *ang-base* always stays withing [0,360]
@@ -497,28 +518,42 @@ be nested to facilitate the hierarchical model."
 	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-d)
 	     (decf *ang-base* standard-angle-increment)
 	     (setf *ang-base* (mod *ang-base* 360.0)))
-
+	   ;; AdjUpperArm()
 	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-w)
 	     (incf *ang-upper-arm* standard-angle-increment)
 	     (setf *ang-upper-arm* (clamp *ang-upper-arm* 0.0 90.0)))
 	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-s)
 	     (decf *ang-upper-arm* standard-angle-increment)
 	     (setf *ang-upper-arm* (clamp *ang-upper-arm* 0.0 90.0)))
-
+	   ;; AdjLowerArm()
 	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-r)
 	     (incf *ang-lower-arm* standard-angle-increment)
 	     (setf *ang-lower-arm* (clamp *ang-lower-arm* -146.25 0.0)))
 	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-f)
 	     (decf *ang-lower-arm* standard-angle-increment)
 	     (setf *ang-lower-arm* (clamp *ang-lower-arm* -146.25 0.0)))
-
-
+	   ;; AdjWristPitch()
+	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-t)
+	     (incf *ang-wrist-pitch* standard-angle-increment)
+	     (setf *ang-wrist-pitch* (clamp *ang-wrist-pitch* 0.0 90.0)))
+	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-g)
+	     (decf *ang-wrist-pitch* standard-angle-increment)
+	     (setf *ang-wrist-pitch* (clamp *ang-wrist-pitch* 0.0 90.0)))
+	   ;; AdjWristRoll()
+	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-z)
+	     (incf *ang-wrist-roll* standard-angle-increment)
+	     (setf *ang-wrist-roll* (mod *ang-wrist-roll* 360.0)))
+	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-c)
+	     (decf *ang-wrist-roll* standard-angle-increment)
+	     (setf *ang-wrist-roll* (mod *ang-wrist-roll* 360.0)))
+	   ;; AdjFingerOpen()
 	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-q)
-	     (decf *for-q-e-key* 10.0))
+	     (incf *ang-finger-open* standard-angle-increment)
+	     (setf *ang-finger-open* (clamp *ang-finger-open* 180.0 360.0)))
 	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-e)
-	     ;; experimental code
-	     (incf *for-q-e-key* 10.0)
-	     )
+	     (decf *ang-finger-open* standard-angle-increment)
+	     (setf *ang-finger-open* (clamp *ang-finger-open* 180.0 360.0)))
+
 	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-escape)
 	     (sdl2:push-event :quit)))
 	  (:quit () t)
