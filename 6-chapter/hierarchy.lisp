@@ -89,6 +89,18 @@ the projection plane)"
 (defparameter *vertex-data*
   (arc:create-gl-array-from-vector 
 `#(
+   ;; Very important note: See how every point is in a difference quadrant?
+   ;; this causes the SCALE operation to be intuitive, because all points
+   ;; when being scale transformed will move away from their relative origin.
+   ;; and therefore the object will appear to grow in place (namely its origin)
+   ;; This caused quite the confusion to me, why the hierarchy transform model
+   ;; should work with arbitrary models, but building upon these "axioms" we
+   ;; set the trait of intuition to be inherited by all its children!!
+
+   ;; Note also the explanation of arcsynthesis:" Since what you (probably) actually
+   ;; wanted was to scale the points away from the origin point in /model space/, hence
+   ;; S[caling] needs to come first."
+
 	;;Front
 	+1.0  +1.0  +1.0 
 	+1.0  -1.0  +1.0 
@@ -379,7 +391,11 @@ be nested to facilitate the hierarchical model."
 
   ;; The lesson here is that SCALE is a distorting function and transform containing
   ;; it should bear no children! While, TRANSLATE and ROTATE-* are additive in and
-  ;; hence intuitive in their behaviour
+  ;; hence intuitive in their behaviour.
+  ;; But having all points in different quadrant resolved distortional problems.
+  ;; TODO: how then did I manage to create those diamond shaped prism?
+  ;;       should only occur when a single axis is moved instead of two at the same
+  ;;       time (as in emulating a rotation along an arbitrary axis)!?
 
   ;; Draw left base
   (with-transform () *model-to-camera-stack*

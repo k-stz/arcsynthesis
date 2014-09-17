@@ -604,13 +604,29 @@ to the model space (given vertices).
 
 Hierarchical model,
 very awesome stuff:
- when we abide to the order: translation * rotation * scaling.
- Because we prepare an amalgam-matrix for incoming points we multiply left-to-right
- because (((translation * rotation) * scaling) * points)
-         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^= amalgam-matrix
-	 and because scaling is distorting we perform it last
-	 
-As an intuitive rule-of-thumb: We can perform translation whenever we please.
-But when we use scaling we should not let that transform bear any children
-as they will be deformed! (Well just that one object may be rendered being
-multiplied with it)
+ We move points by translating, scaling and rotating then we draw intermediates. If we
+ now continue to transform further we can draw again and we yield object relative to
+ each other because tranformation is passing vertices from one coordinate system to
+ another, this also means that the higher coordinate system passes on its orientation
+ to the one represented "within" it. We get results like spinning one axis spins every
+ object drawn within child transformation coordinate systems.
+Example given is the armature simulation, rotating the main arm rotates every object
+build upon the transform that spawned the main arm. We hereby open a door to render
+intricate objects previously perhaps poorly understood and hence daunting to do.
+
+The daunting task remains to imbue hierarchical models in collision logic!!!
+
+On scaling hierarchical models,
+if the main object used to draw all resulting objects from successive transformations
+has its vertices in different quadrants of a coordiante system we get a very convenient
+effect: scaling now can be done intuitively as vertices being multiplied will move
+away from the origin and relative to each other at the same rate, or attract each
+other.
+This is very useful also to incrementatlly design hierarchical models as we can
+WATCH as scaling just blows the object appart or shrinks it IN PLACE.
+
+Translation, scaling in hierarchical models,
+is nearly never problematic as it has an identity matrix in its first 3 rows/col
+and intuitively only offsets given points.
+But a scaling matrix, in contrast, would distort evena translation matrix, as it
+would change the 'w'-column due to its x, y, z non 1 values!
