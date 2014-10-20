@@ -48,6 +48,8 @@ written in Common Lisp using cl-sdl2 and cl-opengl"
 			 (:file "rotation")
 			 (:file "test")
 			 (:file "hierarchy")))
+   (:module "7-chapter"
+	    :components ((:file "world-scene")))
    ))
 
 

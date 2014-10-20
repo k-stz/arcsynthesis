@@ -9,7 +9,6 @@
 
 (defvar position-buffer-object) ; buffer object handle
 
-
 (defvar *program*)
 
 (defparameter *camera-to-clip-matrix* (glm:make-mat4 0.0))
@@ -264,7 +263,7 @@ the projection plane)"
 ;;TODO: implement matrix-stack methods, change and fully implemet (draw) and (display) code
 ;; TODO: creating class overkill? Simpler solution?
 (defclass matrix-stack ()
-  ;; Hierarchy.cpp really uses these to as "private" 
+  ;; Hierarchy.cpp also uses these as "private"
   ((m-curr-mat :initform (glm:make-mat4 1.0)
 	       :accessor m-curr-mat)
    ;; is supposed to be a simple stack, so it is just a list here
@@ -385,7 +384,6 @@ be nested to facilitate the hierarchical model."
   ;;we create a lot of "garbage" this way?
   (setf *model-to-camera-stack* (make-instance 'matrix-stack))
 
-  ;;TODO CONTINUE: implement arcsynthesis armature
   (translate *model-to-camera-stack* *pos-base*)
   (rotate-y *model-to-camera-stack* *ang-base*)
 

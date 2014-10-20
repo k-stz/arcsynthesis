@@ -146,3 +146,8 @@
   (:documentation "Hierarchy model")
   (:use :cl)
   (:export #:main))
+
+(defpackage #:arc-7
+  (:documentation "World in Motion")
+  (:use :cl)
+  (:export #:main))

@@ -386,7 +386,7 @@ machine language!
 VAO,
 up until now we had to draw using the following steps: generate buffer object handle,
 use it to bind it to a target in OpenGL, use it to put data into OpenGL, specify
-the format its in, extract an attribute index from it and finally use it in a
+the format it's in, extract an attribute index from it and finally use it in a
 shader and gl:draw* the data it represents.
 the VERTEX ARRAY OBJECT (VAO) is here to alleviate us of this burden!
 
@@ -400,7 +400,7 @@ and call (gl:draw-* ..) then we will set the next VAO-obj to draw a second objec
 The abstraction of "drawing an object" is explained by Mr. McKesson as:
 "An object, in terms of what you draw, can be considered the results of a single
 drawing call."
-That drawing call is what we do after we (gl:bind-vertex-array *vao-obj) to the
+That drawing call is what we do after we (gl:bind-vertex-array *vao-obj*) to the
 context, as just described.
 --------------------------------------------------------------------------------
 Check this out:

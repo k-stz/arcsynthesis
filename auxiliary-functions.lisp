@@ -114,6 +114,7 @@ will be COERCEd to SINGLE-FLOAT"
     ))
 
 ;; stolen from cbaggers
+;;; yeaaaah, no. It is functional style to "return-it" always, so that is a misnomer!
 (defun create-program-and-return-it (shader-list)
    ;;TODO: is this bad style to gl:use it as well?
   "Create program and RETURN it"
