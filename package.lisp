@@ -40,6 +40,15 @@
    )
   )
 
+(defpackage #:glutil
+  (:use :cl)
+  ;; TODO export
+  (:export
+   #:matrix-stack
+   )
+
+  )
+
 (defpackage #:arc-1
   (:documentation "1. tutorial")
   (:use #:cl #:arcsynthesis)

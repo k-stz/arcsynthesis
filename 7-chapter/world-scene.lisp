@@ -184,18 +184,25 @@ the projection plane)"
 			 (vec4 (glm:vec4-from-vec3 (glm:vec3 3.0 -5.0 -40.0))))
 		     (glm:set-mat4-col translate-mat4 3 vec4)
 		     translate-mat4))
-;;NEXT TODO: k. works for now, next build matrix-stack utility class also
-;;fully a fully functional with-translate operating on matrix-stacks
+;;NEXT TODO: fully functional with-transform operating on matrix-stacks
 ;;then scale that rectangle and work on the worl to camera translation, then
 ;;make the camera focus each corner on command, then move towards dynamic camera,
 ;;then really try to copy the tutorial implementing the trees with multiple shaders
 ;;and the parthenon
+(defvar *model-to-camera-ms*)
+
 (defun model-to-world-setup ()
   ;; just set it to be identity, TODO: is it identity by default in shader?
-  (let* ((m1 (glm:make-mat4 1.0))
-	 (mat (sb-cga:matrix* t-mat m1)))
+  (setf *model-to-camera-ms* (make-instance 'glutil:matrix-stack))
+  (glutil::with-transform (:drawp nil) *model-to-camera-ms*
+    (glutil::translate *model-to-camera-ms* (glm:vec3 -3.0 5.0 -40.0))
     (gl:uniform-matrix *model-to-world-matrix-unif* 4
-		       (vector mat))))
+		       (vector (glutil::top-ms *model-to-camera-ms*)))
+
+
+    )
+
+  )
 
 (defun display ()
   (gl:clear-color 0 0 0.2 1)
