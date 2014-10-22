@@ -91,11 +91,29 @@ be nested to facilitate the hierarchical model."
 ;; TODO: write parser
 ;; :translate 0.0 1.0 2.0 -> (translate matrix-stack (glm:vec3 0.0 1.0 2.0))
 ;; LOOP like, maybe need to read into it a bit because of coding style choices
-(defmacro wt ((&key (drawp t)) matrix-stack &body body)
-  `(progn
-     (push-ms ,matrix-stack)
-     ,@body ;; put another with-transform here
-     ,(when drawp
-	    `(matrix-stack-top-to-shader-and-draw ,matrix-stack))
-     (pop-ms ,matrix-stack)))
 
+;;TODO: this is all garbage and doesn't work yet.. maybe need to read on
+;;this problem before trying an implementation?
+(defmacro with-translate2 ((&key (drawp t)) matrix-stack &body body)
+  `(progn
+       (push-ms ,matrix-stack)
+       ,@body
+       ,(when drawp
+	      `(matrix-stack-top-to-shader-and-draw ,matrix-stack))
+       (pop-ms ,matrix-stack)))
+
+
+(defmacro wt (&body body)
+  (let ((exp '()))
+    (labels ((rec (body car)
+	       (if (null body)
+		   exp
+		   (progn (case car
+			    (:translate  (push 'translate exp))
+			    (:scale)
+			    (:rotate-y)
+			    (:rotate-x)
+			    (:rotate-z)
+			    )
+			  (rec (cdr body) (car body))))))
+      (rec body (car body)))))
