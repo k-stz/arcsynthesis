@@ -36,7 +36,7 @@
 ;; it's "simple-array"
 (defgeneric translate (matrix-stack simple-array))
 (defmethod translate ((ms matrix-stack) (offset-vec3 simple-array))
-  "Trasnlate transform the current-matrix by given vec3"
+  "Translate transform the current-matrix by given vec3"
   (let ((translate-mat4 (glm:make-mat4 1.0))
 	(vec4 (glm:vec4-from-vec3 offset-vec3)))
     (glm:set-mat4-col translate-mat4 3 vec4)
@@ -49,7 +49,7 @@
   (let ((translate-mat4 (glm:rotate-x ang-deg)))
     (setf (m-curr-mat ms) (sb-cga:matrix* translate-mat4
 					  (m-curr-mat ms)))))
-;;TODO: test
+
 (defgeneric rotate-y (matrix-stack float))
 (defmethod rotate-y ((ms matrix-stack) (ang-deg float))
   (let ((translate-mat4 (glm:rotate-y ang-deg)))
@@ -58,7 +58,7 @@
 
 (defgeneric rotate-z (matrix-stack float))
 (defmethod rotate-z ((ms matrix-stack) (ang-deg float))
-  (let ((translate-mat4 (glm:rotate-x ang-deg)))
+  (let ((translate-mat4 (glm:rotate-z ang-deg)))
     (setf (m-curr-mat ms) (sb-cga:matrix* translate-mat4
 					  (m-curr-mat ms)))))
 
@@ -71,49 +71,68 @@
     (setf (m-curr-mat ms) (sb-cga:matrix* scale-mat4
 					  (m-curr-mat ms)))))
 
-(defun matrix-stack-top-to-shader-and-draw (matrix-stack unif index-data)
-      (gl:uniform-matrix unif 4
+(defun matrix-stack-top-to-shader-and-draw (matrix-stack mat-unif index-data)
+      (gl:uniform-matrix mat-unif 4
 			 (vector (top-ms matrix-stack)))
       (%gl:draw-elements :triangles (gl::gl-array-size index-data)
 			 :unsigned-short 0))
 
-(defmacro with-transform ((&key (drawp t)) matrix-stack &body body)
-  "Creates PUSH-MS POP-MS wrapper around its input, so many with-transform can
+;; (defmacro with-transform ((&key (drawp t)) matrix-stack &body body)
+;;   "Creates PUSH-MS POP-MS wrapper around its input, so many with-transform can
+;; be nested to facilitate the hierarchical model."
+;;   `(progn
+;;      (push-ms ,matrix-stack)
+;;      ,@body ;; put another with-transform here
+;;      ,(when drawp
+;; 	    `(matrix-stack-top-to-shader-and-draw ,matrix-stack))
+;;      (pop-ms ,matrix-stack)))
+
+
+;; this is all garbage and doesn't work yet.. maybe need to read on
+;; ;;this problem before trying an implementation?
+;; (defmacro with-translate2 ((&key (drawp t)) matrix-stack &body body)
+;;   `(progn
+;;        (push-ms ,matrix-stack)
+;;        ,@body
+;;        ,(when drawp
+;; 	      `(matrix-stack-top-to-shader-and-draw ,matrix-stack))
+;;        (pop-ms ,matrix-stack)))
+
+
+;; (&key (drop t)) removed as having to provide args (matrix-stack-top-to-shader ..) is too
+;; specific to abstract away in the macro
+(defmacro with-transform ((matrix-stack) &body body)
+    "Creates PUSH-MS POP-MS wrapper around its input, so many with-transform can
 be nested to facilitate the hierarchical model."
-  `(progn
-     (push-ms ,matrix-stack)
-     ,@body ;; put another with-transform here
-     ,(when drawp
-	    `(matrix-stack-top-to-shader-and-draw ,matrix-stack))
-     (pop-ms ,matrix-stack)))
-
-
-;; TODO: write parser
-;; :translate 0.0 1.0 2.0 -> (translate matrix-stack (glm:vec3 0.0 1.0 2.0))
-;; LOOP like, maybe need to read into it a bit because of coding style choices
-
-;;TODO: this is all garbage and doesn't work yet.. maybe need to read on
-;;this problem before trying an implementation?
-(defmacro with-translate2 ((&key (drawp t)) matrix-stack &body body)
-  `(progn
+  (labels ((try-key (car l exp)
+	     (cond ((null l)
+		    (nreverse exp))
+		   ;; this ensures that the body may contain arbitrary functions,
+		   ;; and only free keywords get special treatment
+		   ((listp car) (progn (push car exp)
+				       (try-key (cadr l) (cdr l) exp)))
+		   ;; keyword special treatment
+		   (t (case car
+			(:translate (make-trans 'translate (cdr l) exp))
+			(:scale (make-trans 'scale (cdr l) exp))
+			(:rotate-x (make-rot 'rotate-x (cdr l) exp))
+			(:rotate-y (make-rot 'rotate-y (cdr l) exp))
+			(:rotate-z (make-rot 'rotate-z (cdr l) exp))
+			(t (format *error-output* "~a is not a known transform" car))
+			))))
+	   (make-trans (key l exp)
+	     (push
+	      `(,key ,matrix-stack (glm:vec3 ,(first l) ,(second l) ,(third l)))
+	      exp)
+	     (try-key (cadddr l) (cdddr l) exp))
+	   (make-rot (key l exp)
+	     (push
+	      `(,key ,matrix-stack ,(first l))
+	      exp)
+	     (try-key (cadr l) (cdr l) exp)))
+    ;; start labels body:
+    `(progn
        (push-ms ,matrix-stack)
-       ,@body
-       ,(when drawp
-	      `(matrix-stack-top-to-shader-and-draw ,matrix-stack))
-       (pop-ms ,matrix-stack)))
-
-
-(defmacro wt (&body body)
-  (let ((exp '()))
-    (labels ((rec (body car)
-	       (if (null body)
-		   exp
-		   (progn (case car
-			    (:translate  (push 'translate exp))
-			    (:scale)
-			    (:rotate-y)
-			    (:rotate-x)
-			    (:rotate-z)
-			    )
-			  (rec (cdr body) (car body))))))
-      (rec body (car body)))))
+       ,@(try-key (car body) body '())
+       (pop-ms ,matrix-stack))
+    ))

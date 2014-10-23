@@ -45,6 +45,7 @@
   ;; TODO export
   (:export
    #:matrix-stack
+   #:with-transform
    )
 
   )

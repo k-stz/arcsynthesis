@@ -192,15 +192,15 @@ the projection plane)"
 (defvar *model-to-camera-ms*)
 
 (defun model-to-world-setup ()
-  ;; just set it to be identity, TODO: is it identity by default in shader?
   (setf *model-to-camera-ms* (make-instance 'glutil:matrix-stack))
-  (glutil::with-transform (:drawp nil) *model-to-camera-ms*
-    (glutil::translate *model-to-camera-ms* (glm:vec3 -3.0 5.0 -40.0))
-    (gl:uniform-matrix *model-to-world-matrix-unif* 4
-		       (vector (glutil::top-ms *model-to-camera-ms*)))
-
-
-    )
+  (glutil:with-transform (*model-to-camera-ms*)
+    :translate 3.0 -5.0 -40.0
+    :scale 5.0 5.0 5.0
+    :rotate-z 75.0
+    ;;well this is too verbose?
+    (glutil::matrix-stack-top-to-shader-and-draw *model-to-camera-ms*
+						 *model-to-world-matrix-unif*
+						 *index-data*))
 
   )
 
