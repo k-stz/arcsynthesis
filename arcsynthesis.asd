@@ -21,6 +21,7 @@ written in Common Lisp using cl-sdl2 and cl-opengl"
    (:file "auxiliary-functions")
    (:file "glm")
    (:file "glutil")
+   (:file "framework")
    ;; the following solves the "src in subdirectories" problem nicely!
    (:module "1-chapter/"
    	    :components ((:file "hello-triangle")))

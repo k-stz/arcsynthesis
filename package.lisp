@@ -47,8 +47,16 @@
    #:matrix-stack
    #:with-transform
    )
-
   )
+
+(defpackage #:framework
+  (:use :cl)
+  ;; TODO export
+  (:export
+   #:deg-to-rad
+   )
+  )
+
 
 (defpackage #:arc-1
   (:documentation "1. tutorial")

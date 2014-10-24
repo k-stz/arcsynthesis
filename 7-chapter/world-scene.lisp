@@ -175,6 +175,7 @@ the projection plane)"
 )
 
 (defun draw ()
+
   (%gl:draw-elements :triangles (gl::gl-array-size *index-data*)
 		    :unsigned-short 0)
   )
@@ -185,22 +186,37 @@ the projection plane)"
 		     (glm:set-mat4-col translate-mat4 3 vec4)
 		     translate-mat4))
 ;;NEXT TODO: fully functional with-transform operating on matrix-stacks
-;;then scale that rectangle and work on the worl to camera translation, then
+;;then scale that rectangle and work on the world to camera translation, then
 ;;make the camera focus each corner on command, then move towards dynamic camera,
 ;;then really try to copy the tutorial implementing the trees with multiple shaders
-;;and the parthenon
+;;and the Parthenon
 (defvar *model-to-camera-ms*)
 
+;;g_ in arcsynthesis code variable names, is a convention for global-variable naming
+;;hence replaced by ear-muffs
+(defparameter *sphere-cam-rel-pos* (glm:vec3 67.5 -46.0 150.0))
+
+(defun resolve-cam-position ()
+  (let ((temp-mat (make-instance 'glutil:matrix-stack)))
+    ;; dummy code
+    temp-mat
+    (glm:vec3 0.0 0.0 0.0)))
+
 (defun model-to-world-setup ()
+  (let ((cam-pos-vec3 (resolve-cam-position)))
+    (list cam-pos-vec3)
+    
+    (gl:uniform-matrix *world-to-camera-matrix-unif*  4
+		       (vector (glm:make-mat4 1.0))))
   (setf *model-to-camera-ms* (make-instance 'glutil:matrix-stack))
   (glutil:with-transform (*model-to-camera-ms*)
-    :translate 3.0 -5.0 -40.0
-    :scale 5.0 5.0 5.0
-    :rotate-z 75.0
-    ;;well this is too verbose?
-    (glutil::matrix-stack-top-to-shader-and-draw *model-to-camera-ms*
-						 *model-to-world-matrix-unif*
-						 *index-data*))
+      :translate 3.0 -5.0 -40.0
+      :scale 5.0 5.0 5.0
+      :rotate-z 75.0
+      ;;well this is too verbose?
+      (glutil::matrix-stack-top-to-shader-and-draw *model-to-camera-ms*
+						   *model-to-world-matrix-unif*
+						   *index-data*))
 
   )
 
@@ -212,6 +228,9 @@ the projection plane)"
   (%gl:use-program *program*)
   (gl:bind-vertex-array *vao*)
 
+  ;;NEXT-TODO: arcsynthesis implemntens HERE the world-to-camera matrix update
+  ;; hmm put into (model-to-world-setup) ?
+  
   (model-to-world-setup)
   (draw)
   (gl:bind-vertex-array 0)
