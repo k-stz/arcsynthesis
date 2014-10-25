@@ -2,6 +2,8 @@
 
 (in-package #:arc-7)
 
+;; TODO: this might solve the problem:
+;; (print (uiop/lisp-build:current-lisp-file-pathname)) ?
 (defvar *glsl-directory*
   (merge-pathnames #p "7-chapter/" (asdf/system:system-source-directory :arcsynthesis)))
 ;;todo: fix this output to slime-repl solution
@@ -195,16 +197,53 @@ the projection plane)"
 ;;g_ in arcsynthesis code variable names, is a convention for global-variable naming
 ;;hence replaced by ear-muffs
 (defparameter *sphere-cam-rel-pos* (glm:vec3 67.5 -46.0 150.0))
+(defparameter *cam-target* (glm:vec3 0.0 0.4 0.0))
 
 (defun resolve-cam-position ()
-  (let ((temp-mat (make-instance 'glutil:matrix-stack)))
-    ;; dummy code
-    temp-mat
-    (glm:vec3 0.0 0.0 0.0)))
+  (let* (;(temp-mat (make-instance 'glutil:matrix-stack)) ;; well it isn't used
+	 (phi (framework:deg-to-rad (aref *sphere-cam-rel-pos* 0)))
+	 (theta (framework:deg-to-rad (+ (aref *sphere-cam-rel-pos* 1)
+					 90.0)))
+	 ;; theta is single-float so SIN will return single-float
+	 (sin-theta (sin theta))
+	 (cos-theta (cos theta))
+	 (cos-phi (cos phi))
+	 (sin-phi (sin phi))
+
+	 (dir-to-camera (glm:vec3 (* sin-theta cos-phi)
+	 			  cos-theta
+	 			  (* sin-theta sin-phi)))
+	 )
+    (sb-cga:vec+ (sb-cga:vec* dir-to-camera (aref *sphere-cam-rel-pos* 2))
+       *cam-target*)
+))
+
+;; Note: c++ function signature: foo(const &var) means:
+;; &var we don't need a copy (reuse of resource;pass by reference)
+;; and 'const' ensures we will not mutate it (save pass by reference for user
+;; of this function). Also this probably helps the compiler.
+(defun calc-look-at-matrix (camera-pt look-pt up-pt)
+  ;; no type problems: sb-cga vectors are the same as glm:vec3
+  (let* ((look-dir (sb-cga:normalize (sb-cga:vec- look-pt camera-pt)))
+	 (up-dir (sb-cga:normalize up-pt))
+	 
+	 ;; TODO: is glm::cross = sb-cga:cross-product??
+	 (right-dir (sb-cga:normalize (sb-cga:cross-product look-dir up-dir)))
+	 (perp-up-dir (sb-cga:cross-product right-dir look-dir))
+
+	 (rot-mat (glm:make-mat4 1.0)))
+    ;;NEXT-TODO: ugh col-major or was it row-major, how is (aref ...) working it out
+    ;;maybe needs some functions in GLM, or maybe sb-cga will provide proper setter
+    ;;etc
+;;    (glm:set-mat4-col rot-mat 0 )
+    ;; dummy:
+    (list rot-mat perp-up-dir)
+    ))
 
 (defun model-to-world-setup ()
-  (let ((cam-pos-vec3 (resolve-cam-position)))
-    (list cam-pos-vec3)
+  (let ((cam-pos (resolve-cam-position))
+	(cam-matrix (make-instance 'glutil:matrix-stack )))
+    (list cam-pos cam-matrix)
     
     (gl:uniform-matrix *world-to-camera-matrix-unif*  4
 		       (vector (glm:make-mat4 1.0))))
@@ -228,7 +267,7 @@ the projection plane)"
   (%gl:use-program *program*)
   (gl:bind-vertex-array *vao*)
 
-  ;;NEXT-TODO: arcsynthesis implemntens HERE the world-to-camera matrix update
+  ;;NEXT-TODO: arcsynthesis implements HERE the world-to-camera matrix update
   ;; hmm put into (model-to-world-setup) ?
   
   (model-to-world-setup)
