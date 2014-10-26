@@ -24,7 +24,9 @@
    #:set-mat4
    #:set-mat4-row
    #:set-mat4-col
+   #:vec-
    #:vec3
+   #:vec4
    #:normalize
    #:vec4-from-vec3
    #:set-mat4-diagonal
@@ -46,6 +48,8 @@
   (:export
    #:matrix-stack
    #:with-transform
+   #:top-ms
+   #:set-mat4-ms
    )
   )
 

@@ -13,6 +13,11 @@
 ;; inefficient to force destruction of object or..??
 ;;(defun matrix-stack (&optional))
 
+(defgeneric set-matrix (matrix-stack mat4))
+(defmethod set-matrix ((ms matrix-stack) (mat4 simple-array))
+  "Set the current (top) matrix of the matrix-stack to the given mat4"
+  (setf (m-curr-mat ms) mat4))
+
 (defgeneric top-ms (matrix-stack))
 (defmethod top-ms ((ms matrix-stack))
   "Returns the current-matrix"

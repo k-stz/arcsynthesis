@@ -17,7 +17,7 @@ uniform mat4 camera_to_clip_matrix;
 
 void main()
 {
-  // TODO: rearrange sequence of multiplicatio?
+  // TODO: rearrange sequence of multiplications?
   //   vec4 cameraPos = world_to_camera_matrix * model_to_world_matrix * position;
   //simple test first
       vec4 temp = model_to_world_matrix * position;

@@ -222,6 +222,11 @@ the projection plane)"
 ;; &var we don't need a copy (reuse of resource;pass by reference)
 ;; and 'const' ensures we will not mutate it (save pass by reference for user
 ;; of this function). Also this probably helps the compiler.
+(defparameter tc (lambda () (calc-look-at-matrix
+			     (glm:vec3 0.0 0.0 1.0) ;be
+			     (glm:vec3 0.0)         ;look at
+			     (glm:vec3 0.0 1.0 0.0)))) ;up
+;; TODO: hm the resultin matrix from tc has many rounding problems
 (defun calc-look-at-matrix (camera-pt look-pt up-pt)
   ;; no type problems: sb-cga vectors are the same as glm:vec3
   (let* ((look-dir (sb-cga:normalize (sb-cga:vec- look-pt camera-pt)))
@@ -231,22 +236,37 @@ the projection plane)"
 	 (right-dir (sb-cga:normalize (sb-cga:cross-product look-dir up-dir)))
 	 (perp-up-dir (sb-cga:cross-product right-dir look-dir))
 
-	 (rot-mat (glm:make-mat4 1.0)))
-    ;;NEXT-TODO: ugh col-major or was it row-major, how is (aref ...) working it out
-    ;;maybe needs some functions in GLM, or maybe sb-cga will provide proper setter
-    ;;etc
-;;    (glm:set-mat4-col rot-mat 0 )
-    ;; dummy:
-    (list rot-mat perp-up-dir)
-    ))
+	 (rot-mat (glm:make-mat4 1.0))
+	 (trans-mat (glm:make-mat4 1.0)))
+    ;;TODO: this is the pinnacle of confusion, sb-cga:matrix is column major,
+    ;;hence my glm functions (set-mat4-col ..) are "wrong" yet they work the way
+    ;;opengl wants them... :I don't even know if i want to figure this out,
+    ;;already changed this 180-degree style once.
+    ;;Maybe experiment where uniform-matrix is used to pass matrix. (<- !)
+    ;;Anywhooo those are right:
+    ;;rotMat[0] = glm::vec4 (rightDir, 0.0f);
+    (glm:set-mat4-col rot-mat 0 (glm:vec4-from-vec3 right-dir 0.0))
+    (glm:set-mat4-col rot-mat 1 (glm:vec4-from-vec3 perp-up-dir 0.0))
+    (glm:set-mat4-col rot-mat 2 (glm:vec4-from-vec3 (glm:vec- look-dir) 0.0))
+
+    ;; TODO: intuitive understanding of usage
+    (setf rot-mat (sb-cga:transpose-matrix rot-mat))
+
+    (glm:set-mat4-col trans-mat 3 (glm:vec4-from-vec3 (glm:vec- camera-pt) 1.0))
+
+    ;;return rotmat * transmat;
+    (sb-cga:matrix* rot-mat trans-mat)))
 
 (defun model-to-world-setup ()
   (let ((cam-pos (resolve-cam-position))
 	(cam-matrix (make-instance 'glutil:matrix-stack )))
-    (list cam-pos cam-matrix)
+    (glutil:set-mat4-ms cam-matrix
+			(calc-look-at-matrix cam-pos *cam-target* (glm:vec3 0.0 1.0 0.0)))
+
+    ;;NEXT-TODO: how to implement "ProgramData" maybe with DEFSTRUCT, read up about it
     
     (gl:uniform-matrix *world-to-camera-matrix-unif*  4
-		       (vector (glm:make-mat4 1.0))))
+    		       (vector (glm:make-mat4 1.0))))
   (setf *model-to-camera-ms* (make-instance 'glutil:matrix-stack))
   (glutil:with-transform (*model-to-camera-ms*)
       :translate 3.0 -5.0 -40.0

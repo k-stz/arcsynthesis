@@ -9,7 +9,7 @@
 
 (in-package #:glm)
 
-;;first a simple solution
+;;first a simple solution TODO: just use sb-cga functions internally, like glm:vec-
 (defun make-mat4 (init-diagonal-values)
   (let ((idv init-diagonal-values))	;bad style?
     (make-array 16 :element-type 'single-float
@@ -29,6 +29,7 @@
 (defmacro set-mat4 (mat4 row coordinate set-value)
   ;; wow, this setf doesn't work unless mat4-place is a macro expanding
   ;; an AREF
+  "Set specific place in given matrix"
   `(setf (mat4-place ,mat4 ,row ,coordinate) ,set-value))
 
 
@@ -72,7 +73,12 @@
 	  (setf (mat4-place ,mat4 2 :z) (aref ,vec4 2)) 
 	  (setf (mat4-place ,mat4 3 :w) (aref ,vec4 3))))
 
-
+;; to facilitate pure vector negation 
+(defun vec- (a &optional b)
+  (if (null b)
+      ;; TODO: this doesn't look right, but compiler probably smart enough?
+      (sb-cga:vec- a (sb-cga:vec* a 2.0))
+      (sb-cga:vec- a b)))
 
 (defun vec3 (x &optional (y x) (z x))
   (let ((x (float x))
@@ -108,13 +114,14 @@
   )
 
 
-(defun vec4-from-vec3 (vec3)
+(defun vec4-from-vec3 (vec3 &optional w)
   "Fills vec4 with vec3 ending in w:1.0!"
   (let ((x (aref vec3 0))
 	(y (aref vec3 1))
-	(z (aref vec3 2)))
+	(z (aref vec3 2))
+	(w (if w w 1.0)))
     (make-array 4 :element-type 'single-float
-		:initial-contents (list x y z 1.0))))
+		:initial-contents (list x y z w))))
 
 ;;simple implementation
 

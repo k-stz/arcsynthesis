@@ -630,3 +630,22 @@ is nearly never problematic as it has an identity matrix in its first 3 rows/col
 and intuitively only offsets given points.
 But a scaling matrix, in contrast, would distort evena translation matrix, as it
 would change the 'w'-column due to its x, y, z non 1 values!
+
+--------------------------------------------------------------------------------
+Again on col-major, row-major arc/glsl syntax,
+  col-major, row-major only matter in memory representation (col-major: columns are
+  contiguous). Anywho the syntax used by arc is bit confusing: mat[3] reads the 3rd column
+  the rows however contain each a vectors x,y,z,w in order. So mat[..] will read a vector
+  of purely x,x,x,x or in the case of mat[3] w,w,w,w. This is infered by the implementation
+  of translation (sets mat[3] and scaling).
+  The confusing part is this:
+  mat[3].y reads the "2nd 'w'" because mat[3] = w,w,w,w e.g. (1.0 2.0 3.0 4.0) are all 'w' of
+  the corresponding vectors in a row. So mat[3].y reads 2.0       ^y even though all are 'w'
+  ... yeah, why? TODO: probably OpenGL GLSL syntax has the same property? Since GLM was supposed
+  to emulate its behaviour?
+Then the intuitive solution would be to put the vectors the way we care to represent them in columns?
+... yeah it is the better solution.. why is it not done that way:
+translate mat[0].w = x; mat[1].w = y .. ;; bad?
+scaling   mat[0].x = x; mat[1].y = y .. ;; good?
+
+--------------------------------------------------------------------------------
