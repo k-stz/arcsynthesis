@@ -20,7 +20,7 @@ void main () {
   vec4 cameraPos = position + vec4(offset.x, offset.y, 0.0, 0.0);
   vec4 clipPos;
 
-  // scale world without changing yet keepting eye projection plane constant |-1|
+  // scale world without changing yet keeping eye projection plane constant |-1|
   // also note cliPos.xy <- .xy does what you would intuitively expect and it does
   // it very efficiently. This is called "swizzle selection"
   clipPos.xy = cameraPos.xy * frustumScale;

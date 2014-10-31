@@ -148,6 +148,11 @@
 			:initial-contents
 			;; the matrix with its coefficients 'switches' and the perma 
 			;; "on-switch" the 'w' component
+			;; dang it! It's been wrong all this time!!! AHHAHAHAHAHA!
+			;; (list ...) reads elements sequentially in the array
+			;; hence row-major, no WYSIWYG! Hence when passing via
+			;; uniform-matrix, thank goodness, it provides the means
+			;; of transposing it.... which doesn't work?? TODOOOO
 			(list s 0.0 0.0 0.0                                     ;= x
 			      0.0 s 0.0 0.0                                     ;= y
 			      0.0 0.0 (/ (+ f n) (- n f)) (/ (* 2 f n) (- n f)) ;= z
@@ -155,9 +160,10 @@
 
       (setf offset-uniform (gl:get-uniform-location program "offset"))
       (%gl:use-program program)
-      ;; TODO: beware sb-cga
       ;; TODO: gl:uniform-matrix super useful! lookup implementation!
-      (gl:uniform-matrix matrix-uniform 4 (vector perspective-matrix) :false))
+      ;; wow. just wow. To disable transposing the matrix on input, which we don't want
+      ;; in this case, we have to pass a NIL, not a :false as is opengl wish.
+      (gl:uniform-matrix matrix-uniform 4 (vector perspective-matrix))) ;TRANSPOSE
     (loop for shader-object in shader-list
        do (%gl:delete-shader shader-object))))
 

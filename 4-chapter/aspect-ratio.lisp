@@ -162,7 +162,7 @@
       (%gl:use-program program)
       ;; TODO: beware sb-cga
       ;; TODO: gl:uniform-matrix super useful! lookup implementation!
-      (gl:uniform-matrix matrix-uniform 4 (vector perspective-matrix) :false))
+      (gl:uniform-matrix matrix-uniform 4 (vector perspective-matrix)))
     (loop for shader-object in shader-list
        do (%gl:delete-shader shader-object))))
 
@@ -208,7 +208,7 @@
    ;; than 1 hence cause a x-enlarging effect!!
    (setf (aref perspective-matrix 0) (/ frustum-scale (/ w h))) ;coerce to 'single-float?
    (setf (aref perspective-matrix 5) frustum-scale) 
-   (gl:uniform-matrix matrix-uniform 4 (vector perspective-matrix) :false)
+   (gl:uniform-matrix matrix-uniform 4 (vector perspective-matrix))
    (gl:viewport 0 0 w h)
    (format t "w: ~a h: ~a ~%" w h)
     ))

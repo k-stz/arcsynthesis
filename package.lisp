@@ -49,7 +49,7 @@
    #:matrix-stack
    #:with-transform
    #:top-ms
-   #:set-mat4-ms
+   #:set-matrix
    )
   )
 

@@ -57,7 +57,7 @@
       (%gl:use-program *program*)
       (format t "off-u:~a mat-u:~a" *offset-uniform* matrix-uniform)
 
-      (gl:uniform-matrix matrix-uniform 4 (vector perspective-matrix) :false))
+      (gl:uniform-matrix matrix-uniform 4 (vector perspective-matrix)))
     (loop for shader-object in shader-list
        do (%gl:delete-shader shader-object))))
 

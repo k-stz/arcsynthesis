@@ -67,8 +67,7 @@ the projection plane)"
       
       (%gl:use-program *program*)
       
-      (gl:uniform-matrix *camera-to-clip-matrix-unif*  4 (vector *camera-to-clip-matrix*)
-			 :false))
+      (gl:uniform-matrix *camera-to-clip-matrix-unif*  4 (vector *camera-to-clip-matrix*)))
     (%gl:use-program 0)
     (loop for shader-object in shader-list
        do (%gl:delete-shader shader-object))))
@@ -253,7 +252,7 @@ the projection plane)"
 	   ;; so much fun to code this =^.^=
 	   (glm:set-mat4-diagonal transform-matrix (glm:vec4-from-vec3 scale-vec3))
 	   (gl:uniform-matrix
-	    *model-to-camera-matrix-unif* 4 (vector transform-matrix))
+	    *model-to-camera-matrix-unif* 4 (vector transform-matrix) NIL)
 	   (%gl:draw-elements
 	    :triangles (gl::gl-array-size *index-data*) :unsigned-short 0))
 	 ))

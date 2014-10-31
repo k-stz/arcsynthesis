@@ -62,7 +62,7 @@ the projection plane)"
     (setf *camera-to-clip-matrix-unif*
 	  (gl:get-uniform-location *program* "camera_to_clip_matrix"))
 
-    (format t "a:~a b:~a" *model-to-camera-matrix-unif* *camera-to-clip-matrix-unif* )
+    (format t "mc:~a cc:~a" *model-to-camera-matrix-unif* *camera-to-clip-matrix-unif* )
     
     (let ((fz-near 1.0)
 	  (fz-far 45.0))
@@ -76,7 +76,7 @@ the projection plane)"
       
       (%gl:use-program *program*)
       (gl:uniform-matrix *camera-to-clip-matrix-unif*  4 (vector *camera-to-clip-matrix*)
-			 :false))
+			 NIL))
     (%gl:use-program 0)
     (loop for shader-object in shader-list
        do (%gl:delete-shader shader-object))))
@@ -255,7 +255,7 @@ the projection plane)"
 	   (glm:set-mat4-col
 	    transform-matrix 3 (glm:vec4-from-vec3 (elt *g-instance-list* i)))
 	   (gl:uniform-matrix
-	    *model-to-camera-matrix-unif* 4 (vector transform-matrix))
+	    *model-to-camera-matrix-unif* 4 (vector transform-matrix) NIL)
 	   (%gl:draw-elements
 	    :triangles (gl::gl-array-size *index-data*) :unsigned-short 0))
 	 ))

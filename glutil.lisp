@@ -52,6 +52,7 @@
 (defgeneric rotate-x (matrix-stack float))
 (defmethod rotate-x ((ms matrix-stack) (ang-deg float))
   (let ((translate-mat4 (glm:rotate-x ang-deg)))
+    ;; NEXT-TODO !!!!!!!!!!                 vvvvvv WRONG ORDER!?!?!?!??!?!?!
     (setf (m-curr-mat ms) (sb-cga:matrix* translate-mat4
 					  (m-curr-mat ms)))))
 

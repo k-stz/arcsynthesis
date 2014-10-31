@@ -21,6 +21,29 @@
 (defvar *world-to-camera-matrix-unif*)
 (defvar *camera-to-clip-matrix-unif*)
 
+;; containg opengl handles to program-objects and uniforms
+;; this implicitly creates: make-program-data, as well as getter/setter
+;; (program-data-the-program <instance>) :I it's to verbose
+;; c++ code suffices <instance>.the-program so writing is as a class might be a better
+;; idea? (the-program <instance>) ? Reader macro? this sounds like a very general question
+;; already answered
+;;;TODO: note from pjb stating to try ":conc-name" regarding a former rejection
+;;       to implement program-data using defstruct, as it creates verbose symbols
+(defclass program-data ()
+  ((the-program :accessor the-program)
+   (model-to-world-matrix-unif :accessor model-to-world-matrix-unif)
+   (world-to-camera-matrix-unif :accessor world-to-camera-matrix-unif)
+   (base-color-unif :accessor base-color-unif)))
+
+;; (defun load-program (str-vertex-shader str-fragment-shader)
+;;   (let (( shader-list (list)))
+;;     (push (arc:create-shader :))))
+
+;;program-data
+(defvar uniform-color)
+(defvar object-color)
+(defvar uniform-color-tint)
+
 
 (defun calc-frustum-scale (f-fov-deg)
   "the field-of-view (fov) is the angle between the forward direction and the direction
@@ -38,6 +61,9 @@ the projection plane)"
 (defparameter *frustum-scale* (calc-frustum-scale 25.0)) 
 
 (defun initialize-program ()
+  ;;TODO: remove redundancy due to program-data structure usage
+  ;(setf uniform-data)
+  
   (let ((shader-list (list)))
     ;;oh c'mon how to make it local
     (push (arc:create-shader
@@ -76,7 +102,7 @@ the projection plane)"
       (%gl:use-program *program*)
 
       (gl:uniform-matrix *camera-to-clip-matrix-unif* 4 (vector *camera-to-clip-matrix*)
-			 :false))
+			 :false)) ;looky, looky it is set to :false!
     (%gl:use-program 0)
     (loop for shader-object in shader-list
        do (%gl:delete-shader shader-object))))
@@ -133,8 +159,8 @@ the projection plane)"
   ;; index-array time:
   (setf *index-buffer-object* (first (gl:gen-buffers 1)))
 
-  (gl:bind-buffer :element-array-buffer  *index-buffer-object*)
-  (gl:buffer-data :element-array-buffer  :static-draw *index-data*)
+  (gl:bind-buffer :element-array-buffer *index-buffer-object*)
+  (gl:buffer-data :element-array-buffer :static-draw *index-data*)
   (gl:bind-buffer :element-array-buffer  0)  
   )
 
@@ -153,6 +179,9 @@ the projection plane)"
     (%gl:bind-buffer :element-array-buffer *index-buffer-object*)
 
     (%gl:bind-vertex-array 0)
+    ;; unbind element-array-buffer? since it already, received data, and
+    ;; the *vao* implicit setting is done?
+    
     )
   )
 
@@ -187,17 +216,18 @@ the projection plane)"
 			 (vec4 (glm:vec4-from-vec3 (glm:vec3 3.0 -5.0 -40.0))))
 		     (glm:set-mat4-col translate-mat4 3 vec4)
 		     translate-mat4))
-;;NEXT TODO: fully functional with-transform operating on matrix-stacks
-;;then scale that rectangle and work on the world to camera translation, then
+;;NEXT TODO:work on the world to camera translation, then
 ;;make the camera focus each corner on command, then move towards dynamic camera,
 ;;then really try to copy the tutorial implementing the trees with multiple shaders
 ;;and the Parthenon
-(defvar *model-to-camera-ms*)
+(defvar *model-to-world-ms*)
 
 ;;g_ in arcsynthesis code variable names, is a convention for global-variable naming
 ;;hence replaced by ear-muffs
 (defparameter *sphere-cam-rel-pos* (glm:vec3 67.5 -46.0 150.0))
+;(defparameter *cam-target* (glm:vec3 0.0 0.4 0.0))
 (defparameter *cam-target* (glm:vec3 0.0 0.4 0.0))
+
 
 (defun resolve-cam-position ()
   (let* (;(temp-mat (make-instance 'glutil:matrix-stack)) ;; well it isn't used
@@ -232,7 +262,10 @@ the projection plane)"
   (let* ((look-dir (sb-cga:normalize (sb-cga:vec- look-pt camera-pt)))
 	 (up-dir (sb-cga:normalize up-pt))
 	 
-	 ;; TODO: is glm::cross = sb-cga:cross-product??
+	 ;; cross-product returns the vector perpendicular to the plane formed
+	 ;; by two vectors:
+	 ;; (sb-cga:cross-product (glm:vec3 1.0 0.0 0.0) (glm:vec3 0.0 1.0 0.0))
+	 ;; ==> #(0.0 0.0 1.0)	 
 	 (right-dir (sb-cga:normalize (sb-cga:cross-product look-dir up-dir)))
 	 (perp-up-dir (sb-cga:cross-product right-dir look-dir))
 
@@ -243,8 +276,11 @@ the projection plane)"
     ;;opengl wants them... :I don't even know if i want to figure this out,
     ;;already changed this 180-degree style once.
     ;;Maybe experiment where uniform-matrix is used to pass matrix. (<- !)
+    ;; YEP: UNIFORM-MATRIX _TRANSPOSES_ THE INPUT MATRIX BY DEFAULT .... OMG
     ;;Anywhooo those are right:
     ;;rotMat[0] = glm::vec4 (rightDir, 0.0f);
+    ;;; TODO-NEXT: REWRITE GLM matrix permuting functions, and test if other tutorials
+    ;;; work
     (glm:set-mat4-col rot-mat 0 (glm:vec4-from-vec3 right-dir 0.0))
     (glm:set-mat4-col rot-mat 1 (glm:vec4-from-vec3 perp-up-dir 0.0))
     (glm:set-mat4-col rot-mat 2 (glm:vec4-from-vec3 (glm:vec- look-dir) 0.0))
@@ -257,25 +293,40 @@ the projection plane)"
     ;;return rotmat * transmat;
     (sb-cga:matrix* rot-mat trans-mat)))
 
+(defparameter *look-pt* (glm:vec3 0.0 0.0 0.0)) ; look at actual vertex of drawn object
+(defparameter *cam-pt* (glm:vec3 0.0 0.0 1.0))
+
 (defun model-to-world-setup ()
   (let ((cam-pos (resolve-cam-position))
-	(cam-matrix (make-instance 'glutil:matrix-stack )))
-    (glutil:set-mat4-ms cam-matrix
-			(calc-look-at-matrix cam-pos *cam-target* (glm:vec3 0.0 1.0 0.0)))
+	(cam-matrix (make-instance 'glutil:matrix-stack)))
+    (list cam-pos)
+    ;; (glutil:set-matrix cam-matrix
+    ;; 		     (calc-look-at-matrix cam-pos *cam-target* (glm:vec3 0.0 1.0 0.0)))
+    (setf *cam-pt* (resolve-cam-position))
+       (glutil:set-matrix cam-matrix
+			  (calc-look-at-matrix
+			   cam-pos
+			   *cam-target*         ;look at
+			   (glm:vec3 0.0 1.0 0.0)))
 
-    ;;NEXT-TODO: how to implement "ProgramData" maybe with DEFSTRUCT, read up about it
-    
-    (gl:uniform-matrix *world-to-camera-matrix-unif*  4
-    		       (vector (glm:make-mat4 1.0))))
-  (setf *model-to-camera-ms* (make-instance 'glutil:matrix-stack))
-  (glutil:with-transform (*model-to-camera-ms*)
+ (gl:uniform-matrix *world-to-camera-matrix-unif*  4
+ 		    (vector (glm:make-mat4 1.0)))
+ (gl:uniform-matrix *world-to-camera-matrix-unif*  4
+ 		    (vector (glutil:top-ms cam-matrix)) :false)
+ )
+
+  (setf *model-to-world-ms* (make-instance 'glutil:matrix-stack))
+  (glutil:with-transform (*model-to-world-ms*)
       :translate 3.0 -5.0 -40.0
       :scale 5.0 5.0 5.0
       :rotate-z 75.0
       ;;well this is too verbose?
-      (glutil::matrix-stack-top-to-shader-and-draw *model-to-camera-ms*
-						   *model-to-world-matrix-unif*
-						   *index-data*))
+      (glutil::matrix-stack-top-to-shader-and-draw *model-to-world-ms*
+      						   *model-to-world-matrix-unif*
+      						   *index-data*)
+      ;; (%gl:draw-elements :triangles (gl::gl-array-size *index-data*)
+      ;; 			 :unsigned-short 0)
+      )
 
   )
 
@@ -310,7 +361,15 @@ the projection plane)"
 	   ;; TODO: capture in macro
 	   ;; AdjBase()
 	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-e)
-	     (print "e key pressed!"))
+	     (decf (aref *look-pt* 0) 0.01))
+	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-a)
+	     (decf (aref *cam-pt* 0) 1.0))
+	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-d)
+	     (incf (aref *cam-pt* 0) 1.0))
+	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-w)
+	     (decf (aref *cam-pt* 2) 1.0))
+	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-s)
+	     (incf (aref *cam-pt* 2) 1.0))
 	   
 
 	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-escape)

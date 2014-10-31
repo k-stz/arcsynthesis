@@ -339,7 +339,7 @@ a proper W value for NDC's perspective devide.
 We therefore define a new space for positions which leisurely call: CAMERA SPACE
 
 projection plane,
-part of the Fristum, on which all the projection will take place. It extends in
+part of the Frustum, on which all the projection will take place. It extends in
 [-1,1] on x and y and is fixed at Z = -1. The projection will be from vertices
 from the -Z direction!! We assume the "eye" to be at the origin
 [0,0,0].
@@ -454,13 +454,13 @@ sizeof( foo[0] ) <= sizeof(void*))))
 --------------------------------------------------------------------------------
 hidden surface elimination,
 What anticipated all along: The rasterizer just draws triangles on the screen:
-The last thing drawn, regardless of if is geometrically behind inside an object,
+The last thing drawn, regardless of being  geometrically behind or inside an object,
 is always drawn on top!
 The rasterizer is "stupid" it knows nothing other than drawing triangles, but
 it does it very efficiently.
 
 depth sorting,
-the naive solution, like bubblesort it is the first solution that comes to mind
+the naive solution, like a bubblesort, is the first solution that comes to mind
 and it is inefficient and even incomplete(!):
 We sort objects from closest to farthest from the screen, then render them back
 to front, hence no overlapping of stuff actually in front can happen, right?
@@ -641,11 +641,34 @@ Again on col-major, row-major arc/glsl syntax,
   The confusing part is this:
   mat[3].y reads the "2nd 'w'" because mat[3] = w,w,w,w e.g. (1.0 2.0 3.0 4.0) are all 'w' of
   the corresponding vectors in a row. So mat[3].y reads 2.0       ^y even though all are 'w'
-  ... yeah, why? TODO: probably OpenGL GLSL syntax has the same property? Since GLM was supposed
-  to emulate its behaviour?
-Then the intuitive solution would be to put the vectors the way we care to represent them in columns?
-... yeah it is the better solution.. why is it not done that way:
-translate mat[0].w = x; mat[1].w = y .. ;; bad?
-scaling   mat[0].x = x; mat[1].y = y .. ;; good?
+  
+The core of the problem is that we want to read with our eyes row-major but in memory
+represent with col-major (as is what opengl wants)
+For example one very pernicious bug I've purged was the creation of a matrix.
+Simplification:
+2x2 matrix:
+(list 1 3
+      2 4)
+printing it like this the intent is to fool the reader into it being col-major, but
+lists are read in sequence hence the matrix siphoning these values will look like so:
+[1 2
+ 3 4]
+Where the printed representation is intuitive (columns are really vertical, rows horizontal).
+Therefore gl:uniform-matrix' defaulting to transposing its input can be quite handy when
+we want to read in row-major but have, because of opengl, deal in the background with
+col-major.
+hence we can pass the (list 1 3             (list 1 3 2 4) :I
+                            2 4) and transpose it upon setting the uniform.
 
+But when we build matrices with glm:matrix(...), which we explicitly set by
+functions labeled column/row etc. We don't want to transpose them on input.
+
+That's where the 2nd cl-opengl problem comes in:
+(gl:uniform-matrix *mat-unif* 4 (vector *mat4*) :false)
+still transposes the input matrix even though    ^^^^^ is :false!!!!
+Well... we can't use the GL_FALSE => :false approach on this one, it is just NIL!
+
+The right call to set the uniform unscathed of them rude transposifications is:
+(gl:uniform-matrix *mat-unif* 4 (vector *mat4*) NIL)
+			    
 --------------------------------------------------------------------------------

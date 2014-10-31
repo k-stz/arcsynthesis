@@ -30,9 +30,7 @@ the projection plane)"
 	(tan (/ f-fov-rad 2.0)))
      'single-float)))
 
-;; TODO: why does it look smaller than the screenshots?
-;; provisional solution to scale problem using 25.0
-(defparameter *frustum-scale* (calc-frustum-scale 25.0)) 
+(defparameter *frustum-scale* (calc-frustum-scale 45.0)) 
 
 (defun initialize-program ()
   (let ((shader-list (list)))
@@ -57,7 +55,7 @@ the projection plane)"
     (format t "a:~a b:~a" *model-to-camera-matrix-unif* *camera-to-clip-matrix-unif*)
 
     (let ((fz-near 1.0)
-	  (fz-far 45.0))
+	  (fz-far 100.0))
       (glm:set-mat4 *camera-to-clip-matrix* 0 :x *frustum-scale*)
       (glm:set-mat4 *camera-to-clip-matrix* 1 :y *frustum-scale*)
       (glm:set-mat4 *camera-to-clip-matrix* 2 :z (/ (+ fz-far fz-near)
@@ -66,9 +64,9 @@ the projection plane)"
       (glm:set-mat4 *camera-to-clip-matrix* 3 :z (/ (* 2 fz-far fz-near)
 						    (- fz-near fz-far)))
       (%gl:use-program *program*)
-      
+  
       (gl:uniform-matrix *camera-to-clip-matrix-unif*  4 (vector *camera-to-clip-matrix*)
-			 :false))
+			 NIL))
     (%gl:use-program 0)
     (loop for shader-object in shader-list
        do (%gl:delete-shader shader-object))))
@@ -293,31 +291,31 @@ the projection plane)"
 ;; it's "simple-array"
 (defgeneric translate (matrix-stack simple-array))
 (defmethod translate ((ms matrix-stack) (offset-vec3 simple-array))
-  "Trasnlate transform the current-matrix by given vec3"
+  "Translate transform the current-matrix by given vec3"
   (let ((translate-mat4 (glm:make-mat4 1.0))
 	(vec4 (glm:vec4-from-vec3 offset-vec3)))
     (glm:set-mat4-col translate-mat4 3 vec4)
-    (setf (m-curr-mat ms) (sb-cga:matrix* translate-mat4
-					  (m-curr-mat ms)))))
+    (setf (m-curr-mat ms) (sb-cga:matrix* (m-curr-mat ms)
+					  translate-mat4))))
 
 
 (defgeneric rotate-x (matrix-stack float))
 (defmethod rotate-x ((ms matrix-stack) (ang-deg float))
-  (let ((translate-mat4 (glm:rotate-x ang-deg)))
-    (setf (m-curr-mat ms) (sb-cga:matrix* translate-mat4
-					  (m-curr-mat ms)))))
-;;TODO: test
+  (let ((rotation-mat4 (glm:rotate-x ang-deg)))
+    (setf (m-curr-mat ms) (sb-cga:matrix* (m-curr-mat ms)
+					  rotation-mat4))))
+
 (defgeneric rotate-y (matrix-stack float))
 (defmethod rotate-y ((ms matrix-stack) (ang-deg float))
-  (let ((translate-mat4 (glm:rotate-y ang-deg)))
-    (setf (m-curr-mat ms) (sb-cga:matrix* translate-mat4
-					  (m-curr-mat ms)))))
+  (let ((rotation-mat4 (glm:rotate-y ang-deg)))
+    (setf (m-curr-mat ms) (sb-cga:matrix* (m-curr-mat ms)  
+					  rotation-mat4))))
 
 (defgeneric rotate-z (matrix-stack float))
 (defmethod rotate-z ((ms matrix-stack) (ang-deg float))
   (let ((translate-mat4 (glm:rotate-x ang-deg)))
-    (setf (m-curr-mat ms) (sb-cga:matrix* translate-mat4
-					  (m-curr-mat ms)))))
+    (setf (m-curr-mat ms) (sb-cga:matrix* (m-curr-mat ms)
+					  translate-mat4))))
 
 
 (defgeneric scale (matrix-stack simple-array))
@@ -325,8 +323,8 @@ the projection plane)"
   (let ((scale-mat4 (glm:make-mat4 1.0)))
     (glm:set-mat4-diagonal scale-mat4
   			   (glm:vec4-from-vec3 scale-vec))
-    (setf (m-curr-mat ms) (sb-cga:matrix* scale-mat4
-					  (m-curr-mat ms)))))
+    (setf (m-curr-mat ms) (sb-cga:matrix* (m-curr-mat ms)
+					  scale-mat4))))
 
 
 ;(defparameter *model-to-camera-stack* (make-instance 'matrix-stack))
@@ -334,7 +332,7 @@ the projection plane)"
 
 (defun matrix-stack-top-to-shader-and-draw (matrix-stack)
       (gl:uniform-matrix *model-to-camera-matrix-unif* 4
-			 (vector (top-ms matrix-stack)))
+			 (vector (top-ms matrix-stack)) NIL)
       (%gl:draw-elements :triangles (gl::gl-array-size *index-data*)
 			 :unsigned-short 0))
 
@@ -357,27 +355,27 @@ be nested to facilitate the hierarchical model."
 (defparameter *for-q-e-key* 0.0)
 
 (defparameter *pos-base* (glm:vec3 3.0 -5.0 -40.0))
-(defparameter *ang-base* 45.0) 
+(defparameter *ang-base* -45.0) 
 (defparameter *pos-base-left* (glm:vec3 2.0 0.0 0.0))
 (defparameter *pos-base-right* (glm:vec3 -2.0 0.0 0.0))
 (defparameter *scale-base-z* 3.0)
-(defparameter *ang-upper-arm* 33.75)
+(defparameter *ang-upper-arm* -33.75)
 (defparameter *size-upper-arm* 9.0)
 (defparameter *pos-lower-arm* (glm:vec3 0.0 0.0 8.0))
-(defparameter *ang-lower-arm* -146.25)
+(defparameter *ang-lower-arm* 146.25)
 (defparameter *len-lower-arm* 5.0)
 (defparameter *width-lower-arm* 1.5)
 (defparameter *pos-wrist* (glm:vec3 0.0 0.0 5.0))
 (defparameter *ang-wrist-roll* 0.0)
-(defparameter *ang-wrist-pitch* -67.5)
+(defparameter *ang-wrist-pitch* 67.5)
 (defparameter *len-wrist* 2.0)
 (defparameter *width-wrist* 2.0)
 (defparameter *pos-left-finger* (glm:vec3 1.0 0.0 1.0))
 (defparameter *pos-right-finger* (glm:vec3 -1.0 0.0 1.0))
-(defparameter *ang-finger-open* -180.0)
+(defparameter *ang-finger-open* 180.0)
 (defparameter *len-finger* 2.0)
 (defparameter *width-finger* 0.5)
-(defparameter *ang-lower-finger* -45.0)
+(defparameter *ang-lower-finger* 45.0)
 
 (defun draw ()
   ;;OOOOH we really need to "create" a new stack on every iteration, don't
@@ -387,29 +385,23 @@ be nested to facilitate the hierarchical model."
   (translate *model-to-camera-stack* *pos-base*)
   (rotate-y *model-to-camera-stack* *ang-base*)
 
-  ;; The lesson here is that SCALE is a distorting function and transform containing
-  ;; it should bear no children! While, TRANSLATE and ROTATE-* are additive in and
-  ;; hence intuitive in their behaviour.
-  ;; But having all points in different quadrant resolved distortional problems.
-  ;; TODO: how then did I manage to create those diamond shaped prism?
-  ;;       should only occur when a single axis is moved instead of two at the same
-  ;;       time (as in emulating a rotation along an arbitrary axis)!?
-
   ;; Draw left base
   (with-transform () *model-to-camera-stack*
     (translate *model-to-camera-stack* *pos-base-left*)
-    (scale *model-to-camera-stack* (glm:vec3 1.0 1.0 *scale-base-z*)))
+    (scale *model-to-camera-stack* (glm:vec3 1.0 1.0 *scale-base-z*))
+    )
+
   ;; Draw right base
   (with-transform () *model-to-camera-stack*
     (translate *model-to-camera-stack* *pos-base-right*)
     (scale *model-to-camera-stack* (glm:vec3 1.0 1.0 *scale-base-z*)))
 
-  ;; Draw main arm; DrawUpperArm(modelToCameraStack);
+  ;;Draw main arm; DrawUpperArm(modelToCameraStack);
   (with-transform () *model-to-camera-stack*
     (rotate-x *model-to-camera-stack* *ang-upper-arm*)
     (with-transform () *model-to-camera-stack*
       (translate *model-to-camera-stack*
-		 (glm:vec3 0.0 0.0 (- (/ *size-upper-arm* 2.0) 1.0)))
+  		 (glm:vec3 0.0 0.0 (- (/ *size-upper-arm* 2.0) 1.0)))
       (scale *model-to-camera-stack* (glm:vec3 1.0 1.0 (/ *size-upper-arm* 2.0))))
 
     ;; DrawLowerArm(...)
@@ -418,64 +410,64 @@ be nested to facilitate the hierarchical model."
       (rotate-x *model-to-camera-stack* *ang-lower-arm* )
 
       (with-transform () *model-to-camera-stack*
-	(translate *model-to-camera-stack* (glm:vec3 0.0 0.0 (/ *len-lower-arm* 2.0)))
-	(scale *model-to-camera-stack* (glm:vec3 (/ *width-lower-arm* 2.0)
-						 (/ *width-lower-arm* 2.0)
-						 (/ *len-lower-arm* 2.0))))
+  	(translate *model-to-camera-stack* (glm:vec3 0.0 0.0 (/ *len-lower-arm* 2.0)))
+  	(scale *model-to-camera-stack* (glm:vec3 (/ *width-lower-arm* 2.0)
+  						 (/ *width-lower-arm* 2.0)
+  						 (/ *len-lower-arm* 2.0))))
       ;; DrawWrist(...)
       (with-transform (:drawp nil) *model-to-camera-stack*
-	  (translate *model-to-camera-stack* *pos-wrist*)
-	  (rotate-z *model-to-camera-stack* *ang-wrist-roll*)
-	  (rotate-x *model-to-camera-stack* *ang-wrist-pitch*)
+  	  (translate *model-to-camera-stack* *pos-wrist*)
+  	  (rotate-z *model-to-camera-stack* *ang-wrist-roll*)
+  	  (rotate-x *model-to-camera-stack* *ang-wrist-pitch*)
 
-	  (with-transform () *model-to-camera-stack*
-	    (scale *model-to-camera-stack* (glm:vec3 (/ *width-wrist* 2.0)
-	  					     (/ *width-wrist* 2.0)
-	  					     (/ *len-wrist* 2.0))))
-	  ;; DrawFingers(...)
-	  (with-transform (:drawp nil) *model-to-camera-stack*
-	    ;; Draw left finger
-	    (translate *model-to-camera-stack* *pos-left-finger*)
-	    (rotate-y *model-to-camera-stack* *ang-finger-open*)
+  	  (with-transform () *model-to-camera-stack*
+  	    (scale *model-to-camera-stack* (glm:vec3 (/ *width-wrist* 2.0)
+  	  					     (/ *width-wrist* 2.0)
+  	  					     (/ *len-wrist* 2.0))))
+  	  ;; DrawFingers(...)
+  	  (with-transform (:drawp nil) *model-to-camera-stack*
+  	    ;; Draw left finger
+  	    (translate *model-to-camera-stack* *pos-left-finger*)
+  	    (rotate-y *model-to-camera-stack* *ang-finger-open*)
 
-	    (with-transform () *model-to-camera-stack*
-	      (translate *model-to-camera-stack* (glm:vec3 0.0 0.0 (/ *len-finger* 2.0)))
-	      (scale *model-to-camera-stack* (glm:vec3 (/ *width-finger* 2.0)
-						       (/ *width-finger* 2.0)
-						       (/ *len-finger* 2.0))))
-	    ;;Draw left lower finger
-	    (with-transform (:drawp nil) *model-to-camera-stack*
-	      (translate *model-to-camera-stack* (glm:vec3 0.0 0.0 *len-finger*))
-	      (rotate-y *model-to-camera-stack* (- *ang-lower-finger*))
-	      (with-transform () *model-to-camera-stack*
-		(translate *model-to-camera-stack* (glm:vec3 0.0 0.0
-							     (/ *len-finger* 2.0)))
-		(scale *model-to-camera-stack* (glm:vec3 (/ *width-finger* 2.0)
-							 (/ *width-finger* 2.0)
-							 (/ *len-finger* 2.0))))))
-	  ;;/ Draw left finger
-	  
+  	    (with-transform () *model-to-camera-stack*
+  	      (translate *model-to-camera-stack* (glm:vec3 0.0 0.0 (/ *len-finger* 2.0)))
+  	      (scale *model-to-camera-stack* (glm:vec3 (/ *width-finger* 2.0)
+  						       (/ *width-finger* 2.0)
+  						       (/ *len-finger* 2.0))))
+  	    ;;Draw left lower finger
+  	    (with-transform (:drawp nil) *model-to-camera-stack*
+  	      (translate *model-to-camera-stack* (glm:vec3 0.0 0.0 *len-finger*))
+  	      (rotate-y *model-to-camera-stack* (- *ang-lower-finger*))
+  	      (with-transform () *model-to-camera-stack*
+  		(translate *model-to-camera-stack* (glm:vec3 0.0 0.0
+  							     (/ *len-finger* 2.0)))
+  		(scale *model-to-camera-stack* (glm:vec3 (/ *width-finger* 2.0)
+  							 (/ *width-finger* 2.0)
+  							 (/ *len-finger* 2.0))))))
+  	  ;;/ Draw left finger
+
           ;; Draw right finger
-	  (with-transform (:drawp nil) *model-to-camera-stack*
-	    (translate *model-to-camera-stack* *pos-right-finger*)
-	    (rotate-y *model-to-camera-stack* (- *ang-finger-open*))
-	    (with-transform () *model-to-camera-stack*
-	      (translate *model-to-camera-stack* (glm:vec3 0.0 0.0 (/ *len-finger* 2.0)))
-	      (scale *model-to-camera-stack* (glm:vec3 (/ *width-finger* 2.0)
-						       (/ *width-finger* 2.0)
-						       (/ *len-finger* 2.0))))
-	    ;; Draw right lower finger
-	    (with-transform (:drawp nil) *model-to-camera-stack*
-	      (translate *model-to-camera-stack* (glm:vec3 0.0 0.0 *len-finger*))
-	      (rotate-y *model-to-camera-stack* *ang-lower-finger*)
-	      (with-transform () *model-to-camera-stack*
-		(translate *model-to-camera-stack* (glm:vec3 0.0 0.0 (/ *len-finger* 2.0)))
-		(scale *model-to-camera-stack* (glm:vec3 (/ *width-finger* 2.0)
-							 (/ *width-finger* 2.0)
-							 (/ *len-finger* 2.0)))))
-	    );;/Draw right finger
-	  
-	  );;/DrawWrist
+  	  (with-transform (:drawp nil) *model-to-camera-stack*
+  	    (translate *model-to-camera-stack* *pos-right-finger*)
+  	    (rotate-y *model-to-camera-stack* (- *ang-finger-open*))
+  	    (with-transform () *model-to-camera-stack*
+  	      (translate *model-to-camera-stack* (glm:vec3 0.0 0.0 (/ *len-finger* 2.0)))
+  	      (scale *model-to-camera-stack* (glm:vec3 (/ *width-finger* 2.0)
+  						       (/ *width-finger* 2.0)
+  						       (/ *len-finger* 2.0))))
+  	    ;; Draw right lower finger
+  	    (with-transform (:drawp nil) *model-to-camera-stack*
+  	      (translate *model-to-camera-stack* (glm:vec3 0.0 0.0 *len-finger*))
+  	      (rotate-y *model-to-camera-stack* *ang-lower-finger*)
+  	      (with-transform () *model-to-camera-stack*
+  		(translate *model-to-camera-stack* (glm:vec3 0.0 0.0 (/ *len-finger* 2.0)))
+  		(scale *model-to-camera-stack* (glm:vec3 (/ *width-finger* 2.0)
+  							 (/ *width-finger* 2.0)
+  							 (/ *len-finger* 2.0)))))
+  	    );;/Draw right finger
+
+  	  );;/DrawWrist
       ) ;;/DrawLowerArm
     ) ;;/Draw main arm
   
@@ -490,6 +482,7 @@ be nested to facilitate the hierarchical model."
   (gl:bind-vertex-array *vao*)
 
   (draw)
+
   (gl:bind-vertex-array 0)
   (gl:use-program *program*)
   ;;swap buffers: in main loop 
@@ -534,24 +527,24 @@ be nested to facilitate the hierarchical model."
 	     (setf *ang-base* (mod *ang-base* 360.0)))
 	   ;; AdjUpperArm()
 	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-w)
-	     (incf *ang-upper-arm* standard-angle-increment)
-	     (setf *ang-upper-arm* (clamp *ang-upper-arm* 0.0 90.0)))
+	     (incf *ang-upper-arm* (- standard-angle-increment))
+	     (setf *ang-upper-arm* (clamp *ang-upper-arm* -90.0 0.0)))
 	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-s)
-	     (decf *ang-upper-arm* standard-angle-increment)
-	     (setf *ang-upper-arm* (clamp *ang-upper-arm* 0.0 90.0)))
+	     (incf *ang-upper-arm* standard-angle-increment)
+	     (setf *ang-upper-arm* (clamp *ang-upper-arm* -90.0 0.0)))
 	   ;; AdjLowerArm()
 	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-r)
-	     (incf *ang-lower-arm* standard-angle-increment)
-	     (setf *ang-lower-arm* (clamp *ang-lower-arm* -146.25 0.0)))
+	     (incf *ang-lower-arm* (- standard-angle-increment))
+	     (setf *ang-lower-arm* (clamp *ang-lower-arm* 0.0 146.25)))
 	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-f)
-	     (decf *ang-lower-arm* standard-angle-increment)
-	     (setf *ang-lower-arm* (clamp *ang-lower-arm* -146.25 0.0)))
+	     (incf *ang-lower-arm* standard-angle-increment)
+	     (setf *ang-lower-arm* (clamp *ang-lower-arm* 0.0 146.25)))
 	   ;; AdjWristPitch()
 	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-t)
-	     (incf *ang-wrist-pitch* standard-angle-increment)
+	     (incf *ang-wrist-pitch* (- standard-angle-increment))
 	     (setf *ang-wrist-pitch* (clamp *ang-wrist-pitch* 0.0 90.0)))
 	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-g)
-	     (decf *ang-wrist-pitch* standard-angle-increment)
+	     (incf *ang-wrist-pitch* standard-angle-increment)
 	     (setf *ang-wrist-pitch* (clamp *ang-wrist-pitch* 0.0 90.0)))
 	   ;; AdjWristRoll()
 	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-z)
@@ -563,10 +556,10 @@ be nested to facilitate the hierarchical model."
 	   ;; AdjFingerOpen()
 	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-q)
 	     (incf *ang-finger-open* standard-angle-increment)
-	     (setf *ang-finger-open* (clamp *ang-finger-open* 180.0 360.0)))
+	     (setf *ang-finger-open* (clamp *ang-finger-open* 9.0 180.0)))
 	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-e)
-	     (decf *ang-finger-open* standard-angle-increment)
-	     (setf *ang-finger-open* (clamp *ang-finger-open* 180.0 360.0)))
+	     (incf *ang-finger-open* (- standard-angle-increment))
+	     (setf *ang-finger-open* (clamp *ang-finger-open* 9.0 180.0)))
 
 	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-escape)
 	     (sdl2:push-event :quit)))

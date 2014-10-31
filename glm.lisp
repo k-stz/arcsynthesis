@@ -24,13 +24,18 @@
 (defmacro mat4-place (mat4 row coordinate)
   (let ((c (ecase coordinate
 	    (:x 0) (:y 1) (:z 2) (:w 3))))
-    `(aref ,mat4 ,(+ (* 4 row)  c))))
+    `(aref ,mat4 ,(+ row (* 4 c)))))
 
-(defmacro set-mat4 (mat4 row coordinate set-value)
+(defmacro mat4-col-place (mat4 col coordinate)
+  (let ((c (ecase coordinate
+	     (:x 0) (:y 1) (:z 2) (:w 3))))
+    `(aref ,mat4 ,(+ c (* col 4)))))
+
+(defmacro set-mat4 (mat4 col col-coordinate set-value)
   ;; wow, this setf doesn't work unless mat4-place is a macro expanding
   ;; an AREF
   "Set specific place in given matrix"
-  `(setf (mat4-place ,mat4 ,row ,coordinate) ,set-value))
+  `(setf (mat4-col-place ,mat4 ,col ,col-coordinate) ,set-value))
 
 
 ;; this can't work as a macro, because a macro can't have runtime
@@ -48,6 +53,8 @@
 ;; 	 `(setf (mat4-place ,mat4 j ,key) vector-element)
 ;; 	 )))
 
+;; noooooo, this is alllll wrooooooong. gl:uniform-matrix transposes its input matrix by default,
+;; hence I've tested this function based on the visual representation being right -.-
 (defmacro set-mat4-col (mat4 col vec4)
   (let ((key (ecase col
 	       (0 :x) (1 :y) (2 :z) (3 :w))))
@@ -72,6 +79,9 @@
 	  (setf (mat4-place ,mat4 1 :y) (aref ,vec4 1)) 
 	  (setf (mat4-place ,mat4 2 :z) (aref ,vec4 2)) 
 	  (setf (mat4-place ,mat4 3 :w) (aref ,vec4 3))))
+;; interesting having the progn of the above return mat4, would just expand into an
+;; expression returning a "copy" of mat4 as if premutations haven't occured
+
 
 ;; to facilitate pure vector negation 
 (defun vec- (a &optional b)
@@ -125,21 +135,21 @@
 
 ;;simple implementation
 
-(defun col-vec4-from-mat4 (col mat4)
-  (let ((x col)
-	(y (+ col 4))
-	(z (+ col (* 4 2)))
-	(w (+ col (* 4 3))))
+(defun row-vec4-from-mat4 (row mat4)
+  (let ((x row)
+	(y (+ row 4))
+	(z (+ row (* 4 2)))
+	(w (+ row (* 4 3))))
     (vec4 (aref mat4 x )
 	  (aref mat4 y )
 	  (aref mat4 z )
 	  (aref mat4 w ))))
 
-(defmacro switch-mat4-col (col-1 col-2 mat4)
-  `(let ((c1 (col-vec4-from-mat4 ,col-1 ,mat4))
-	(c2 (col-vec4-from-mat4 ,col-2 ,mat4)))
-    (set-mat4-col ,mat4 ,col-1 c2)
-    (set-mat4-col ,mat4 ,col-2 c1)
+(defmacro switch-mat4-row (row-1 row-2 mat4)
+  `(let ((c1 (row-vec4-from-mat4 ,row-1 ,mat4))
+	(c2 (row-vec4-from-mat4 ,row-2 ,mat4)))
+    (set-mat4-row ,mat4 ,row-1 c2)
+    (set-mat4-row ,mat4 ,row-2 c1)
     ))
 
 (defun make-mat3 (init-diagonal-values)

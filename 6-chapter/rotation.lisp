@@ -29,9 +29,11 @@ the projection plane)"
 	(tan (/ f-fov-rad 2.0)))
      'single-float)))
 
-;; TODO: why does it look smaller than the screenshots?
+;; DONE: why does it look smaller than the screenshots?
 ;; provisional solution to scale problem using 25.0
-(defparameter *frustum-scale* (calc-frustum-scale 25.0)) 
+;; => cam-matrix was wrong ALLLL ALONG, (essentially: row/col-major issue, just transposing
+;;    it solved it!)
+(defparameter *frustum-scale* (calc-frustum-scale 45.0)) 
 
 (defun initialize-program ()
   (let ((shader-list (list)))
@@ -67,7 +69,7 @@ the projection plane)"
       (%gl:use-program *program*)
       
       (gl:uniform-matrix *camera-to-clip-matrix-unif*  4 (vector *camera-to-clip-matrix*)
-			 :false))
+			 NIL))
     (%gl:use-program 0)
     (loop for shader-object in shader-list
        do (%gl:delete-shader shader-object))))
@@ -322,7 +324,7 @@ the projection plane)"
 	    transform-matrix 3 (glm:vec4-from-vec3 translation-vec3))
 
 	   (gl:uniform-matrix
-	    *model-to-camera-matrix-unif* 4 (vector transform-matrix))
+	    *model-to-camera-matrix-unif* 4 (vector transform-matrix) NIL)
 	   (%gl:draw-elements
 	    :triangles (gl::gl-array-size *index-data*) :unsigned-short 0))
 	 ))
