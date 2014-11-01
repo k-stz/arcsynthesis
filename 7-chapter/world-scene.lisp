@@ -102,13 +102,13 @@ the projection plane)"
       (%gl:use-program *program*)
 
       (gl:uniform-matrix *camera-to-clip-matrix-unif* 4 (vector *camera-to-clip-matrix*)
-			 :false)) ;looky, looky it is set to :false!
+			 NIL))
     (%gl:use-program 0)
     (loop for shader-object in shader-list
        do (%gl:delete-shader shader-object))))
 
 
-(defparameter *number-of-vertices* 4) ;; TODO: maybe 3, if counting from 0
+(defparameter *number-of-vertices* 4)
 
 (defparameter +red-color+   '(1.0 0.0 0.0 1.0))
 (defparameter +green-color+ '(0.0 1.0 0.0 1.0))
@@ -124,10 +124,10 @@ the projection plane)"
 `#(
 
 	;; vertex positions
-	+1.0  +1.0  +1.0 
-	+1.0  -1.0  +1.0 
-	-1.0  -1.0  +1.0 
-	-1.0  +1.0  +1.0 
+	+1.0  +1.0  +0.0 
+	+1.0  -1.0  +0.0 
+	-1.0  -1.0  +0.0 
+	-1.0  +1.0  +0.0 
 
         ;; vertex colors
 	,@+green-color+
@@ -309,21 +309,29 @@ the projection plane)"
 			   *cam-target*         ;look at
 			   (glm:vec3 0.0 1.0 0.0)))
 
+ ;; (gl:uniform-matrix *model-to-world-matrix-unif*  4
+ ;; 		    (vector (glm:make-mat4 1.0)))
  (gl:uniform-matrix *world-to-camera-matrix-unif*  4
- 		    (vector (glm:make-mat4 1.0)))
- (gl:uniform-matrix *world-to-camera-matrix-unif*  4
- 		    (vector (glutil:top-ms cam-matrix)) :false)
+ 		    (vector (glm:make-mat4 1.0)) NIL)
  )
 
   (setf *model-to-world-ms* (make-instance 'glutil:matrix-stack))
   (glutil:with-transform (*model-to-world-ms*)
       :translate 3.0 -5.0 -40.0
-      :scale 5.0 5.0 5.0
-      :rotate-z 75.0
+      :translate 1.0 1.0 0.0
+      :rotate-z 35.0
+      :scale 2.0 1.0 1.0
+
+
+
+
       ;;well this is too verbose?
-      (glutil::matrix-stack-top-to-shader-and-draw *model-to-world-ms*
-      						   *model-to-world-matrix-unif*
-      						   *index-data*)
+
+
+
+      (glutil::draw-matrix-stack *model-to-world-ms*
+				 *model-to-world-matrix-unif*
+				 *index-data*)
       ;; (%gl:draw-elements :triangles (gl::gl-array-size *index-data*)
       ;; 			 :unsigned-short 0)
       )

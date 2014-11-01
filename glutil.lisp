@@ -51,22 +51,21 @@
 
 (defgeneric rotate-x (matrix-stack float))
 (defmethod rotate-x ((ms matrix-stack) (ang-deg float))
-  (let ((translate-mat4 (glm:rotate-x ang-deg)))
-    ;; NEXT-TODO !!!!!!!!!!                 vvvvvv WRONG ORDER!?!?!?!??!?!?!
-    (setf (m-curr-mat ms) (sb-cga:matrix* translate-mat4
-					  (m-curr-mat ms)))))
+  (let ((transform-mat4 (glm:rotate-x ang-deg)))
+    (setf (m-curr-mat ms) (sb-cga:matrix* (m-curr-mat ms)
+					  transform-mat4))))
 
 (defgeneric rotate-y (matrix-stack float))
 (defmethod rotate-y ((ms matrix-stack) (ang-deg float))
-  (let ((translate-mat4 (glm:rotate-y ang-deg)))
-    (setf (m-curr-mat ms) (sb-cga:matrix* translate-mat4
-					  (m-curr-mat ms)))))
+  (let ((transform-mat4 (glm:rotate-y ang-deg)))
+    (setf (m-curr-mat ms) (sb-cga:matrix* (m-curr-mat ms)
+					  transform-mat4))))
 
 (defgeneric rotate-z (matrix-stack float))
 (defmethod rotate-z ((ms matrix-stack) (ang-deg float))
-  (let ((translate-mat4 (glm:rotate-z ang-deg)))
-    (setf (m-curr-mat ms) (sb-cga:matrix* translate-mat4
-					  (m-curr-mat ms)))))
+  (let ((transform-mat4 (glm:rotate-z ang-deg)))
+    (setf (m-curr-mat ms) (sb-cga:matrix* (m-curr-mat ms)
+					  transform-mat4))))
 
 
 (defgeneric scale (matrix-stack simple-array))
@@ -74,12 +73,12 @@
   (let ((scale-mat4 (glm:make-mat4 1.0)))
     (glm:set-mat4-diagonal scale-mat4
   			   (glm:vec4-from-vec3 scale-vec))
-    (setf (m-curr-mat ms) (sb-cga:matrix* scale-mat4
-					  (m-curr-mat ms)))))
+    (setf (m-curr-mat ms) (sb-cga:matrix* (m-curr-mat ms)
+					  scale-mat4))))
 
-(defun matrix-stack-top-to-shader-and-draw (matrix-stack mat-unif index-data)
+(defun draw-matrix-stack (matrix-stack mat-unif index-data)
       (gl:uniform-matrix mat-unif 4
-			 (vector (top-ms matrix-stack)))
+			 (vector (top-ms matrix-stack)) NIL)
       (%gl:draw-elements :triangles (gl::gl-array-size index-data)
 			 :unsigned-short 0))
 
