@@ -12,7 +12,7 @@ smooth out vec4 theColor;
 
 uniform mat4 model_to_world_matrix;
 uniform mat4 world_to_camera_matrix; // for now, identity
-uniform mat4 camera_to_clip_matrix; // already set in (initialize-program)
+uniform mat4 camera_to_clip_matrix;
 
 
 void main()

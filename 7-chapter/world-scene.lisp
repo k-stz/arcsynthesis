@@ -21,23 +21,13 @@
 (defvar *world-to-camera-matrix-unif*)
 (defvar *camera-to-clip-matrix-unif*)
 
-;; containg opengl handles to program-objects and uniforms
-;; this implicitly creates: make-program-data, as well as getter/setter
-;; (program-data-the-program <instance>) :I it's to verbose
-;; c++ code suffices <instance>.the-program so writing is as a class might be a better
-;; idea? (the-program <instance>) ? Reader macro? this sounds like a very general question
-;; already answered
-;;;TODO: note from pjb stating to try ":conc-name" regarding a former rejection
+;;TODO: note from pjb stating to try ":conc-name" regarding a former rejection
 ;;       to implement program-data using defstruct, as it creates verbose symbols
 (defclass program-data ()
   ((the-program :accessor the-program)
    (model-to-world-matrix-unif :accessor model-to-world-matrix-unif)
    (world-to-camera-matrix-unif :accessor world-to-camera-matrix-unif)
    (base-color-unif :accessor base-color-unif)))
-
-;; (defun load-program (str-vertex-shader str-fragment-shader)
-;;   (let (( shader-list (list)))
-;;     (push (arc:create-shader :))))
 
 ;;program-data
 (defvar uniform-color)
@@ -56,14 +46,12 @@ the projection plane)"
 	(tan (/ f-fov-rad 2.0)))
      'single-float)))
 
-;; TODO: why does it look smaller than the screenshots?
-;; provisional solution to scale problem using 25.0
-(defparameter *frustum-scale* (calc-frustum-scale 25.0)) 
+
+(defparameter *frustum-scale* (calc-frustum-scale 45.0)) 
 
 (defun initialize-program ()
   ;;TODO: remove redundancy due to program-data structure usage
   ;(setf uniform-data)
-  
   (let ((shader-list (list)))
     ;;oh c'mon how to make it local
     (push (arc:create-shader
@@ -91,18 +79,18 @@ the projection plane)"
 	    *camera-to-clip-matrix-unif*)
 
     (let ((fz-near 1.0)
-	  (fz-far 45.0))
+    	  (fz-far 1000.0))
       (glm:set-mat4 *camera-to-clip-matrix* 0 :x *frustum-scale*)
       (glm:set-mat4 *camera-to-clip-matrix* 1 :y *frustum-scale*)
       (glm:set-mat4 *camera-to-clip-matrix* 2 :z (/ (+ fz-far fz-near)
-						    (- fz-near fz-far)))
+    						    (- fz-near fz-far)))
       (glm:set-mat4 *camera-to-clip-matrix* 2 :w -1.0)
       (glm:set-mat4 *camera-to-clip-matrix* 3 :z (/ (* 2 fz-far fz-near)
-						    (- fz-near fz-far)))
+    						    (- fz-near fz-far)))
       (%gl:use-program *program*)
 
       (gl:uniform-matrix *camera-to-clip-matrix-unif* 4 (vector *camera-to-clip-matrix*)
-			 NIL))
+    			 NIL))
     (%gl:use-program 0)
     (loop for shader-object in shader-list
        do (%gl:delete-shader shader-object))))
@@ -124,11 +112,17 @@ the projection plane)"
 `#(
 
 	;; vertex positions
-	+1.0  +1.0  +0.0 
-	+1.0  -1.0  +0.0 
-	-1.0  -1.0  +0.0 
-	-1.0  +1.0  +0.0 
+	;; +1.0  +1.0  +0.0 
+	;; +1.0  -1.0  +0.0 
+	;; -1.0  -1.0  +0.0 
+	;; -1.0  +1.0  +0.0 
 
+   ;; from arc's unit-plane.xml
+     0.5  0.0 -0.5
+     0.5  0.0  0.5
+    -0.5  0.0  0.5
+    -0.5  0.0 -0.5
+        
         ;; vertex colors
 	,@+green-color+
 	,@+green-color+
@@ -136,14 +130,21 @@ the projection plane)"
 	,@+green-color+
   )))
 
+
+;; IMPORTANT: in arc's code, index alternate every three indices between points and
+;;            colors!!!!!!
 (defparameter *index-data*
   (arc::create-gl-array-of-unsigned-short-from-vector
    #(
-	0  1  2 
-        0  2  3
-
-	4  5  6 
-	6  7  4 
+     0 1 2
+     2 3 0
+     0 2 1
+     2 0 3
+     
+	;; 0  1  2 
+        ;; 0  2  3
+        ;; 4  5  6 
+        ;; 6  7  4 
      )))
 
 (defvar *vertex-buffer-object*)
@@ -193,9 +194,9 @@ the projection plane)"
 	(initialize-vertex-buffer)
 	(initialize-vertex-array-objects)
   
-	(gl:enable :cull-face)
-	(%gl:cull-face :back)
-	(%gl:front-face :cw) ;; TODO maybe bad order vertices, need to change; test here
+	;; (gl:enable :cull-face)
+	;; (%gl:cull-face :back)
+	;; (%gl:front-face :cw) ;; TODO maybe bad order vertices, need to change; test here
 
 	(gl:viewport 0 0 500 500)
 
@@ -207,8 +208,8 @@ the projection plane)"
 
 (defun draw ()
 
-  (%gl:draw-elements :triangles (gl::gl-array-size *index-data*)
-		    :unsigned-short 0)
+  ;; (%gl:draw-elements :triangles (gl::gl-array-size *index-data*)
+  ;; 		    :unsigned-short 0)
   )
 
 ;; makeshift solution
@@ -260,6 +261,7 @@ the projection plane)"
 (defun calc-look-at-matrix (camera-pt look-pt up-pt)
   ;; no type problems: sb-cga vectors are the same as glm:vec3
   (let* ((look-dir (sb-cga:normalize (sb-cga:vec- look-pt camera-pt)))
+	 ;; since we only want a direction, we naturally normalize the vector
 	 (up-dir (sb-cga:normalize up-pt))
 	 
 	 ;; cross-product returns the vector perpendicular to the plane formed
@@ -271,6 +273,8 @@ the projection plane)"
 
 	 (rot-mat (glm:make-mat4 1.0))
 	 (trans-mat (glm:make-mat4 1.0)))
+
+;    (format t "ppud:~a up-dir:~a rd:~a" perp-up-dir up-dir right-dir)
     ;;TODO: this is the pinnacle of confusion, sb-cga:matrix is column major,
     ;;hence my glm functions (set-mat4-col ..) are "wrong" yet they work the way
     ;;opengl wants them... :I don't even know if i want to figure this out,
@@ -286,8 +290,11 @@ the projection plane)"
     (glm:set-mat4-col rot-mat 2 (glm:vec4-from-vec3 (glm:vec- look-dir) 0.0))
 
     ;; TODO: intuitive understanding of usage
+    ;; NEXT-TODO: this should mean that the above col settings are to be row
+    ;; settings!? what is going on here? first get it to run simple test
     (setf rot-mat (sb-cga:transpose-matrix rot-mat))
 
+    ;; oh, its just a translation matrix putting the camera-pt into origin!
     (glm:set-mat4-col trans-mat 3 (glm:vec4-from-vec3 (glm:vec- camera-pt) 1.0))
 
     ;;return rotmat * transmat;
@@ -299,42 +306,47 @@ the projection plane)"
 (defun model-to-world-setup ()
   (let ((cam-pos (resolve-cam-position))
 	(cam-matrix (make-instance 'glutil:matrix-stack)))
-    (list cam-pos)
-    ;; (glutil:set-matrix cam-matrix
-    ;; 		     (calc-look-at-matrix cam-pos *cam-target* (glm:vec3 0.0 1.0 0.0)))
-    (setf *cam-pt* (resolve-cam-position))
-       (glutil:set-matrix cam-matrix
-			  (calc-look-at-matrix
-			   cam-pos
-			   *cam-target*         ;look at
-			   (glm:vec3 0.0 1.0 0.0)))
 
- ;; (gl:uniform-matrix *model-to-world-matrix-unif*  4
- ;; 		    (vector (glm:make-mat4 1.0)))
- (gl:uniform-matrix *world-to-camera-matrix-unif*  4
- 		    (vector (glm:make-mat4 1.0)) NIL)
- )
+    (glutil:set-matrix cam-matrix
+		       (calc-look-at-matrix cam-pos *cam-target* (glm:vec3 0.0 1.0 0.0)))
+
+    ;; (gl:uniform-matrix *world-to-camera-matrix-unif*  4
+    ;; 		       (vector (glm:make-mat4 1.0)))
+
+
+    (gl:uniform-matrix *world-to-camera-matrix-unif*  4
+    		   (vector (glutil:top-ms cam-matrix)) NIL)
+
+    )
 
   (setf *model-to-world-ms* (make-instance 'glutil:matrix-stack))
+
+
+  ;; ;; by now all the data is set-up, its time to draw
+  ;;  (%gl:draw-elements :triangles (gl::gl-array-size *index-data*)
+  ;; 			 :unsigned-short 0) 
+					;  (glutil::draw-matrix-stack )
+
+
+  
   (glutil:with-transform (*model-to-world-ms*)
-      :translate 3.0 -5.0 -40.0
-      :translate 1.0 1.0 0.0
-      :rotate-z 35.0
-      :scale 2.0 1.0 1.0
+       :translate 0.0 0.0 -140.0
+       :rotate-x *e2*
+       :rotate-y *e1*
+      ;; :scale 100.0 1.0 100.0
+      :scale 100.0 10.0 100.0
+;      :scale 100.0 1.0 100.0
+        (gl:uniform-matrix *model-to-world-matrix-unif* 4
+			 (vector (glutil:top-ms *model-to-world-ms*)) NIL)
 
-
-
-
-      ;;well this is too verbose?
-
-
-
-      (glutil::draw-matrix-stack *model-to-world-ms*
-				 *model-to-world-matrix-unif*
-				 *index-data*)
-      ;; (%gl:draw-elements :triangles (gl::gl-array-size *index-data*)
-      ;; 			 :unsigned-short 0)
+        ;; (glutil::draw-matrix-stack *model-to-world-ms*
+      	;; 			 *model-to-world-matrix-unif*
+      	;; 			 *index-data*)
       )
+
+        (%gl:draw-elements :triangles (gl::gl-array-size *index-data*)
+			 :unsigned-short 0)
+
 
   )
 
@@ -356,6 +368,9 @@ the projection plane)"
   ;;swap buffers: in main loop 
        )
 
+(defparameter *e1* 0.0)
+(defparameter *e2* 0.0)
+
 (defun main ()
   (sdl2:with-init (:everything)
     (progn (setf *standard-output* out) (setf *debug-io* dbg) (setf *error-output* err))
@@ -371,13 +386,13 @@ the projection plane)"
 	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-e)
 	     (decf (aref *look-pt* 0) 0.01))
 	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-a)
-	     (decf (aref *cam-pt* 0) 1.0))
+	     (decf *e1* 2.0))
 	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-d)
-	     (incf (aref *cam-pt* 0) 1.0))
+	     (incf *e1* 2.0))
 	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-w)
-	     (decf (aref *cam-pt* 2) 1.0))
+	     (incf *e2* 2.0))
 	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-s)
-	     (incf (aref *cam-pt* 2) 1.0))
+	     (decf *e2* 2.0))
 	   
 
 	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-escape)
