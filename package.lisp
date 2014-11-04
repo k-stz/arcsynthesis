@@ -25,6 +25,7 @@
    #:set-mat4-row
    #:set-mat4-col
    #:vec-
+   #:vec.
    #:vec3
    #:vec4
    #:normalize

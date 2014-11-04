@@ -11,8 +11,9 @@ layout(location = 1) in vec4 color;
 smooth out vec4 theColor;
 
 uniform mat4 model_to_world_matrix;
-uniform mat4 world_to_camera_matrix; // for now, identity
-uniform mat4 camera_to_clip_matrix;
+uniform mat4 world_to_camera_matrix; 
+uniform mat4 camera_to_clip_matrix; // just camera matrix (forced projection ratio in
+ // departing points  w-slot for projection divide)
 
 
 void main()

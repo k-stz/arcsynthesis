@@ -90,6 +90,12 @@
       (sb-cga:vec- a (sb-cga:vec* a 2.0))
       (sb-cga:vec- a b)))
 
+(defmacro vec. (vector xyzw)
+  "AREFable vector component returned. In the vein of C++ notation: vec.x vec.y etc."
+  `(aref ,vector
+	 ,(case xyzw
+		(:x 0) (:y 1) (:z 2) (:w 3))))
+
 (defun vec3 (x &optional (y x) (z x))
   (let ((x (float x))
 	(y (float y))

@@ -79,7 +79,7 @@ the projection plane)"
 	    *camera-to-clip-matrix-unif*)
 
     (let ((fz-near 1.0)
-    	  (fz-far 1000.0))
+    	  (fz-far 1000.0)) ;; arc uses same value!
       (glm:set-mat4 *camera-to-clip-matrix* 0 :x *frustum-scale*)
       (glm:set-mat4 *camera-to-clip-matrix* 1 :y *frustum-scale*)
       (glm:set-mat4 *camera-to-clip-matrix* 2 :z (/ (+ fz-far fz-near)
@@ -193,10 +193,11 @@ the projection plane)"
 	(initialize-program)
 	(initialize-vertex-buffer)
 	(initialize-vertex-array-objects)
-  
-	;; (gl:enable :cull-face)
-	;; (%gl:cull-face :back)
-	;; (%gl:front-face :cw) ;; TODO maybe bad order vertices, need to change; test here
+
+	;; TODO: why doesn't this seem to affect the unit-plane when it is rotated 360?
+	(gl:enable :cull-face)
+	(%gl:cull-face :back)
+	(%gl:front-face :cw) ;; TODO maybe bad order vertices, need to change; test here
 
 	(gl:viewport 0 0 500 500)
 
@@ -232,8 +233,8 @@ the projection plane)"
 
 (defun resolve-cam-position ()
   (let* (;(temp-mat (make-instance 'glutil:matrix-stack)) ;; well it isn't used
-	 (phi (framework:deg-to-rad (aref *sphere-cam-rel-pos* 0)))
-	 (theta (framework:deg-to-rad (+ (aref *sphere-cam-rel-pos* 1)
+	 (phi (framework:deg-to-rad (glm:vec. *sphere-cam-rel-pos* :x)))
+	 (theta (framework:deg-to-rad (+ (glm:vec. *sphere-cam-rel-pos* :y)
 					 90.0)))
 	 ;; theta is single-float so SIN will return single-float
 	 (sin-theta (sin theta))
@@ -245,7 +246,7 @@ the projection plane)"
 	 			  cos-theta
 	 			  (* sin-theta sin-phi)))
 	 )
-    (sb-cga:vec+ (sb-cga:vec* dir-to-camera (aref *sphere-cam-rel-pos* 2))
+    (sb-cga:vec+ (sb-cga:vec* dir-to-camera (glm:vec. *sphere-cam-rel-pos* :z))
        *cam-target*)
 ))
 
@@ -330,12 +331,8 @@ the projection plane)"
 
   
   (glutil:with-transform (*model-to-world-ms*)
-       :translate 0.0 0.0 -140.0
-       :rotate-x *e2*
-       :rotate-y *e1*
-      ;; :scale 100.0 1.0 100.0
-      :scale 100.0 10.0 100.0
-;      :scale 100.0 1.0 100.0
+       :translate 0.0 0.0 0.0
+       :scale 100.0 1.0 100.0
         (gl:uniform-matrix *model-to-world-matrix-unif* 4
 			 (vector (glutil:top-ms *model-to-world-ms*)) NIL)
 
@@ -382,18 +379,37 @@ the projection plane)"
 	  (:keydown
 	   (:keysym keysym)
 	   ;; TODO: capture in macro
-	   ;; AdjBase()
-	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-e)
-	     (decf (aref *look-pt* 0) 0.01))
+	   ;; move cam target horizontally
 	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-a)
-	     (decf *e1* 2.0))
+	     (decf (glm:vec. *cam-target* :x) 0.4))
 	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-d)
-	     (incf *e1* 2.0))
+	     (incf (glm:vec. *cam-target* :x) 0.4))
+	   ;; move cam target vertically 
 	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-w)
-	     (incf *e2* 2.0))
+	     (decf (glm:vec. *cam-target* :z) 0.4))
 	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-s)
-	     (decf *e2* 2.0))
-	   
+	     (incf (glm:vec. *cam-target* :z) 0.4))
+	   ;; move camera target up/down
+	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-e)
+	     (decf (glm:vec. *cam-target* :y) 4.0))
+   	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-q)
+	     (incf (glm:vec. *cam-target* :y) 4.0))
+	   ;; rotate camera horizontally around target
+	   ;; TODO: why bounces back and forth while incresing/decreasing to certain point?
+	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-j)
+	     (decf (glm:vec. *sphere-cam-rel-pos* :x) 1.125))
+   	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-l)
+	     (incf (glm:vec. *sphere-cam-rel-pos* :x) 1.125))
+	   ;; rotate cam vertically around target
+   	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-i)
+	     (decf (glm:vec. *sphere-cam-rel-pos* :y) 1.125))
+   	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-k)
+	     (incf (glm:vec. *sphere-cam-rel-pos* :y) 1.125))
+	   ;; zoom camera in/out of target
+      	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-u)
+	     (decf (glm:vec. *sphere-cam-rel-pos* :z) 0.5))
+   	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-o)
+	     (incf (glm:vec. *sphere-cam-rel-pos* :z) 0.5))
 
 	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-escape)
 	     (sdl2:push-event :quit)))
