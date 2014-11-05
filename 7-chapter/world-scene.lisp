@@ -21,13 +21,16 @@
 (defvar *world-to-camera-matrix-unif*)
 (defvar *camera-to-clip-matrix-unif*)
 
+
 ;;TODO: note from pjb stating to try ":conc-name" regarding a former rejection
 ;;       to implement program-data using defstruct, as it creates verbose symbols
 (defclass program-data ()
   ((the-program :accessor the-program)
    (model-to-world-matrix-unif :accessor model-to-world-matrix-unif)
    (world-to-camera-matrix-unif :accessor world-to-camera-matrix-unif)
+   (camera-to-clip-matrix-unif :accessor camera-to-clip-matrix-unif)
    (base-color-unif :accessor base-color-unif)))
+
 
 ;;program-data
 (defvar uniform-color)
@@ -49,7 +52,34 @@ the projection plane)"
 
 (defparameter *frustum-scale* (calc-frustum-scale 45.0)) 
 
+
+(defun load-program (str-vertex-shader str-fragment-shader)
+  "Create program-data object from shader strings. Hardcoded uniform reference."
+  (let ((shader-list (list))
+	(data (make-instance 'program-data)))
+    (push (arc:create-shader :vertex-shader
+	   (arc:file-to-string (merge-pathnames str-vertex-shader *glsl-directory*)))
+	  shader-list)
+    (push (arc:create-shader :fragment-shader
+    	   (arc:file-to-string (merge-pathnames str-fragment-shader *glsl-directory*)))
+    	  shader-list)
+    (setf (the-program data) (arc:create-program shader-list))
+    ;; hard-coding time:
+    (setf (model-to-world-matrix-unif data)
+	  (gl:get-uniform-location (the-program data) "model_to_world-matrix"))
+    (setf (world-to-camera-matrix-unif data)
+	  (gl:get-uniform-location (the-program data) "world_to_camera_matrix"))
+    (setf (camera-to-clip-matrix-unif data)
+	  (gl:get-uniform-location (the-program data) "camera_to_clip_matrix"))
+    ;; TODO: if uniform doesn't really exist in shader, wasn't opengl lenient about it?
+    (setf (base-color-unif data)
+	  (gl:get-uniform-location (the-program data) "base_color"))
+    ))
+
+
 (defun initialize-program ()
+  (setf uniform-color
+	(load-program "pos-color-local-transformation.vert" "color-passthrough.frag"))
   ;;TODO: remove redundancy due to program-data structure usage
   ;(setf uniform-data)
   (let ((shader-list (list)))
@@ -110,24 +140,16 @@ the projection plane)"
 (defparameter *vertex-data*
   (arc:create-gl-array-from-vector 
 `#(
-
-	;; vertex positions
-	;; +1.0  +1.0  +0.0 
-	;; +1.0  -1.0  +0.0 
-	;; -1.0  -1.0  +0.0 
-	;; -1.0  +1.0  +0.0 
-
    ;; from arc's unit-plane.xml
      0.5  0.0 -0.5
      0.5  0.0  0.5
     -0.5  0.0  0.5
     -0.5  0.0 -0.5
-        
         ;; vertex colors
-	,@+green-color+
-	,@+green-color+
-	,@+green-color+
-	,@+green-color+
+    ,@+green-color+
+    ,@+green-color+
+    ,@+green-color+
+    ,@+green-color+
   )))
 
 
@@ -140,11 +162,6 @@ the projection plane)"
      2 3 0
      0 2 1
      2 0 3
-     
-	;; 0  1  2 
-        ;; 0  2  3
-        ;; 4  5  6 
-        ;; 6  7  4 
      )))
 
 (defvar *vertex-buffer-object*)
@@ -188,7 +205,6 @@ the projection plane)"
 
 
 
-
 (defun init ()
 	(initialize-program)
 	(initialize-vertex-buffer)
@@ -207,11 +223,6 @@ the projection plane)"
 	(gl:depth-range 0.0 1.0)
 )
 
-(defun draw ()
-
-  ;; (%gl:draw-elements :triangles (gl::gl-array-size *index-data*)
-  ;; 		    :unsigned-short 0)
-  )
 
 ;; makeshift solution
 (defparameter t-mat (let ((translate-mat4 (glm:make-mat4 1.0))
@@ -311,34 +322,19 @@ the projection plane)"
     (glutil:set-matrix cam-matrix
 		       (calc-look-at-matrix cam-pos *cam-target* (glm:vec3 0.0 1.0 0.0)))
 
-    ;; (gl:uniform-matrix *world-to-camera-matrix-unif*  4
-    ;; 		       (vector (glm:make-mat4 1.0)))
-
-
     (gl:uniform-matrix *world-to-camera-matrix-unif*  4
     		   (vector (glutil:top-ms cam-matrix)) NIL)
-
     )
 
+  
   (setf *model-to-world-ms* (make-instance 'glutil:matrix-stack))
 
-
-  ;; ;; by now all the data is set-up, its time to draw
-  ;;  (%gl:draw-elements :triangles (gl::gl-array-size *index-data*)
-  ;; 			 :unsigned-short 0) 
-					;  (glutil::draw-matrix-stack )
-
-
-  
   (glutil:with-transform (*model-to-world-ms*)
        :translate 0.0 0.0 0.0
        :scale 100.0 1.0 100.0
         (gl:uniform-matrix *model-to-world-matrix-unif* 4
 			 (vector (glutil:top-ms *model-to-world-ms*)) NIL)
 
-        ;; (glutil::draw-matrix-stack *model-to-world-ms*
-      	;; 			 *model-to-world-matrix-unif*
-      	;; 			 *index-data*)
       )
 
         (%gl:draw-elements :triangles (gl::gl-array-size *index-data*)
@@ -359,14 +355,11 @@ the projection plane)"
   ;; hmm put into (model-to-world-setup) ?
   
   (model-to-world-setup)
-  (draw)
+  
   (gl:bind-vertex-array 0)
   (gl:use-program *program*)
   ;;swap buffers: in main loop 
        )
-
-(defparameter *e1* 0.0)
-(defparameter *e2* 0.0)
 
 (defun main ()
   (sdl2:with-init (:everything)

@@ -13,14 +13,11 @@ smooth out vec4 theColor;
 uniform mat4 model_to_world_matrix;
 uniform mat4 world_to_camera_matrix; 
 uniform mat4 camera_to_clip_matrix; // just camera matrix (forced projection ratio in
- // departing points  w-slot for projection divide)
+ // output point  w-slot for projection divide)
 
 
 void main()
 {
-  // TODO: rearrange sequence of multiplications?
-  //   vec4 cameraPos = world_to_camera_matrix * model_to_world_matrix * position;
-  //simple test first
       vec4 temp = model_to_world_matrix * position;
       temp = world_to_camera_matrix * temp;
 

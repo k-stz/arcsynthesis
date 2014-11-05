@@ -49,6 +49,7 @@
   (:export
    #:matrix-stack
    #:with-transform
+   #:perspective
    #:top-ms
    #:set-matrix
    )

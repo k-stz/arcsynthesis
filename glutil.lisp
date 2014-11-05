@@ -37,6 +37,35 @@
   (setf (m-curr-mat ms) (first (m-matrices ms)))
   (pop (m-matrices ms)))
 
+
+(defun calc-frustum-scale (f-fov-deg)
+  "the field-of-view (fov) is the angle between the forward direction and the direction
+of the farmost-extent of the view (meaning vectors from these points still get to hit
+the projection plane)"
+  (let* ((deg-to-rad (/ (* pi 2.0) 360.0))
+	(f-fov-rad (* f-fov-deg deg-to-rad)))
+    (coerce
+     (/ 1.0
+	(tan (/ f-fov-rad 2.0)))
+     'single-float)))
+
+(defgeneric perspective (matrix-stack deg-FOV aspect-ratio z-near z-far))
+(defmethod perspective ((ms matrix-stack) (deg-FOV float) (aspect-ratio float)
+			(z-near float) (z-far float))
+  ;; TODO: implement "aspect-ratio" usage. arc: uses in reshape(int w, int h)
+  ;; like so (w / (float)h)
+  (let ((m (glm:make-mat4 0.0))
+	(frustum-scale (calc-frustum-scale deg-FOV)))
+    (glm:set-mat4 m 0 :x frustum-scale)
+    (glm:set-mat4 m 1 :y frustum-scale)
+    (glm:set-mat4 m 2 :z (/ (+ z-far z-near)
+			    (- z-near z-far)))
+    (glm:set-mat4 m 2 :w -1.0)
+    (glm:set-mat4 m 3 :z (/ (* 2 z-far z-near)
+			    (- z-near z-far)))
+    (set-matrix ms m)))
+
+
 ;; TODO: defmethod lambda-list displayed with class-name instead of "offset-vec3"
 ;; it's "simple-array"
 (defgeneric translate (matrix-stack simple-array))
@@ -66,7 +95,6 @@
   (let ((transform-mat4 (glm:rotate-z ang-deg)))
     (setf (m-curr-mat ms) (sb-cga:matrix* (m-curr-mat ms)
 					  transform-mat4))))
-
 
 (defgeneric scale (matrix-stack simple-array))
 (defmethod scale ((ms matrix-stack) (scale-vec simple-array))

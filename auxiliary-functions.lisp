@@ -90,32 +90,33 @@ will be COERCEd to SINGLE-FLOAT"
 	      (gl:get-shader-info-log shader)))
     shader))
 
-(defun create-program (shader-list)
-   ;;TODO: is this bad style to gl:use it as well?
-  "Create program and gl:use-program it."
-  (let ((program (%gl:create-program)))
-    ;; "attach" all of the created shader objects to the program object
-    (loop for shader-object in shader-list
-       do (%gl:attach-shader program shader-object))
-    ;; I guess links all the attached shaders to actually form a program object
-    (%gl:link-program program)
-    (if (gl:get-program program :link-status)
-	(print "Linking successful! (program object)")
-	(print (gl:get-program-info-log program)))
-    ;; remove shader objects from program:
-    (loop for shader-object in shader-list
-       do (%gl:detach-shader program shader-object))
-    (print "executing glUseProgram!")
-    ;; finally we need to tell OpenGL that rendering commands should use
-    ;; our program object instead of its default rendering state:
-    ;; arcsyntheses: "it, glUseProgram, is later called with 0 to indicate that no
-    ;;                program will be used for rendering
-    (%gl:use-program program)
-    ))
+;;; TODO: any code depend on it?
+;; (defun create-program (shader-list)
+;;    ;;TODO: is this bad style to gl:use it as well?
+;;   "Create program and gl:use-program it."
+;;   (let ((program (%gl:create-program)))
+;;     ;; "attach" all of the created shader objects to the program object
+;;     (loop for shader-object in shader-list
+;;        do (%gl:attach-shader program shader-object))
+;;     ;; I guess links all the attached shaders to actually form a program object
+;;     (%gl:link-program program)
+;;     (if (gl:get-program program :link-status)
+;; 	(print "Linking successful! (program object)")
+;; 	(print (gl:get-program-info-log program)))
+;;     ;; remove shader objects from program:
+;;     (loop for shader-object in shader-list
+;;        do (%gl:detach-shader program shader-object))
+;;     (print "executing glUseProgram!")
+;;     ;; finally we need to tell OpenGL that rendering commands should use
+;;     ;; our program object instead of its default rendering state:
+;;     ;; arcsyntheses: "it, glUseProgram, is later called with 0 to indicate that no
+;;     ;;                program will be used for rendering
+;;     (%gl:use-program program)
+;;     ))
 
 ;; stolen from cbaggers
 ;;; yeaaaah, no. It is functional style to "return-it" always, so that is a misnomer!
-(defun create-program-and-return-it (shader-list)
+(defun create-program (shader-list)
    ;;TODO: is this bad style to gl:use it as well?
   "Create program and RETURN it"
   (let ((program (%gl:create-program)))
@@ -136,6 +137,11 @@ will be COERCEd to SINGLE-FLOAT"
     ;;                program will be used for rendering
     program
     ))
+
+;; TODO: remove from all code, find solution to do such clean-ups more organized in the
+;;       future
+(defun create-program-and-return-it (shader-list)
+  (create-program shader-list))
 
 ;; stolen from cbaggers ;;TODO: aha, give an &optional asdf/system:system-source-directory !!
 ;; and let it merge it with <path> !!
