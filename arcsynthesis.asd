@@ -67,5 +67,5 @@ written in Common Lisp using cl-sdl2 and cl-opengl"
   ;; 	       (:file "1-chapter/hello-triangle"
   ;; 		      :depends-on ("1-chapter/auxiliary-functions")
 
-;;TODO: bad design?  
+;;TODO: bad style?  
 (asdf:load-system :arcsynthesis)

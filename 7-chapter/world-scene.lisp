@@ -9,18 +9,6 @@
 ;;todo: fix this output to slime-repl solution
 (defvar out *standard-output*)  (defvar dbg *debug-io*) (defvar err *error-output*)
 
-(defvar position-buffer-object) ; buffer object handle
-
-
-(defvar *program*)
-
-(defparameter *camera-to-clip-matrix* (glm:make-mat4 0.0))
-(defparameter *world-to-camera-matrix* (glm:make-mat4 1.0)) ;; identity for now
-
-(defvar *model-to-world-matrix-unif*)
-(defvar *world-to-camera-matrix-unif*)
-(defvar *camera-to-clip-matrix-unif*)
-
 
 ;;TODO: note from pjb stating to try ":conc-name" regarding a former rejection
 ;;       to implement program-data using defstruct, as it creates verbose symbols
@@ -33,25 +21,9 @@
 
 
 ;;program-data
-(defvar uniform-color)
-(defvar object-color)
-(defvar uniform-color-tint)
-
-
-(defun calc-frustum-scale (f-fov-deg)
-  "the field-of-view (fov) is the angle between the forward direction and the direction
-of the farmost-extent of the view (meaning vectors from these points still get to hit
-the projection plane)"
-  (let* ((deg-to-rad (/ (* pi 2.0) 360.0))
-	(f-fov-rad (* f-fov-deg deg-to-rad)))
-    (coerce
-     (/ 1.0
-	(tan (/ f-fov-rad 2.0)))
-     'single-float)))
-
-
-(defparameter *frustum-scale* (calc-frustum-scale 45.0)) 
-
+(defvar *uniform-color*)
+(defvar *object-color*)
+(defvar *uniform-color-tint*)
 
 (defun load-program (str-vertex-shader str-fragment-shader)
   "Create program-data object from shader strings. Hardcoded uniform reference."
@@ -64,9 +36,9 @@ the projection plane)"
     	   (arc:file-to-string (merge-pathnames str-fragment-shader *glsl-directory*)))
     	  shader-list)
     (setf (the-program data) (arc:create-program shader-list))
-    ;; hard-coding time:
+    ;; hard-coding time: also this should undergo test if assignment was successful
     (setf (model-to-world-matrix-unif data)
-	  (gl:get-uniform-location (the-program data) "model_to_world-matrix"))
+	  (gl:get-uniform-location (the-program data) "model_to_world_matrix"))
     (setf (world-to-camera-matrix-unif data)
 	  (gl:get-uniform-location (the-program data) "world_to_camera_matrix"))
     (setf (camera-to-clip-matrix-unif data)
@@ -74,56 +46,13 @@ the projection plane)"
     ;; TODO: if uniform doesn't really exist in shader, wasn't opengl lenient about it?
     (setf (base-color-unif data)
 	  (gl:get-uniform-location (the-program data) "base_color"))
-    ))
+    data))
 
 
 (defun initialize-program ()
-  (setf uniform-color
+  (setf *uniform-color*
 	(load-program "pos-color-local-transformation.vert" "color-passthrough.frag"))
-  ;;TODO: remove redundancy due to program-data structure usage
-  ;(setf uniform-data)
-  (let ((shader-list (list)))
-    ;;oh c'mon how to make it local
-    (push (arc:create-shader
-	   :vertex-shader
-	   (arc:file-to-string
-	    (merge-pathnames "pos-color-local-transformation.vert" *glsl-directory*)))
-	  shader-list)
-    (push (arc:create-shader
-    	   :fragment-shader
-    	   (arc:file-to-string
-	    (merge-pathnames "color-passthrough.frag" *glsl-directory* )))
-    	  shader-list)
-    (setf *program* (arc:create-program-and-return-it shader-list))
-
-    (setf *model-to-world-matrix-unif*
-	  (gl:get-uniform-location *program* "model_to_world_matrix"))
-    (setf *world-to-camera-matrix-unif*
-	  (gl:get-uniform-location *program* "world_to_camera_matrix"))
-    (setf *camera-to-clip-matrix-unif*
-	  (gl:get-uniform-location *program* "camera_to_clip_matrix"))
-
-    (format t "mw:~a wc:~a cc:~a"
-	    *model-to-world-matrix-unif*
-	    *world-to-camera-matrix-unif*
-	    *camera-to-clip-matrix-unif*)
-
-    (let ((fz-near 1.0)
-    	  (fz-far 1000.0)) ;; arc uses same value!
-      (glm:set-mat4 *camera-to-clip-matrix* 0 :x *frustum-scale*)
-      (glm:set-mat4 *camera-to-clip-matrix* 1 :y *frustum-scale*)
-      (glm:set-mat4 *camera-to-clip-matrix* 2 :z (/ (+ fz-far fz-near)
-    						    (- fz-near fz-far)))
-      (glm:set-mat4 *camera-to-clip-matrix* 2 :w -1.0)
-      (glm:set-mat4 *camera-to-clip-matrix* 3 :z (/ (* 2 fz-far fz-near)
-    						    (- fz-near fz-far)))
-      (%gl:use-program *program*)
-
-      (gl:uniform-matrix *camera-to-clip-matrix-unif* 4 (vector *camera-to-clip-matrix*)
-    			 NIL))
-    (%gl:use-program 0)
-    (loop for shader-object in shader-list
-       do (%gl:delete-shader shader-object))))
+)
 
 
 (defparameter *number-of-vertices* 4)
@@ -229,16 +158,10 @@ the projection plane)"
 			 (vec4 (glm:vec4-from-vec3 (glm:vec3 3.0 -5.0 -40.0))))
 		     (glm:set-mat4-col translate-mat4 3 vec4)
 		     translate-mat4))
-;;NEXT TODO:work on the world to camera translation, then
-;;make the camera focus each corner on command, then move towards dynamic camera,
-;;then really try to copy the tutorial implementing the trees with multiple shaders
-;;and the Parthenon
-(defvar *model-to-world-ms*)
 
 ;;g_ in arcsynthesis code variable names, is a convention for global-variable naming
 ;;hence replaced by ear-muffs
 (defparameter *sphere-cam-rel-pos* (glm:vec3 67.5 -46.0 150.0))
-;(defparameter *cam-target* (glm:vec3 0.0 0.4 0.0))
 (defparameter *cam-target* (glm:vec3 0.0 0.4 0.0))
 
 
@@ -315,51 +238,60 @@ the projection plane)"
 (defparameter *look-pt* (glm:vec3 0.0 0.0 0.0)) ; look at actual vertex of drawn object
 (defparameter *cam-pt* (glm:vec3 0.0 0.0 1.0))
 
-(defun model-to-world-setup ()
+(defun draw ()
   (let ((cam-pos (resolve-cam-position))
-	(cam-matrix (make-instance 'glutil:matrix-stack)))
+	(cam-matrix (make-instance 'glutil:matrix-stack))
+	(model-matrix (make-instance 'glutil:matrix-stack)))
 
     (glutil:set-matrix cam-matrix
 		       (calc-look-at-matrix cam-pos *cam-target* (glm:vec3 0.0 1.0 0.0)))
+    ;; set world-to-camera matrix
+    (gl:use-program (the-program *uniform-color*))
+    (gl:uniform-matrix (world-to-camera-matrix-unif *uniform-color*) 4
+		       (vector (glutil:top-ms cam-matrix)) NIL)
 
-    (gl:uniform-matrix *world-to-camera-matrix-unif*  4
-    		   (vector (glutil:top-ms cam-matrix)) NIL)
-    )
+    ;; render the ground plane:
+    (glutil:with-transform (model-matrix)
+	:scale 100.0 1.0 100.0
+	;; TODO fold into WITH-TRANSFORM macro: optional slots (make matrix-stack
+	;; have slots for shader uniforms? Create shader-program class to work with?
+	(gl:uniform-matrix (model-to-world-matrix-unif *uniform-color*) 4
+			   (vector (glutil:top-ms model-matrix)) NIL)
 
-  
-  (setf *model-to-world-ms* (make-instance 'glutil:matrix-stack))
-
-  (glutil:with-transform (*model-to-world-ms*)
-       :translate 0.0 0.0 0.0
-       :scale 100.0 1.0 100.0
-        (gl:uniform-matrix *model-to-world-matrix-unif* 4
-			 (vector (glutil:top-ms *model-to-world-ms*)) NIL)
-
-      )
-
-        (%gl:draw-elements :triangles (gl::gl-array-size *index-data*)
-			 :unsigned-short 0)
+	(%gl:draw-elements :triangles (gl::gl-array-size *index-data*)
+			   :unsigned-short 0)
 
 
-  )
+	(gl:use-program (the-program *uniform-color*)))
+    
+    ))
 
 (defun display ()
   (gl:clear-color 0 0 0.2 1)
   (gl:clear-depth 1.0)
   (gl:clear :color-buffer-bit :depth-buffer-bit)
 
-  (%gl:use-program *program*)
+
   (gl:bind-vertex-array *vao*)
 
-  ;;NEXT-TODO: arcsynthesis implements HERE the world-to-camera matrix update
-  ;; hmm put into (model-to-world-setup) ?
-  
-  (model-to-world-setup)
+  (draw)
   
   (gl:bind-vertex-array 0)
-  (gl:use-program *program*)
   ;;swap buffers: in main loop 
        )
+
+(defparameter *fz-near* 1.0)
+(defparameter *fz-far* 1000.0)
+
+(defun reshape (w h)
+  ;; for now where we set the camera-to-clip perspective-matrix for the shaders
+  (let ((pers-matrix (make-instance 'glutil:matrix-stack)))
+    (glutil:perspective pers-matrix 45.0 (/ w h) *fz-near* *fz-far*)
+    (%gl:use-program (the-program *uniform-color*))
+    (gl:uniform-matrix (camera-to-clip-matrix-unif *uniform-color*) 4
+		       (vector (glutil:top-ms pers-matrix)) NIL)
+    (%gl:use-program 0))
+  (%gl:viewport 0 0 w h))
 
 (defun main ()
   (sdl2:with-init (:everything)
@@ -368,6 +300,8 @@ the projection plane)"
       (sdl2:with-gl-context (gl-context win)
 	;; INIT code:
 	(init)
+	;; TODO: callback for reshape; for now used to setup cam-to-clip-space matrix
+	(reshape 500.0 500.0)
 	(sdl2:with-event-loop (:method :poll)
 	  (:keydown
 	   (:keysym keysym)
