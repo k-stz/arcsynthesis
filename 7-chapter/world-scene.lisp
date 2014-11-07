@@ -161,28 +161,41 @@
 
 ;;g_ in arcsynthesis code variable names, is a convention for global-variable naming
 ;;hence replaced by ear-muffs
-(defparameter *sphere-cam-rel-pos* (glm:vec3 67.5 -46.0 150.0))
+(defparameter *sphere-cam-rel-pos* (glm:vec3 67.5 -46.0 150.0) "Order: phi theta r")
 (defparameter *cam-target* (glm:vec3 0.0 0.4 0.0))
 
 
 (defun resolve-cam-position ()
-  (let* (;(temp-mat (make-instance 'glutil:matrix-stack)) ;; well it isn't used
-	 (phi (framework:deg-to-rad (glm:vec. *sphere-cam-rel-pos* :x)))
+  "Return coordinate space position from polar positions stored in *sphere-cam-rel-pos*"
+  (let* ((phi (framework:deg-to-rad (glm:vec. *sphere-cam-rel-pos* :x)))
 	 (theta (framework:deg-to-rad (+ (glm:vec. *sphere-cam-rel-pos* :y)
 					 90.0)))
-	 ;; theta is single-float so SIN will return single-float
 	 (sin-theta (sin theta))
 	 (cos-theta (cos theta))
 	 (cos-phi (cos phi))
 	 (sin-phi (sin phi))
-
+	 ;; this is black magic, also called trigonometry: we effectively produce a
+	 ;; euclideon vector out of polar coordinates cos-theta is the y
+	 ;; shortened/reversed by theta given. Complementaryly sin-theta is the
+	 ;; perpendicular x value, but since we need to move by phi, from there, we need
+	 ;; to shorten/reverse the x value (sin-theta) by cos-phi, which we do by
+	 ;; multiplying it with the cos-phi again complementarily we grow/reverse
+	 ;; the perpendicular z. z, if phi is 0-degrees is equal to sin-phi (namely 0)
+	 ;; but the moment it is not 0, we need to adjust it by multiplying it with
+	 ;; its relative "host" axis which is sin-theta.
+	 ;; To facilitate intuitive understanding I strongly recommend drawing it
+	 ;; on paper trying to anticipate the relations. The same initial rules
+	 ;; apply for any "nested" angles added.
 	 (dir-to-camera (glm:vec3 (* sin-theta cos-phi)
 	 			  cos-theta
-	 			  (* sin-theta sin-phi)))
-	 )
+	 			  (* sin-theta sin-phi))))
+    ;; Once the direction is set, we need to blow it up by multiplying the
+    ;; "euclidean" vector by 'r' which is the :z value of *sphere-cam-rel-pos*
+    ;; and add it to the target the camera is supposed to look at, thereby creating
+    ;; a geometrical dependent positions of the camera to the *cam-target*
     (sb-cga:vec+ (sb-cga:vec* dir-to-camera (glm:vec. *sphere-cam-rel-pos* :z))
-       *cam-target*)
-))
+		 *cam-target*)
+    ))
 
 ;; Note: c++ function signature: foo(const &var) means:
 ;; &var we don't need a copy (reuse of resource;pass by reference)
