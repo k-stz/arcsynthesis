@@ -19,6 +19,8 @@
 		      0.0 0.0 idv 0.0
 		      0.0 0.0 0.0 idv))))
 
+(defconstant +identity-mat4+ (make-mat4 1.0))
+
 ;; so as to be used in conjunction with SETF
 ;; TODO: maybe SETF facilitates this somehow already? some DEFMETHOD?
 (defmacro mat4-place (mat4 row coordinate)

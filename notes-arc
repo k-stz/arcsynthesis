@@ -672,3 +672,29 @@ The right call to set the uniform unscathed of them rude transposifications is:
 (gl:uniform-matrix *mat-unif* 4 (vector *mat4*) NIL)
 			    
 --------------------------------------------------------------------------------
+polar coordinates and camera,
+we may express a position using two angles that represent a position on a sphere
+like on the globe of the world the meridian and latitude. Once the direction
+from the center of the unit-diameter sphere is determined, we multiply the
+coordinates with r, the radius.
+The euclidean coordinates are salvaged from the angles expressing the direction
+(theta and phi) by using the trigonometric functions sin and cos in sequence
+for we first need to get the length of the y-axis as shortened by cos(theta),
+then sin(theta) multiplied with cos(phi) yields the 'x', and the complementary
+sin(theta)*sin(phi) must be 'y'. The result is scaled using r, the radius.
+The world's latitude and meridian may serve as an analogy but they differ a bit,
+using lambda and phi as angles and starting at the equator.
+The use of polar coordinates is useful for the camera, as we can change a single
+angle and emulate a rotation about a reference point: as changing a single
+angle makes the position move on a circle relative to a center point. In the
+world-scene example that reference point was a the camera-target, we simply
+(glm:vec+ ..) added the resulting vector with the camera-target and now we
+could move around(phi) up/down(theta) and towards/away(r) from a relative point!
+
+Furthermore using the target point and the camera-point we can easily derive a look-at
+direction (by normalizing the subtraction of these points!) then using a fiat up
+direction (usually x=0 y=1 z=0) and the cross-product to yield perpendicular axis to build
+a rotation matrix so as to place the world relative to the cameras view direction.  But
+first we had take the camera position and offset the world by putting it as the origin of the
+coordinate system: translation matrix using the camera position negation!
+

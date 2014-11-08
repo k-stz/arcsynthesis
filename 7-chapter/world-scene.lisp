@@ -29,11 +29,13 @@
   "Create program-data object from shader strings. Hardcoded uniform reference."
   (let ((shader-list (list))
 	(data (make-instance 'program-data)))
-    (push (arc:create-shader :vertex-shader
+    (push (arc:create-shader
+	   :vertex-shader
 	   (arc:file-to-string (merge-pathnames str-vertex-shader *glsl-directory*)))
 	  shader-list)
-    (push (arc:create-shader :fragment-shader
-    	   (arc:file-to-string (merge-pathnames str-fragment-shader *glsl-directory*)))
+    (push (arc:create-shader
+	   :fragment-shader
+	   (arc:file-to-string (merge-pathnames str-fragment-shader *glsl-directory*)))
     	  shader-list)
     (setf (the-program data) (arc:create-program shader-list))
     ;; hard-coding time: also this should undergo test if assignment was successful
@@ -68,18 +70,17 @@
 
 (defparameter *vertex-data*
   (arc:create-gl-array-from-vector 
-`#(
-   ;; from arc's unit-plane.xml
-     0.5  0.0 -0.5
-     0.5  0.0  0.5
-    -0.5  0.0  0.5
-    -0.5  0.0 -0.5
-        ;; vertex colors
-    ,@+green-color+
-    ,@+green-color+
-    ,@+green-color+
-    ,@+green-color+
-  )))
+   `#( ;; from arc's unit-plane.xml
+      0.5  0.0 -0.5
+      0.5  0.0  0.5
+      -0.5  0.0  0.5
+      -0.5  0.0 -0.5
+      ;; vertex colors
+      ,@+green-color+
+      ,@+green-color+
+      ,@+green-color+
+      ,@+green-color+
+      )))
 
 
 ;; IMPORTANT: in arc's code, index alternate every three indices between points and
@@ -108,8 +109,7 @@
 
   (gl:bind-buffer :element-array-buffer *index-buffer-object*)
   (gl:buffer-data :element-array-buffer :static-draw *index-data*)
-  (gl:bind-buffer :element-array-buffer  0)  
-  )
+  (gl:bind-buffer :element-array-buffer  0))
 
 (defvar *vao*)
 
@@ -140,9 +140,11 @@
 	(initialize-vertex-array-objects)
 
 	;; TODO: why doesn't this seem to affect the unit-plane when it is rotated 360?
+	;; this gotta be a pernicious bug, swapping the z-axis so that the winding order is
+	;; always clock-wise?
 	(gl:enable :cull-face)
 	(%gl:cull-face :back)
-	(%gl:front-face :cw) ;; TODO maybe bad order vertices, need to change; test here
+	(%gl:front-face :cw) 
 
 	(gl:viewport 0 0 500 500)
 
@@ -166,7 +168,8 @@
 
 
 (defun resolve-cam-position ()
-  "Return coordinate space position from polar positions stored in *sphere-cam-rel-pos*"
+  "Spherical coordinates stored in *sphere-cam-rel-pos* are transformed to Euclidean
+geometry coordinates and returned as a position vector."
   (let* ((phi (framework:deg-to-rad (glm:vec. *sphere-cam-rel-pos* :x)))
 	 (theta (framework:deg-to-rad (+ (glm:vec. *sphere-cam-rel-pos* :y)
 					 90.0)))
@@ -207,11 +210,16 @@
 			     (glm:vec3 0.0 1.0 0.0)))) ;up
 ;; TODO: hm the resultin matrix from tc has many rounding problems
 (defun calc-look-at-matrix (camera-pt look-pt up-pt)
-  ;; no type problems: sb-cga vectors are the same as glm:vec3
+  ;; camera-pt already is set relative to look-pt by being added to it in
+  ;; resolve-cam-position. negating the two yields the direction of the camera "through"
+  ;; look-pt. Unit vector, through normalize, is needed as we will use look-dir
+  ;; directly as the axis of the look-at-matrix, so as to prevent scaling!
+  ;; With this we already have our Z axis
   (let* ((look-dir (sb-cga:normalize (sb-cga:vec- look-pt camera-pt)))
-	 ;; since we only want a direction, we naturally normalize the vector
+	 ;; since we only want a direction, we normalize the vector
+	 ;; using up-dir we have a plane from which we can yield the perpendicular x-axis
+	 ;; and from that the perpendicular y-axis (cross-product z-axis x-axis)
 	 (up-dir (sb-cga:normalize up-pt))
-	 
 	 ;; cross-product returns the vector perpendicular to the plane formed
 	 ;; by two vectors:
 	 ;; (sb-cga:cross-product (glm:vec3 1.0 0.0 0.0) (glm:vec3 0.0 1.0 0.0))
@@ -222,31 +230,54 @@
 	 (rot-mat (glm:make-mat4 1.0))
 	 (trans-mat (glm:make-mat4 1.0)))
 
-;    (format t "ppud:~a up-dir:~a rd:~a" perp-up-dir up-dir right-dir)
-    ;;TODO: this is the pinnacle of confusion, sb-cga:matrix is column major,
-    ;;hence my glm functions (set-mat4-col ..) are "wrong" yet they work the way
-    ;;opengl wants them... :I don't even know if i want to figure this out,
-    ;;already changed this 180-degree style once.
-    ;;Maybe experiment where uniform-matrix is used to pass matrix. (<- !)
-    ;; YEP: UNIFORM-MATRIX _TRANSPOSES_ THE INPUT MATRIX BY DEFAULT .... OMG
-    ;;Anywhooo those are right:
-    ;;rotMat[0] = glm::vec4 (rightDir, 0.0f);
-    ;;; TODO-NEXT: REWRITE GLM matrix permuting functions, and test if other tutorials
-    ;;; work
     (glm:set-mat4-col rot-mat 0 (glm:vec4-from-vec3 right-dir 0.0))
     (glm:set-mat4-col rot-mat 1 (glm:vec4-from-vec3 perp-up-dir 0.0))
+    ;; the look-dir must be negated, or it wouldn't be a rotation of the original
+    ;; identity matrix. As it currently would be a transform that couldn't arise
+    ;; from rotating the original coordinate system (one axis is moved without
+    ;; moving another by _the same_ angle). This must be a problem that arises from
+    ;; using the cross-product, which doesn't seem to return the perpendicular axis
+    ;; needed (there are always two perpendicular direction vectors for a plane)
     (glm:set-mat4-col rot-mat 2 (glm:vec4-from-vec3 (glm:vec- look-dir) 0.0))
 
-    ;; TODO: intuitive understanding of usage
-    ;; NEXT-TODO: this should mean that the above col settings are to be row
-    ;; settings!? what is going on here? first get it to run simple test
+    ;; TODO: why transpose it eventually? Maybe because it is col-major and setting
+    ;; column-wise and transpose is more efficient than just setting the rows
+    ;; with discontiguous indices
     (setf rot-mat (sb-cga:transpose-matrix rot-mat))
 
-    ;; oh, its just a translation matrix putting the camera-pt into origin!
+    ;; oh, its just a translation matrix putting the camera-pt into origin! (and thereby
+    ;; every offseting every position send through this matrix by the camera pos
     (glm:set-mat4-col trans-mat 3 (glm:vec4-from-vec3 (glm:vec- camera-pt) 1.0))
 
     ;;return rotmat * transmat;
     (sb-cga:matrix* rot-mat trans-mat)))
+
+;;NEXT-TODO:
+(defun draw-look-at-point (model-matrix cam-pos)
+ (gl:disable :depth-test)
+
+  (let ((identity glm:+identity-mat4+)
+	(cam-aim-vec (glm:vec- *cam-target* cam-pos)))
+    (glutil:with-transform (model-matrix)
+	:translate 0.0 1.0 (- (sb-cga:vec-length cam-aim-vec))
+	:scale 1.0 1.0 1.0
+	:rotate-y 20.0
+	;; TODO use dedicated program-data
+	(gl:uniform-matrix (model-to-world-matrix-unif *uniform-color*) 4
+			   (vector (glutil:top-ms model-matrix)) NIL)
+	(gl:uniform-matrix (world-to-camera-matrix-unif *uniform-color*) 4
+			   (vector identity) NIL)
+;    (print (glutil:top-ms model-matrix))	
+    (%gl:draw-elements :triangles (gl::gl-array-size *index-data*)
+		       :unsigned-short 0)
+  
+	
+	)
+
+    )
+
+  (gl:enable :depth-test)
+  )
 
 (defparameter *look-pt* (glm:vec3 0.0 0.0 0.0)) ; look at actual vertex of drawn object
 (defparameter *cam-pt* (glm:vec3 0.0 0.0 1.0))
@@ -273,10 +304,9 @@
 
 	(%gl:draw-elements :triangles (gl::gl-array-size *index-data*)
 			   :unsigned-short 0)
+	    (when *draw-look-at-point*
+	      (draw-look-at-point model-matrix cam-pos)))
 
-
-	(gl:use-program (the-program *uniform-color*)))
-    
     ))
 
 (defun display ()
@@ -305,6 +335,8 @@
 		       (vector (glutil:top-ms pers-matrix)) NIL)
     (%gl:use-program 0))
   (%gl:viewport 0 0 w h))
+
+(defparameter *draw-look-at-point* nil)
 
 (defun main ()
   (sdl2:with-init (:everything)
@@ -335,7 +367,6 @@
    	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-q)
 	     (incf (glm:vec. *cam-target* :y) 4.0))
 	   ;; rotate camera horizontally around target
-	   ;; TODO: why bounces back and forth while incresing/decreasing to certain point?
 	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-j)
 	     (decf (glm:vec. *sphere-cam-rel-pos* :x) 1.125))
    	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-l)
@@ -347,14 +378,21 @@
 	     (incf (glm:vec. *sphere-cam-rel-pos* :y) 1.125))
 	   ;; zoom camera in/out of target
       	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-u)
-	     (decf (glm:vec. *sphere-cam-rel-pos* :z) 0.5))
+	     (decf (glm:vec. *sphere-cam-rel-pos* :z) 1.5))
    	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-o)
-	     (incf (glm:vec. *sphere-cam-rel-pos* :z) 0.5))
+	     (incf (glm:vec. *sphere-cam-rel-pos* :z) 1.5))
+
+	   ;; TODO: toggle look at point rendering 
+	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-space)
+	     (if *draw-look-at-point*
+		 (setf *draw-look-at-point* nil)
+		 (setf *draw-look-at-point* t)))
 
 	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-escape)
 	     (sdl2:push-event :quit)))
 	  (:quit () t)
 	  (:idle ()
+		 ;; TODO: *sphere-cam-rel-pos* clamp theta angle
 		 ;;main-loop:
 		 (display)
 		 

@@ -20,6 +20,7 @@
   (:use :cl)
   (:export
    #:make-mat4
+   #:+identity-mat4+
    #:mat4-place
    #:set-mat4
    #:set-mat4-row
