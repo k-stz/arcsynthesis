@@ -698,3 +698,33 @@ a rotation matrix so as to place the world relative to the cameras view directio
 first we had take the camera position and offset the world by putting it as the origin of the
 coordinate system: translation matrix using the camera position negation!
 
+--------------------------------------------------------------------------------
+DEFCONSTANT and the compilation environment
+;; because DEFUN: "Define a function at _top level_
+(eval-when (:compile-toplevel) (defun foo () 2))
+
+
+;; evaluates the expression (foo) in the compilation environment, and sets it
+;; and defines the constant. Not so DEFUN! In the eyes of the compiler, it only
+;; wants to inline the appearance of +qux+ henceforth with (foo). In the eyes
+;; of a programmer, or API user, it is supposed however to show it's not to be changed.
+;; Which does clash in a way with the inline use, as builder functions are not
+;; evaluted in the compilation-environment!!
+
+;; Furthermore DEFCONSTANT has problems with non number values etc. TODO
+(defconstant +qux+ (foo))
+
+
+;; defconstant expand:
+;; (EVAL-WHEN (:COMPILE-TOPLEVEL :LOAD-TOPLEVEL :EXECUTE)
+;;   (SB-C::%DEFCONSTANT '+QUX+ (FOO) 'NIL (SB-C:SOURCE-LOCATION)))
+
+;; defun expand:
+(PROGN
+ (EVAL-WHEN (:COMPILE-TOPLEVEL) (SB-C:%COMPILER-DEFUN 'FOO 'NIL T))
+ (EVAL-WHEN (:LOAD-TOPLEVEL :EXECUTE)
+   (SB-IMPL::%DEFUN 'FOO
+                    (SB-INT:NAMED-LAMBDA FOO
+                        NIL
+                      (BLOCK FOO 2))
+                    NIL 'NIL (SB-C:SOURCE-LOCATION))))

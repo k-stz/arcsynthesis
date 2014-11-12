@@ -19,7 +19,12 @@
 		      0.0 0.0 idv 0.0
 		      0.0 0.0 0.0 idv))))
 
-(defconstant +identity-mat4+ (make-mat4 1.0))
+;; TODO: 
+;; is +notation+ acceptable? Can't be constant for DEFCONSTANT gets its value at
+;; compile-time while DEFUN work at toplevel
+;; TODO: compile-time, top-level :execute intuitive understanding: start at EVAL-WHEN clhs
+(defparameter +identity-mat4+ (make-mat4 1.0)) ;;TODO: make me a constant
+
 
 ;; so as to be used in conjunction with SETF
 ;; TODO: maybe SETF facilitates this somehow already? some DEFMETHOD?
