@@ -15,7 +15,7 @@ written in Common Lisp using cl-sdl2 and cl-opengl"
   :version "0.0.1"
   :author "k-stz"
   ;; :licence  TODO
-  :depends-on (:cl-opengl :sdl2 :sb-cga :cxml)
+  :depends-on (:cl-opengl :sdl2 :sb-cga :cxml :cxml-stp)
   :serial t		  ; now: :file order in :components order is also dependency order
   :components
   ((:file "package")

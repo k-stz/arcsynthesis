@@ -6,6 +6,8 @@
 ;; (print (uiop/lisp-build:current-lisp-file-pathname)) ?
 (defvar *glsl-directory*
   (merge-pathnames #p "7-chapter/" (asdf/system:system-source-directory :arcsynthesis)))
+(defvar *data-dir*
+  (merge-pathnames #p "data/" *glsl-directory*))
 ;;todo: fix this output to slime-repl solution
 (defvar out *standard-output*)  (defvar dbg *debug-io*) (defvar err *error-output*)
 
@@ -138,6 +140,8 @@
 	(initialize-program)
 	(initialize-vertex-buffer)
 	(initialize-vertex-array-objects)
+	;; test:
+	(framework::make-mesh (merge-pathnames *data-dir* "UnitPlane.xml"))
 
 	;; TODO: why doesn't this seem to affect the unit-plane when it is rotated 360?
 	;; this gotta be a pernicious bug, swapping the z-axis so that the winding order is
