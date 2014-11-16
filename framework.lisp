@@ -22,6 +22,19 @@
 
 (defparameter m-stp (cxml:parse *xml-path* (stp:make-builder)))
 
+(defclass mesh ()
+  ((attributes :accessor attrs)
+   (indices :accessor inds)
+   (stp-obj :accessor so)
+   (vbo :accessor vbo)))
+
+(defclass attribute ()
+  ((index :accessor index) (type :accessor attr-type) (size :accessor size)
+   (data :accessor data)))
+
+(defclass indices ()
+  ((command :accessor cmd) (type :accessor indices-type) (data :accessor data)))
+
 ;; everything is a node, every node has PARENTS
 ;; (stp:parent m-stp) , some CAN have children:
 
@@ -64,7 +77,29 @@
 
 (defun stp-obj->attributes (stp-obj)
   (node-attributes-list (list-element-nodes stp-obj)))
-;;;
+
+;;;INDICES
+
+(defun node->index (indx-node)
+  (let ((indx (make-instance 'indices)))
+    (stp:with-attributes
+	((c "cmd") (ty "type")) indx-node
+      (setf (cmd indx) (read-from-string c))
+      (setf (indices-type indx) (read-from-string ty))
+      (setf (data indx) (list-from-string (stp:data (stp:first-child indx-node)))))
+    indx))
+
+(defun node-indices-list (element-nodes)
+  "Take list of element nodes and return a list of indices objects from it"
+  (let ((stp-indices
+	 (loop for node in element-nodes when
+	      (string-equal "indices" (stp:local-name node))
+	    collecting node)))
+    (mapcar #'node->index stp-indices)))
+
+(defun stp-obj->indices (stp-obj)
+  (node-indices-list (list-element-nodes stp-obj)))
+;;;/INDICES
 
 
 (defun list-from-string (string)
@@ -80,18 +115,6 @@
 
 
 
-(defclass mesh ()
-  ((vbo :accessor vbo)
-   (attributes :accessor attrs)
-   (indices :accessor inds)
-   (stp-obj :accessor so)))
-
-(defclass attribute ()
-  ((index :accessor index) (type :accessor attr-type) (size :accessor size)
-   (data :accessor data)))
-
-(defclass indices ()
-  ((command :accessor cmd) (type :accessor indices-type)))
 
 (defun vertex-data (stp-obj)
   ;; check out this APPLY use!! Could solve all problems of the sort
@@ -145,6 +168,8 @@
 (defun make-mesh (stp-obj)
   (let ((mesh (make-instance 'mesh)))
     (setf (attrs mesh) (stp-obj->attributes stp-obj))
+    (setf (inds mesh) (stp-obj->indices stp-obj))
+    (setf (so mesh) stp-obj)
 mesh))
 
 (defun mesh->vao (path-to-xml)
