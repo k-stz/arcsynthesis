@@ -135,13 +135,15 @@
   )
 
 
+(defvar m-mesh)
 
 (defun init ()
 	(initialize-program)
 	(initialize-vertex-buffer)
 	(initialize-vertex-array-objects)
 	;; test:
-	(framework::make-mesh (merge-pathnames *data-dir* "UnitPlane.xml"))
+	(setf m-mesh (framework::mesh->vao (merge-pathnames *data-dir* "UnitCube.xml")))
+	(setf framework::msh m-mesh)
 
 	;; TODO: why doesn't this seem to affect the unit-plane when it is rotated 360?
 	;; this gotta be a pernicious bug, swapping the z-axis so that the winding order is
@@ -208,10 +210,12 @@ geometry coordinates and returned as a position vector."
 ;; &var we don't need a copy (reuse of resource;pass by reference)
 ;; and 'const' ensures we will not mutate it (save pass by reference for user
 ;; of this function). Also this probably helps the compiler.
-(defparameter tc (lambda () (calc-look-at-matrix
-			     (glm:vec3 0.0 0.0 1.0) ;be
-			     (glm:vec3 0.0)         ;look at
-			     (glm:vec3 0.0 1.0 0.0)))) ;up
+
+;; (defparameter tc (lambda () (calc-look-at-matrix
+;; 			     (glm:vec3 0.0 0.0 1.0) ;be
+;; 			     (glm:vec3 0.0)         ;look at
+;; 			     (glm:vec3 0.0 1.0 0.0)))) ;up
+
 ;; TODO: hm the resultin matrix from tc has many rounding problems
 (defun calc-look-at-matrix (camera-pt look-pt up-pt)
   ;; camera-pt already is set relative to look-pt by being added to it in
