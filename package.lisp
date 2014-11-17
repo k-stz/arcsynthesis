@@ -14,7 +14,8 @@
    #:create-program
    #:create-program-and-return-it
    #:file-to-string
-   #:gl-array-content))
+   #:gl-array-content
+   #:string->gl-type))
 
 (defpackage #:glm
   (:use :cl)

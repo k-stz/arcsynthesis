@@ -158,3 +158,15 @@ bytes read."
   "Returns list of gl-array's content."
   (loop for i from 0 below (gl::gl-array-size gl-array) collecting
        (gl:glaref gl-array i)))
+
+(defmacro string-case (str &body cases)
+  `(loop for i in (quote ,cases) when (string-equal ,str (car i))
+       return (cadr i)))
+
+(defun string->gl-type (string)
+  (string-case string
+    ("ushort" :unsigned-short)
+    ("triangles" :triangles)
+    ("float" :float)
+    ("tri-fan" :triangle-fan)
+    ("tri-strip" :triangle-strip)))

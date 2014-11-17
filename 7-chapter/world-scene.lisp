@@ -143,13 +143,11 @@
 	(initialize-vertex-array-objects)
 	;; test:
 	(setf m-mesh (framework::mesh->vao (merge-pathnames *data-dir* "UnitCube.xml")))
-	(setf framework::msh m-mesh)
-
 	;; TODO: why doesn't this seem to affect the unit-plane when it is rotated 360?
 	;; this gotta be a pernicious bug, swapping the z-axis so that the winding order is
 	;; always clock-wise?
 	(gl:enable :cull-face)
-	(%gl:cull-face :back)
+	(%gl:cull-face :front)
 	(%gl:front-face :cw) 
 
 	(gl:viewport 0 0 500 500)
@@ -260,7 +258,6 @@ geometry coordinates and returned as a position vector."
     ;;return rotmat * transmat;
     (sb-cga:matrix* rot-mat trans-mat)))
 
-;;NEXT-TODO:
 (defun draw-look-at-point (model-matrix cam-pos)
  (gl:disable :depth-test)
 

@@ -61,11 +61,12 @@
     (stp:with-attributes
 	((i "index") (ty "type") (s "size")) attr-node
       (setf (index attr) (read-from-string i))
-      (setf (attr-type attr) (read-from-string ty))
+      ;; TODO: if xml is "ufloat" -falsly- it also returns cl::ufloat!!! ... why?
+      (setf (attr-type attr) (arc:string->gl-type ty))
       (setf (size attr) (read-from-string s))
       ;; TODO: brute-force solution shows
-      (setf (data attr) (list-from-string (stp:data (stp:first-child attr-node))))
-	attr)))
+      (setf (data attr) (list-from-string (stp:data (stp:first-child attr-node)))))
+    attr))
 
 (defun node-attributes-list (element-nodes)
   "Take list of element nodes and return a list of attribute objects from it"
@@ -79,14 +80,15 @@
   (node-attributes-list (list-element-nodes stp-obj)))
 
 ;;;INDICES
-
 (defun node->index (indx-node)
   (let ((indx (make-instance 'indices)))
     (stp:with-attributes
 	((c "cmd") (ty "type")) indx-node
-      (setf (cmd indx) (read-from-string c))
-      (setf (indices-type indx) (read-from-string ty))
-      (setf (data indx) (list-from-string (stp:data (stp:first-child indx-node)))))
+      ;;(print *package*) ==> #<PACKAGE "COMMON-LISP-USER"> !
+      (setf (cmd indx) (arc:string->gl-type c))
+      (setf (indices-type indx) (arc:string->gl-type ty))
+      (setf (data indx) (list-from-string (stp:data (stp:first-child indx-node))))
+      )
     indx))
 
 (defun node-indices-list (element-nodes)
@@ -132,6 +134,13 @@
 
 (defvar *vertex-buffer-object*)
 
+(defun build-vao-in-mesh (mesh)
+  (let ((vbos (gl:gen-buffers (length (attrs mesh)))))
+    	(print 'hello)
+	(print vbos))
+  (setf (vbo mesh) "cheese"))
+
+
 (defun initialize-vertex-buffer (stp-obj)
   (setf *vertex-buffer-object* (first (gl:gen-buffers 1)))
 
@@ -157,11 +166,11 @@
 ;;   (%gl:vertex-attrib-pointer 0 3 :float :false 0 0)
 ;;   (%gl:vertex-attrib-pointer 1 4 :float :false 0 color-data-offset)
 ;;   (%gl:bind-buffer :element-array-buffer *index-buffer-object*)
+;;   (%gl:bind-vertex-array 0))
+;;(%gl:draw-elements :triangles (gl::gl-array-size *index-data*)
+;;		       :unsigned-short 0)
 
-;;   (%gl:bind-vertex-array 0)
-;;   ;; unbind element-array-buffer? since it already, received data, and
-;;   ;; the *vao* implicit setting is done?
-;;   )
+
 
 ;; TODO: implement class, with RENDER generic function
 
@@ -170,6 +179,7 @@
     (setf (attrs mesh) (stp-obj->attributes stp-obj))
     (setf (inds mesh) (stp-obj->indices stp-obj))
     (setf (so mesh) stp-obj)
+    (build-vao-in-mesh mesh)
 mesh))
 
 (defun mesh->vao (path-to-xml)
@@ -180,9 +190,11 @@ mesh))
     mesh))
 
 
-;; multiple attribute
-
-(defvar msh)
-
 
 ;; (arc-7:main)
+
+;;render: keywords: cmd
+;;(%gl:draw-elements :triangles (gl::gl-array-size *index-data*)
+;;		       :unsigned-short 0)
+;; :triangle-fan , :triangle-strip
+
