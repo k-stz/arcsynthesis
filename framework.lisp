@@ -23,10 +23,10 @@
 (defparameter m-stp (cxml:parse *xml-path* (stp:make-builder)))
 
 (defclass mesh ()
-  ((attributes :accessor attrs)
+  ((attributes :accessor attrs) ;; usually two attrs objects: positions + colors
    (indices :accessor inds)
    (stp-obj :accessor so)
-   (vbo :accessor vbo)))
+   (vaos :accessor vaos))) ;; number of indices objects decide number of vbos
 
 (defclass attribute ()
   ((index :accessor index) (type :accessor attr-type) (size :accessor size)
@@ -134,11 +134,77 @@
 
 (defvar *vertex-buffer-object*)
 
-(defun build-vao-in-mesh (mesh)
-  (let ((vbos (gl:gen-buffers (length (attrs mesh)))))
-    	(print 'hello)
-	(print vbos))
-  (setf (vbo mesh) "cheese"))
+  ;; TODO: read attributes in one vertex-buffer-object,
+  ;; format with first attribute using type and number from first attribute,
+  ;; if 2nd attribute exists, calculate offset from first
+  ;;;
+  ;; if one index list, then use it on both attributes. On the first as is,
+  ;; on the 2nd by offset.
+  ;; If there are two: use first on first attribute, and 2nd on 2nd
+  ;;; could be that each index, must belong to separate vbo... hence
+  ;; we'd have to create mulitple vbos, and (render mesh) would draw
+  ;; each one in order? e.g. UnitCylinder "indices" seem to hold 60 items, just like
+  ;; the one attribute provided
+
+
+;; TODO: fully implement? If yes, move to "auxiliary-functions"
+(defun gl-type-byte-size (type)
+  (case type
+    (:float 4)
+    (t (progn (format t "type: ~a unknown! Defaulting to byte-size 4" type)
+		 4))))
+
+(defun calc-color-data-offset (position-data-attribute)
+  (let* ((pda position-data-attribute) #|->|#  (number-of-vertices (length (data pda)))
+	 (type (attr-type pda)) #|->|# (type-size (gl-type-byte-size type)))
+    ;; (* #|size-of(float):|# 4 3 *number-of-vertices*)
+    (* type-size number-of-vertices)))
+
+(defun indices->index-buffer-objects (indices)
+  (print 'hi)
+  (loop for inds in indices
+     with ibo = (first (gl:gen-buffers 1))
+     with index-data = (arc::create-gl-array-of-unsigned-short-from-vector
+			(apply #'vector (data inds)))
+       ;; NEXT-TODO: why can't call (data inds) inside LOOP, but no problem outside?
+     do
+       (gl:bind-buffer :element-array-buffer ibo)
+       (gl:buffer-data :element-array-buffer :static-draw index-data)
+       (gl:bind-buffer :element-array-buffer 0)
+     collecting ibo))
+
+(defun build-vaos (mesh vertex-buffer-object)
+  ;; TODO: create multiple vaos or call (gl:buffer-data ..) to supply index-data in
+  ;; sequence?
+  (let ((color-data-offset (calc-color-data-offset (first (attrs mesh))))
+	(index-buffer-objects (indices->index-buffer-objects (inds mesh))))
+    (loop for ibo in index-buffer-objects
+       with vao = (gl:gen-vertex-array) do
+	 (gl:bind-vertex-array vao)
+	 (gl:bind-buffer :array-buffer vertex-buffer-object)
+	 (loop for attribute in (attrs mesh)
+	    for data-offset = 0 then color-data-offset
+	    do
+	      (%gl:enable-vertex-attrib-array (index attribute))
+	      (%gl:vertex-attrib-pointer (index attribute)
+					 (size attribute)
+					 (attr-type attribute) :false 0
+					 data-offset))
+;       (%gl:bind-buffer :element-array-buffer *index-buffer-object*)
+;	 (print ibo)
+       ;; (%gl:bind-vertex-array 0)
+	 )))
+
+(defun build-vaos-in-mesh (mesh)
+  (let* ((vbo (first (gl:gen-buffers 1)))
+	 )
+    (gl:bind-buffer :array-buffer vbo)
+    (gl:buffer-data :array-buffer :static-draw (vertex-data (so mesh)))
+    (gl:bind-buffer :array-buffer 0)
+
+    (build-vaos mesh vbo)
+    
+))
 
 
 (defun initialize-vertex-buffer (stp-obj)
@@ -155,8 +221,6 @@
   (gl:buffer-data :element-array-buffer :static-draw (index-data stp-obj))
   (gl:bind-buffer :element-array-buffer  0))
 
-
-;; (defvar *vao*)
 ;; (defun initialize-vertex-array-objects ()
 ;;   (setf *vao* (first (gl:gen-vertex-arrays 1)))
 ;;   (gl:bind-vertex-array *vao*)
@@ -176,17 +240,17 @@
 
 (defun make-mesh (stp-obj)
   (let ((mesh (make-instance 'mesh)))
-    (setf (attrs mesh) (stp-obj->attributes stp-obj))
+    ;; TODO: ugly ad-hoc solution (n-reverse...) because data in reverse order
+    ;; and the vaos building code likes to iterate through it the other way around..
+    (setf (attrs mesh) (nreverse (stp-obj->attributes stp-obj)))
     (setf (inds mesh) (stp-obj->indices stp-obj))
     (setf (so mesh) stp-obj)
-    (build-vao-in-mesh mesh)
+    (build-vaos-in-mesh mesh)
 mesh))
 
 (defun mesh->vao (path-to-xml)
   (let* ((stp-obj  (cxml:parse path-to-xml (stp:make-builder)))
 	(mesh (make-mesh stp-obj)))
-    (initialize-vertex-buffer stp-obj)
-    (setf (so mesh) stp-obj)
     mesh))
 
 

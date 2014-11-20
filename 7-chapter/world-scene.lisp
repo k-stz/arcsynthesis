@@ -142,7 +142,8 @@
 	(initialize-vertex-buffer)
 	(initialize-vertex-array-objects)
 	;; test:
-	(setf m-mesh (framework::mesh->vao (merge-pathnames *data-dir* "UnitCube.xml")))
+	(setf m-mesh
+	      (framework::mesh->vao (merge-pathnames *data-dir* "UnitCylinderTint.xml")))
 	;; TODO: why doesn't this seem to affect the unit-plane when it is rotated 360?
 	;; this gotta be a pernicious bug, swapping the z-axis so that the winding order is
 	;; always clock-wise?
@@ -315,7 +316,7 @@ geometry coordinates and returned as a position vector."
     ))
 
 (defun display ()
-  (gl:clear-color 0 0 0.2 1)
+  (gl:clear-color 0.0 0.0 0.2 1)
   (gl:clear-depth 1.0)
   (gl:clear :color-buffer-bit :depth-buffer-bit)
 
