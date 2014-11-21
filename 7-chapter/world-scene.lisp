@@ -56,6 +56,8 @@
 (defun initialize-program ()
   (setf *uniform-color*
 	(load-program "pos-color-local-transformation.vert" "color-passthrough.frag"))
+  ;; (setf *object-color*
+  ;; 	(load-program "pos-color-"))
 )
 
 
@@ -135,7 +137,7 @@
   )
 
 
-(defvar m-mesh)
+(defparameter m-mesh nil)
 
 (defun init ()
 	(initialize-program)
@@ -143,7 +145,7 @@
 	(initialize-vertex-array-objects)
 	;; test:
 	(setf m-mesh
-	      (framework::mesh->vao (merge-pathnames *data-dir* "UnitCylinderTint.xml")))
+	      (framework::mesh->vao (merge-pathnames *data-dir* "UnitCube.xml")))
 	;; TODO: why doesn't this seem to affect the unit-plane when it is rotated 360?
 	;; this gotta be a pernicious bug, swapping the z-axis so that the winding order is
 	;; always clock-wise?
@@ -274,8 +276,8 @@ geometry coordinates and returned as a position vector."
 	(gl:uniform-matrix (world-to-camera-matrix-unif *uniform-color*) 4
 			   (vector identity) NIL)
 ;    (print (glutil:top-ms model-matrix))	
-    (%gl:draw-elements :triangles (gl::gl-array-size *index-data*)
-		       :unsigned-short 0)
+    ;; (%gl:draw-elements :triangles (gl::gl-array-size *index-data*)
+    ;; 		       :unsigned-short 0)
   
 	
 	)
@@ -302,14 +304,16 @@ geometry coordinates and returned as a position vector."
 
     ;; render the ground plane:
     (glutil:with-transform (model-matrix)
-	:scale 100.0 1.0 100.0
+	:scale 10.0 10.0 10.0
 	;; TODO fold into WITH-TRANSFORM macro: optional slots (make matrix-stack
 	;; have slots for shader uniforms? Create shader-program class to work with?
 	(gl:uniform-matrix (model-to-world-matrix-unif *uniform-color*) 4
 			   (vector (glutil:top-ms model-matrix)) NIL)
+        
+	(framework::render m-mesh)
 
-	(%gl:draw-elements :triangles (gl::gl-array-size *index-data*)
-			   :unsigned-short 0)
+	;; (%gl:draw-elements :triangles (gl::gl-array-size *index-data*)
+	;; 		   :unsigned-short 0)
 	    (when *draw-look-at-point*
 	      (draw-look-at-point model-matrix cam-pos)))
 
@@ -321,11 +325,11 @@ geometry coordinates and returned as a position vector."
   (gl:clear :color-buffer-bit :depth-buffer-bit)
 
 
-  (gl:bind-vertex-array *vao*)
+;  (gl:bind-vertex-array *vao*)
 
   (draw)
   
-  (gl:bind-vertex-array 0)
+;  (gl:bind-vertex-array 0)
   ;;swap buffers: in main loop 
        )
 

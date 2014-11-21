@@ -35,6 +35,26 @@
 (defclass indices ()
   ((command :accessor cmd) (type :accessor indices-type) (data :accessor data)))
 
+
+(defgeneric render (mesh))
+(defmethod render ((mesh mesh))
+  ;; exploits the fact that the order of indices-obj and vao-obj match with what
+  ;; was used to create the vao-obj. Hence related data such as CMD and TYPE can be
+  ;; used. For now only CMD is really variable for each vao
+  (loop for vao-obj in (vaos mesh)
+       
+     for index-obj in (inds mesh) do
+       (%gl:bind-vertex-array vao-obj)
+       ;; TODO: ugh, again with this long function, create data needed upstream (make-mesh)
+       (%gl:draw-elements (cmd index-obj)
+			  (gl::gl-array-size
+			   (arc::create-gl-array-of-unsigned-short-from-vector
+			    (apply #'vector
+				   (data index-obj))))
+			  (indices-type index-obj) 0)
+       (%gl:bind-vertex-array 0)
+       ))
+
 ;; everything is a node, every node has PARENTS
 ;; (stp:parent m-stp) , some CAN have children:
 
@@ -161,17 +181,20 @@
     (* type-size number-of-vertices)))
 
 (defun indices->index-buffer-objects (indices)
-  (print 'hi)
-  (loop for inds in indices
-     with ibo = (first (gl:gen-buffers 1))
-     with index-data = (arc::create-gl-array-of-unsigned-short-from-vector
-			(apply #'vector (data inds)))
-       ;; NEXT-TODO: why can't call (data inds) inside LOOP, but no problem outside?
-     do
-       (gl:bind-buffer :element-array-buffer ibo)
-       (gl:buffer-data :element-array-buffer :static-draw index-data)
-       (gl:bind-buffer :element-array-buffer 0)
-     collecting ibo))
+  (let* ((data-list (mapcar #'data indices))
+	 (gl-index-data-list ;; TODO: yeah, maybe rewrite this?
+	  (mapcar #'arc::create-gl-array-of-unsigned-short-from-vector
+		  (mapcar #'(lambda (x) (apply #'vector x)) data-list))))
+     
+    (loop for ibo in (gl:gen-buffers (length indices)) and
+	  index-data in gl-index-data-list
+	 ;; TODO: did it work??
+       do
+       	 (gl:bind-buffer :element-array-buffer ibo)
+       	 (gl:buffer-data :element-array-buffer :static-draw index-data)
+       	 (gl:bind-buffer :element-array-buffer 0)
+       collecting ibo))
+  )
 
 (defun build-vaos (mesh vertex-buffer-object)
   ;; TODO: create multiple vaos or call (gl:buffer-data ..) to supply index-data in
@@ -179,9 +202,12 @@
   (let ((color-data-offset (calc-color-data-offset (first (attrs mesh))))
 	(index-buffer-objects (indices->index-buffer-objects (inds mesh))))
     (loop for ibo in index-buffer-objects
-       with vao = (gl:gen-vertex-array) do
+	 ;; attention 'for <var> = <sexp>' will evaluate <sexp> on every iteration!
+	 ;; And that's what we need here: new vertex-array-object for each run through
+       for vao = (gl:gen-vertex-array) do
 	 (gl:bind-vertex-array vao)
 	 (gl:bind-buffer :array-buffer vertex-buffer-object)
+       ;; this is opengl state setting code
 	 (loop for attribute in (attrs mesh)
 	    for data-offset = 0 then color-data-offset
 	    do
@@ -190,21 +216,21 @@
 					 (size attribute)
 					 (attr-type attribute) :false 0
 					 data-offset))
-;       (%gl:bind-buffer :element-array-buffer *index-buffer-object*)
-;	 (print ibo)
-       ;; (%gl:bind-vertex-array 0)
-	 )))
+       ;; associate current vao with index-data in index-buffer-object: ibo
+	 (%gl:bind-buffer :element-array-buffer ibo)
+	 (%gl:bind-vertex-array 0)
+	 ;; finally collecting the vao we carefully pieced together :)
+       collecting VAO)))
 
 (defun build-vaos-in-mesh (mesh)
   (let* ((vbo (first (gl:gen-buffers 1)))
 	 )
+    ;; build vbo first
     (gl:bind-buffer :array-buffer vbo)
     (gl:buffer-data :array-buffer :static-draw (vertex-data (so mesh)))
     (gl:bind-buffer :array-buffer 0)
-
-    (build-vaos mesh vbo)
     
-))
+    (setf (vaos mesh) (build-vaos mesh vbo))))
 
 
 (defun initialize-vertex-buffer (stp-obj)
