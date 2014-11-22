@@ -135,8 +135,10 @@ the projection plane)"
 ;; (&key (drop t)) removed as having to provide args (matrix-stack-top-to-shader ..) is too
 ;; specific to abstract away in the macro
 (defmacro with-transform ((matrix-stack) &body body)
-    "Creates PUSH-MS POP-MS wrapper around its input, so many with-transform can
-be nested to facilitate the hierarchical model."
+    "Creates PUSH-MS POP-MS wrapper around its input, so many with-transform can be nested
+to facilitate the hierarchical model. Intuitive explanation: work with the current
+matrix (translating, scaling, rotating) and when your done, it will be returned to its
+former state"
   (labels ((try-key (car l exp)
 	     (cond ((null l)
 		    (nreverse exp))

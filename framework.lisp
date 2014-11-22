@@ -55,11 +55,9 @@
        (%gl:bind-vertex-array 0)
        ))
 
+;;; about cxml-stp:
 ;; everything is a node, every node has PARENTS
 ;; (stp:parent m-stp) , some CAN have children:
-
-;; TODO: rewrite; this is trial-and-error code
-;; to avoid procrastination a "brute-force" solution was implemented
 
 ;; access attributes with: (stp:attribute-value <element> "attribute-name")
 (defun get-element (element-string stp-obj)
@@ -274,7 +272,7 @@
     (build-vaos-in-mesh mesh)
 mesh))
 
-(defun mesh->vao (path-to-xml)
+(defun xml->mesh-obj (path-to-xml)
   (let* ((stp-obj  (cxml:parse path-to-xml (stp:make-builder)))
 	(mesh (make-mesh stp-obj)))
     mesh))

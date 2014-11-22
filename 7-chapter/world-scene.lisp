@@ -55,97 +55,112 @@
 
 (defun initialize-program ()
   (setf *uniform-color*
-	(load-program "pos-color-local-transformation.vert" "color-passthrough.frag"))
-  ;; (setf *object-color*
-  ;; 	(load-program "pos-color-"))
+	(load-program "pos-only-world-transform.vert" "color-uniform.frag"))
+  (setf *object-color*
+  	(load-program "pos-color-world-transform.vert" "color-passthrough.frag"))
+  (setf *uniform-color-tint*
+	(load-program "pos-color-world-transform.vert" "color-mult-uniform.frag"))
 )
 
 
-(defparameter *number-of-vertices* 4)
+;; (defparameter *number-of-vertices* 4)
 
-(defparameter +red-color+   '(1.0 0.0 0.0 1.0))
-(defparameter +green-color+ '(0.0 1.0 0.0 1.0))
-(defparameter +blue-color+  '(0.0 0.0 1.0 1.0))
+;; (defparameter +red-color+   '(1.0 0.0 0.0 1.0))
+;; (defparameter +green-color+ '(0.0 1.0 0.0 1.0))
+;; (defparameter +blue-color+  '(0.0 0.0 1.0 1.0))
 
-(defparameter +yellow-color+ '(1.0 1.0 0.0 1.0))
-(defparameter +cyan-color+ '(0.0 1.0 1.0 1.0))
-(defparameter +magenta-color+ '(1.0 0.0 1.0 1.0))
-
-
-(defparameter *vertex-data*
-  (arc:create-gl-array-from-vector 
-   `#( ;; from arc's unit-plane.xml
-      0.5  0.0 -0.5
-      0.5  0.0  0.5
-      -0.5  0.0  0.5
-      -0.5  0.0 -0.5
-      ;; vertex colors
-      ,@+green-color+
-      ,@+green-color+
-      ,@+green-color+
-      ,@+green-color+
-      )))
+;; (defparameter +yellow-color+ '(1.0 1.0 0.0 1.0))
+;; (defparameter +cyan-color+ '(0.0 1.0 1.0 1.0))
+;; (defparameter +magenta-color+ '(1.0 0.0 1.0 1.0))
 
 
-;; IMPORTANT: in arc's code, index alternate every three indices between points and
-;;            colors!!!!!!
-(defparameter *index-data*
-  (arc::create-gl-array-of-unsigned-short-from-vector
-   #(
-     0 1 2
-     2 3 0
-     0 2 1
-     2 0 3
-     )))
-
-(defvar *vertex-buffer-object*)
-(defvar *index-buffer-object*)
-
-(defun initialize-vertex-buffer ()
-  (setf *vertex-buffer-object* (first (gl:gen-buffers 1)))
-
-  (gl:bind-buffer :array-buffer *vertex-buffer-object*)
-  (gl:buffer-data :array-buffer :static-draw *vertex-data*)
-  (gl:bind-buffer :array-buffer 0)
-
-  ;; index-array time:
-  (setf *index-buffer-object* (first (gl:gen-buffers 1)))
-
-  (gl:bind-buffer :element-array-buffer *index-buffer-object*)
-  (gl:buffer-data :element-array-buffer :static-draw *index-data*)
-  (gl:bind-buffer :element-array-buffer  0))
-
-(defvar *vao*)
-
-(defun initialize-vertex-array-objects ()
-  (setf *vao* (first (gl:gen-vertex-arrays 1)))
-  (gl:bind-vertex-array *vao*)
-
-  (let ((color-data-offset (* #|size-of(float):|# 4 3 *number-of-vertices*)))
-    (gl:bind-buffer :array-buffer *vertex-buffer-object*)
-    (%gl:enable-vertex-attrib-array 0)
-    (%gl:enable-vertex-attrib-array 1)
-    (%gl:vertex-attrib-pointer 0 3 :float :false 0 0)
-    (%gl:vertex-attrib-pointer 1 4 :float :false 0 color-data-offset)
-    (%gl:bind-buffer :element-array-buffer *index-buffer-object*)
-
-    (%gl:bind-vertex-array 0)
-    ;; unbind element-array-buffer? since it already, received data, and
-    ;; the *vao* implicit setting is done?
-    
-    )
-  )
+;; (defparameter *vertex-data*
+;;   (arc:create-gl-array-from-vector 
+;;    `#( ;; from arc's unit-plane.xml
+;;       0.5  0.0 -0.5
+;;       0.5  0.0  0.5
+;;       -0.5  0.0  0.5
+;;       -0.5  0.0 -0.5
+;;       ;; vertex colors
+;;       ,@+green-color+
+;;       ,@+green-color+
+;;       ,@+green-color+
+;;       ,@+green-color+
+;;       )))
 
 
-(defparameter m-mesh nil)
+;; ;; IMPORTANT: in arc's code, index alternate every three indices between points and
+;; ;;            colors!!!!!!
+;; (defparameter *index-data*
+;;   (arc::create-gl-array-of-unsigned-short-from-vector
+;;    #(
+;;      0 1 2
+;;      2 3 0
+;;      0 2 1
+;;      2 0 3
+;;      )))
+
+;; (defvar *vertex-buffer-object*)
+;; (defvar *index-buffer-object*)
+
+;; (defun initialize-vertex-buffer ()
+;;   (setf *vertex-buffer-object* (first (gl:gen-buffers 1)))
+
+;;   (gl:bind-buffer :array-buffer *vertex-buffer-object*)
+;;   (gl:buffer-data :array-buffer :static-draw *vertex-data*)
+;;   (gl:bind-buffer :array-buffer 0)
+
+;;   ;; index-array time:
+;;   (setf *index-buffer-object* (first (gl:gen-buffers 1)))
+
+;;   (gl:bind-buffer :element-array-buffer *index-buffer-object*)
+;;   (gl:buffer-data :element-array-buffer :static-draw *index-data*)
+;;   (gl:bind-buffer :element-array-buffer  0))
+
+;; (defvar *vao*)
+
+;; (defun initialize-vertex-array-objects ()
+;;   (setf *vao* (first (gl:gen-vertex-arrays 1)))
+;;   (gl:bind-vertex-array *vao*)
+
+;;   (let ((color-data-offset (* #|size-of(float):|# 4 3 *number-of-vertices*)))
+;;     (gl:bind-buffer :array-buffer *vertex-buffer-object*)
+;;     (%gl:enable-vertex-attrib-array 0)
+;;     (%gl:enable-vertex-attrib-array 1)
+;;     (%gl:vertex-attrib-pointer 0 3 :float :false 0 0)
+;;     (%gl:vertex-attrib-pointer 1 4 :float :false 0 color-data-offset)
+;;     (%gl:bind-buffer :element-array-buffer *index-buffer-object*)
+
+;;     (%gl:bind-vertex-array 0)
+;;     ;; unbind element-array-buffer? since it already, received data, and
+;;     ;; the *vao* implicit setting is done?
+;; ))
+
+
+(defparameter *cone-mesh* nil)
+(defparameter *cylinder-mesh* nil)
+(defparameter *cube-tint-mesh* nil)
+(defparameter *cube-color-mesh* nil)
+(defparameter *plane-mesh* nil)
+
+(defun init-meshes ()
+  (setf *cone-mesh*
+	(framework::xml->mesh-obj (merge-pathnames *data-dir* "UnitConeTint.xml")))
+  (setf *cylinder-mesh*
+	(framework::xml->mesh-obj (merge-pathnames *data-dir* "UnitCylinderTint.xml")))
+  (setf *cube-tint-mesh*
+	(framework::xml->mesh-obj (merge-pathnames *data-dir* "UnitCubeTint.xml")))
+  (setf *cube-color-mesh*
+	(framework::xml->mesh-obj (merge-pathnames *data-dir* "UnitCubeColor.xml")))
+  (setf *plane-mesh*
+	(framework::xml->mesh-obj (merge-pathnames *data-dir* "UnitPlane.xml"))))
 
 (defun init ()
 	(initialize-program)
-	(initialize-vertex-buffer)
-	(initialize-vertex-array-objects)
-	;; test:
-	(setf m-mesh
-	      (framework::mesh->vao (merge-pathnames *data-dir* "UnitCube.xml")))
+	(init-meshes)
+;	(initialize-vertex-buffer)
+;	(initialize-vertex-array-objects)
+
 	;; TODO: why doesn't this seem to affect the unit-plane when it is rotated 360?
 	;; this gotta be a pernicious bug, swapping the z-axis so that the winding order is
 	;; always clock-wise?
@@ -289,6 +304,8 @@ geometry coordinates and returned as a position vector."
 
 (defparameter *look-pt* (glm:vec3 0.0 0.0 0.0)) ; look at actual vertex of drawn object
 (defparameter *cam-pt* (glm:vec3 0.0 0.0 1.0))
+(defparameter *draw-look-at-point* nil)
+
 
 (defun draw ()
   (let ((cam-pos (resolve-cam-position))
@@ -301,21 +318,24 @@ geometry coordinates and returned as a position vector."
     (gl:use-program (the-program *uniform-color*))
     (gl:uniform-matrix (world-to-camera-matrix-unif *uniform-color*) 4
 		       (vector (glutil:top-ms cam-matrix)) NIL)
+    ;; TODO: all the other camera-matrices setting
 
     ;; render the ground plane:
     (glutil:with-transform (model-matrix)
-	:scale 10.0 10.0 10.0
+	:scale 100.0 1.0 100.0
 	;; TODO fold into WITH-TRANSFORM macro: optional slots (make matrix-stack
 	;; have slots for shader uniforms? Create shader-program class to work with?
+
+	(%gl:use-program (the-program *uniform-color*))
 	(gl:uniform-matrix (model-to-world-matrix-unif *uniform-color*) 4
 			   (vector (glutil:top-ms model-matrix)) NIL)
-        
-	(framework::render m-mesh)
-
-	;; (%gl:draw-elements :triangles (gl::gl-array-size *index-data*)
-	;; 		   :unsigned-short 0)
-	    (when *draw-look-at-point*
-	      (draw-look-at-point model-matrix cam-pos)))
+	;; TODO: noo, something is off. The colors looks different.. uglier too
+	(%gl:uniform-4f (base-color-unif *uniform-color*) 0.302 0.416 0.0589 1.0)
+	(framework:render *plane-mesh*)
+	(gl:use-program 0)
+	;; (when *draw-look-at-point*
+	;;   (draw-look-at-point model-matrix cam-pos))
+	)
 
     ))
 
@@ -345,8 +365,6 @@ geometry coordinates and returned as a position vector."
 		       (vector (glutil:top-ms pers-matrix)) NIL)
     (%gl:use-program 0))
   (%gl:viewport 0 0 w h))
-
-(defparameter *draw-look-at-point* nil)
 
 (defun main ()
   (sdl2:with-init (:everything)

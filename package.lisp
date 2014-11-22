@@ -62,6 +62,8 @@
   ;; TODO export
   (:export
    #:deg-to-rad
+   #:render
+   #:xml->mesh-obj
    )
   )
 
