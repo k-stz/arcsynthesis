@@ -88,7 +88,7 @@
 	;; this gotta be a pernicious bug, swapping the z-axis so that the winding order is
 	;; always clock-wise?
 	(gl:enable :cull-face)
-	(%gl:cull-face :front)
+	(%gl:cull-face :back)
 	(%gl:front-face :cw) 
 
 	(gl:viewport 0 0 500 500)
@@ -225,7 +225,6 @@ geometry coordinates and returned as a position vector."
   (glutil:with-transform (matrix-stack)
       :scale 1.0 trunk-height 1.0
       :translate 0.0 0.5 0.0 ;; check out the z-fighting when y = 1.0 !
-
       ;; TODO: write with-program-data macro?
       (gl:use-program (the-program *uniform-color-tint*))
       (gl:uniform-matrix (model-to-world-matrix-unif *uniform-color-tint*) 4
@@ -244,7 +243,7 @@ geometry coordinates and returned as a position vector."
       (%gl:uniform-4f (base-color-unif *uniform-color-tint*) 0.0 1.0 0.0 1.0)
       (framework:render *cone-mesh*)))
 
-(defparameter *tree-data*
+(defvar *tree-data*
   '((-45.0 -40.0 2.0 3.0)
     (-42.0 -35.0 2.0 3.0) 
     (-39.0 -29.0 2.0 4.0) 
@@ -359,14 +358,140 @@ geometry coordinates and returned as a position vector."
      do
        (glutil:with-transform (matrix-stack)
 	   :translate fx-pos 0.0 fz-pos
-	   (draw-tree matrix-stack trunk-height cone-height)))  )
+	   (draw-tree matrix-stack trunk-height cone-height))))
 
+(defparameter *column-base-height* 0.25)
+
+(defun draw-column (matrix-stack &optional (height 5.0))
+  ;; Draw the bottom of the column
+  (glutil:with-transform (matrix-stack)
+;      (print (glutil:top-ms matrix-stack))
+      :scale 1.0 *column-base-height* 1.0
+;      :translate 0.0 0.5 0.0 ;; this is on purpose to prevent z-fighting?
+      
+      (gl:use-program (the-program *uniform-color-tint*))
+      (gl:uniform-matrix (model-to-world-matrix-unif *uniform-color-tint*) 4
+			 (vector (glutil:top-ms matrix-stack)) NIL)
+      (%gl:uniform-4f (base-color-unif *uniform-color-tint*) 1.0 1.0 1.0 1.0)
+      (framework:render *cube-tint-mesh*)
+      (gl:use-program 0))
+  ;; Draw the top of the column
+  (glutil:with-transform (matrix-stack)
+      :translate 0.0 (- height *column-base-height*) 0.0
+      :scale 1.0 *column-base-height* 1.0
+      ;; TODO: had to change from y = 0.5, maybe arc code is not up-to-date?
+      :translate 0.0 -0.25 0.0
+      (gl:use-program (the-program *uniform-color-tint*))
+      (gl:uniform-matrix (model-to-world-matrix-unif *uniform-color-tint*) 4
+			 (vector (glutil:top-ms matrix-stack)) NIL)
+      (%gl:uniform-4f (base-color-unif *uniform-color-tint*) 0.9 0.9 0.9 0.9)
+      (framework:render *cube-tint-mesh*)
+      (gl:use-program 0))
+  ;; Draw the main column ;; TODO: why does it draw it falsely
+  (glutil:with-transform (matrix-stack)
+      :translate 0.0 *column-base-height* 0.0
+      :scale 0.8 (- height (* *column-base-height* 2.0)) 0.8
+      ;; changed from y = 0.5
+      :translate 0.0 2.0 0.0
+      (gl:use-program (the-program *uniform-color-tint*))
+      (gl:uniform-matrix (model-to-world-matrix-unif *uniform-color-tint*) 4
+			 (vector (glutil:top-ms matrix-stack)) NIL)
+      (%gl:uniform-4f (base-color-unif *uniform-color-tint*) 0.9 0.9 0.9 0.9)
+      (framework:render *cylinder-mesh*)
+      (gl:use-program 0)))
+
+(defparameter *parthenon-width* 14.0)
+(defparameter *parthenon-length* 20.0)
+(defparameter *parthenon-column-height* 5.0)
+(defparameter *parthenon-base-height* 1.0)
+(defparameter *parthenon-top-height* 2.0)
+
+(defun draw-parthenon (matrix-stack)
+  ;; Draw base
+  (glutil:with-transform (matrix-stack)
+      :scale *parthenon-width* *parthenon-base-height* *parthenon-length*
+      :translate 0.0 0.5 0.0
+
+      (gl:use-program (the-program *uniform-color-tint*))
+      (gl:uniform-matrix (model-to-world-matrix-unif *uniform-color-tint*) 4
+			 (vector (glutil:top-ms matrix-stack)) NIL)
+      (%gl:uniform-4f (base-color-unif *uniform-color-tint*) 0.9 0.9 0.9 0.9)
+      (framework:render *cube-tint-mesh*)
+      (gl:use-program 0))
+
+  ;; Draw top
+  (glutil:with-transform (matrix-stack)
+      :translate 0.0 (+ *parthenon-column-height* *parthenon-base-height*) 0.0
+      :scale *parthenon-width* *parthenon-top-height* *parthenon-length*
+      :translate 0.0 0.5 0.0
+      (gl:use-program (the-program *uniform-color-tint*))
+      (gl:uniform-matrix (model-to-world-matrix-unif *uniform-color-tint*) 4
+  			 (vector (glutil:top-ms matrix-stack)) NIL)
+      (%gl:uniform-4f (base-color-unif *uniform-color-tint*) 0.9 0.9 0.9 0.9)
+      (framework:render *cube-tint-mesh*)
+      (gl:use-program 0))
+
+  ;; Draw columns
+  (let ((f-front-z-val (1- (/ *parthenon-length* 2.0)))
+	(f-right-x-val (1- (/ *parthenon-width* 2.0))))
+    (loop for i-col-num below (/ *parthenon-width* 2.0) do
+	 (glutil:with-transform (matrix-stack)
+	     :translate (1+ (- (* i-col-num 2.0) (/ *parthenon-width* 2.0)))
+	     *parthenon-base-height* f-front-z-val
+	     (draw-column matrix-stack *parthenon-column-height*))
+	 (glutil:with-transform (matrix-stack)
+	     :translate (1+ (- (* 2.0 i-col-num) (/ *parthenon-width* 2.0)))
+	     *parthenon-base-height* (- f-front-z-val)
+	     (draw-column matrix-stack *parthenon-column-height*)))
+
+    ;; Don't draw the first or last columns, since they've been drawn already
+    (loop for i-col-num from 1 below (/ (- *parthenon-length* 2.0) 2.0) do
+	 (glutil:with-transform (matrix-stack)
+	     :translate f-right-x-val *parthenon-base-height*
+	     (1+ (- (* 2.0 i-col-num) (/ *parthenon-length* 2.0)))
+	     (draw-column matrix-stack *parthenon-column-height*))
+	 (glutil:with-transform (matrix-stack)
+	     :translate (- f-right-x-val) *parthenon-base-height*
+	     (1+ (- (* 2.0 i-col-num) (/ *parthenon-length* 2.0)))
+	     (draw-column matrix-stack *parthenon-column-height*))))
+
+  ;; Draw interior
+  (glutil:with-transform (matrix-stack)
+      :translate 0.0 1.0 0.0
+      :scale (- *parthenon-width* 6.0) *parthenon-column-height*
+      (- *parthenon-length* 6.0)
+      ;; changed from y = 0.5
+      :translate 0.0 1.5 0.0
+      ;; secret-cube :>
+      (gl:use-program (the-program *object-color*))
+      (gl:uniform-matrix (model-to-world-matrix-unif *object-color*) 4
+			 (vector (glutil:top-ms matrix-stack)) NIL)
+      (framework:render *cube-color-mesh*)
+      (gl:use-program 0))
+    
+  ;; Draw headpiece
+  (glutil:with-transform (matrix-stack)
+      :translate 0.0
+      (- (+ *parthenon-column-height* *parthenon-base-height*
+	    (/ *parthenon-top-height* 2.0)) 0.5)
+      (/ *parthenon-length* 2.0)
+      :rotate-x -135.0
+      :rotate-y 45.0
+      (gl:use-program (the-program *object-color*))
+      (gl:uniform-matrix (model-to-world-matrix-unif *object-color*) 4
+			 (vector (glutil:top-ms matrix-stack)) NIL)
+      (framework:render *cube-color-mesh*)
+      (gl:use-program 0))
+    
+  )
 
 (defparameter *look-pt* (glm:vec3 0.0 0.0 0.0)) ; look at actual vertex of drawn object
 (defparameter *cam-pt* (glm:vec3 0.0 0.0 1.0))
 (defparameter *draw-look-at-point* nil)
 
 (defun draw ()
+  ;; TODO: as the demo runns sbcl's memory usage grows without stopping
+  ;; once back to the REPL it isn't released
   (let ((cam-pos (resolve-cam-position))
 	(cam-matrix (make-instance 'glutil:matrix-stack))
 	(model-matrix (make-instance 'glutil:matrix-stack)))
@@ -415,6 +540,10 @@ geometry coordinates and returned as a position vector."
     ;;Draw the trees:
     (draw-forest model-matrix)
 
+    ;;draw building
+    (glutil:with-transform (model-matrix)
+	:translate 20.0 0.0 -10.0
+	(draw-parthenon model-matrix))
     ))
 
 
