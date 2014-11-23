@@ -59,82 +59,7 @@
   (setf *object-color*
   	(load-program "pos-color-world-transform.vert" "color-passthrough.frag"))
   (setf *uniform-color-tint*
-	(load-program "pos-color-world-transform.vert" "color-mult-uniform.frag"))
-)
-
-
-;; (defparameter *number-of-vertices* 4)
-
-;; (defparameter +red-color+   '(1.0 0.0 0.0 1.0))
-;; (defparameter +green-color+ '(0.0 1.0 0.0 1.0))
-;; (defparameter +blue-color+  '(0.0 0.0 1.0 1.0))
-
-;; (defparameter +yellow-color+ '(1.0 1.0 0.0 1.0))
-;; (defparameter +cyan-color+ '(0.0 1.0 1.0 1.0))
-;; (defparameter +magenta-color+ '(1.0 0.0 1.0 1.0))
-
-
-;; (defparameter *vertex-data*
-;;   (arc:create-gl-array-from-vector 
-;;    `#( ;; from arc's unit-plane.xml
-;;       0.5  0.0 -0.5
-;;       0.5  0.0  0.5
-;;       -0.5  0.0  0.5
-;;       -0.5  0.0 -0.5
-;;       ;; vertex colors
-;;       ,@+green-color+
-;;       ,@+green-color+
-;;       ,@+green-color+
-;;       ,@+green-color+
-;;       )))
-
-
-;; ;; IMPORTANT: in arc's code, index alternate every three indices between points and
-;; ;;            colors!!!!!!
-;; (defparameter *index-data*
-;;   (arc::create-gl-array-of-unsigned-short-from-vector
-;;    #(
-;;      0 1 2
-;;      2 3 0
-;;      0 2 1
-;;      2 0 3
-;;      )))
-
-;; (defvar *vertex-buffer-object*)
-;; (defvar *index-buffer-object*)
-
-;; (defun initialize-vertex-buffer ()
-;;   (setf *vertex-buffer-object* (first (gl:gen-buffers 1)))
-
-;;   (gl:bind-buffer :array-buffer *vertex-buffer-object*)
-;;   (gl:buffer-data :array-buffer :static-draw *vertex-data*)
-;;   (gl:bind-buffer :array-buffer 0)
-
-;;   ;; index-array time:
-;;   (setf *index-buffer-object* (first (gl:gen-buffers 1)))
-
-;;   (gl:bind-buffer :element-array-buffer *index-buffer-object*)
-;;   (gl:buffer-data :element-array-buffer :static-draw *index-data*)
-;;   (gl:bind-buffer :element-array-buffer  0))
-
-;; (defvar *vao*)
-
-;; (defun initialize-vertex-array-objects ()
-;;   (setf *vao* (first (gl:gen-vertex-arrays 1)))
-;;   (gl:bind-vertex-array *vao*)
-
-;;   (let ((color-data-offset (* #|size-of(float):|# 4 3 *number-of-vertices*)))
-;;     (gl:bind-buffer :array-buffer *vertex-buffer-object*)
-;;     (%gl:enable-vertex-attrib-array 0)
-;;     (%gl:enable-vertex-attrib-array 1)
-;;     (%gl:vertex-attrib-pointer 0 3 :float :false 0 0)
-;;     (%gl:vertex-attrib-pointer 1 4 :float :false 0 color-data-offset)
-;;     (%gl:bind-buffer :element-array-buffer *index-buffer-object*)
-
-;;     (%gl:bind-vertex-array 0)
-;;     ;; unbind element-array-buffer? since it already, received data, and
-;;     ;; the *vao* implicit setting is done?
-;; ))
+  	(load-program "pos-color-world-transform.vert" "color-mult-uniform.frag")))
 
 
 (defparameter *cone-mesh* nil)
@@ -158,8 +83,6 @@
 (defun init ()
 	(initialize-program)
 	(init-meshes)
-;	(initialize-vertex-buffer)
-;	(initialize-vertex-array-objects)
 
 	;; TODO: why doesn't this seem to affect the unit-plane when it is rotated 360?
 	;; this gotta be a pernicious bug, swapping the z-axis so that the winding order is
@@ -277,7 +200,7 @@ geometry coordinates and returned as a position vector."
     (sb-cga:matrix* rot-mat trans-mat)))
 
 (defun draw-look-at-point (model-matrix cam-pos)
- (gl:disable :depth-test)
+  (gl:disable :depth-test)
 
   (let ((identity glm:+identity-mat4+)
 	(cam-aim-vec (glm:vec- *cam-target* cam-pos)))
@@ -290,22 +213,51 @@ geometry coordinates and returned as a position vector."
 			   (vector (glutil:top-ms model-matrix)) NIL)
 	(gl:uniform-matrix (world-to-camera-matrix-unif *uniform-color*) 4
 			   (vector identity) NIL)
-;    (print (glutil:top-ms model-matrix))	
-    ;; (%gl:draw-elements :triangles (gl::gl-array-size *index-data*)
-    ;; 		       :unsigned-short 0)
-  
-	
-	)
-
-    )
-
+					;    (print (glutil:top-ms model-matrix))	
+	;; (%gl:draw-elements :triangles (gl::gl-array-size *index-data*)
+	;; 		       :unsigned-short 0)
+	))
   (gl:enable :depth-test)
   )
+
+(defun draw-tree (matrix-stack &optional (trunk-height 2.0) (cone-height 3.0))
+  ;; Draw trunk
+  (glutil:with-transform (matrix-stack)
+      :scale 1.0 trunk-height 1.0
+      :translate 0.0 0.5 0.0 ;; check out the z-fighting when y = 1.0 !
+
+      ;; TODO: write with-program-data macro?
+      (gl:use-program (the-program *uniform-color-tint*))
+      (gl:uniform-matrix (model-to-world-matrix-unif *uniform-color-tint*) 4
+      			 (vector (glutil:top-ms matrix-stack)) NIL)
+      (%gl:uniform-4f (base-color-unif *uniform-color-tint*) 0.694 0.4 0.106 1.0)
+      (framework:render *cylinder-mesh*)
+      (gl:use-program 0))
+  ;; Draw the treetop
+  (glutil:with-transform (matrix-stack)
+      :translate 0.0 trunk-height 0.0
+      :scale 3.0 cone-height 3.0
+
+      (gl:use-program (the-program *uniform-color-tint*))
+      (gl:uniform-matrix (model-to-world-matrix-unif *uniform-color-tint*) 4
+			 (vector (glutil:top-ms matrix-stack)) NIL)
+      (%gl:uniform-4f (base-color-unif *uniform-color-tint*) 0.0 1.0 0.0 1.0)
+      (framework:render *cone-mesh*))
+  )
+
+(defun draw-forest (matrix-stack)
+  ;; example data: x = -45.0, y = -40.0, 2.0 = trunk-height, 3.0 cone-height
+  (glutil:with-transform (matrix-stack)
+      :translate 25.0 0.0 45.0
+      (draw-tree matrix-stack 2.0 3.0)
+
+      )
+  )
+
 
 (defparameter *look-pt* (glm:vec3 0.0 0.0 0.0)) ; look at actual vertex of drawn object
 (defparameter *cam-pt* (glm:vec3 0.0 0.0 1.0))
 (defparameter *draw-look-at-point* nil)
-
 
 (defun draw ()
   (let ((cam-pos (resolve-cam-position))
@@ -317,7 +269,15 @@ geometry coordinates and returned as a position vector."
     ;; set world-to-camera matrix
     (gl:use-program (the-program *uniform-color*))
     (gl:uniform-matrix (world-to-camera-matrix-unif *uniform-color*) 4
+    		       (vector (glutil:top-ms cam-matrix)) NIL)
+    (gl:use-program (the-program *object-color*))
+    (gl:uniform-matrix (world-to-camera-matrix-unif *object-color*) 4
 		       (vector (glutil:top-ms cam-matrix)) NIL)
+    (gl:use-program (the-program *uniform-color-tint*))
+    (gl:uniform-matrix (world-to-camera-matrix-unif *uniform-color-tint*) 4
+		       (vector (glutil:top-ms cam-matrix)) NIL)
+    (gl:use-program 0)
+
     ;; TODO: all the other camera-matrices setting
 
     ;; render the ground plane:
@@ -332,12 +292,24 @@ geometry coordinates and returned as a position vector."
 	;; TODO: noo, something is off. The colors looks different.. uglier too
 	(%gl:uniform-4f (base-color-unif *uniform-color*) 0.302 0.416 0.0589 1.0)
 	(framework:render *plane-mesh*)
-	(gl:use-program 0)
+	;; (gl:use-program (the-program *uniform-color-tint*))
+	;; :scale 1.0 50.0 1.0
+	;; (gl:uniform-matrix (model-to-world-matrix-unif *uniform-color-tint*) 4
+	;; 		   (vector (glutil:top-ms model-matrix)) NIL)
+	;; (framework:render *cone-mesh*)
+	;; (gl:use-program 0)
 	;; (when *draw-look-at-point*
 	;;   (draw-look-at-point model-matrix cam-pos))
-	)
+	) 
+    ;; now that arc codes has onle "PUSH-MS" while here we use WITH-TRANSFORM
+    ;; this works for arc because it uses separate namespaces { inside these }
+    ;; model-matrix { push matrix-stack } code outside the curly-brackets refers to
+    ;; model-matrix as if the code inside the {brackets} never happened!
+    ;;Draw the trees:
+    (draw-forest model-matrix)
 
     ))
+
 
 (defun display ()
   (gl:clear-color 0.0 0.0 0.2 1)
@@ -360,8 +332,15 @@ geometry coordinates and returned as a position vector."
   ;; for now where we set the camera-to-clip perspective-matrix for the shaders
   (let ((pers-matrix (make-instance 'glutil:matrix-stack)))
     (glutil:perspective pers-matrix 45.0 (/ w h) *fz-near* *fz-far*)
+    ;; set camera-matrix for all programs
     (%gl:use-program (the-program *uniform-color*))
     (gl:uniform-matrix (camera-to-clip-matrix-unif *uniform-color*) 4
+		       (vector (glutil:top-ms pers-matrix)) NIL)
+    (gl:use-program (the-program *object-color*))
+    (gl:uniform-matrix (camera-to-clip-matrix-unif *object-color*) 4
+		       (vector (glutil:top-ms pers-matrix)) NIL)
+    (gl:use-program (the-program *uniform-color-tint*))
+    (gl:uniform-matrix (camera-to-clip-matrix-unif *uniform-color-tint*) 4
 		       (vector (glutil:top-ms pers-matrix)) NIL)
     (%gl:use-program 0))
   (%gl:viewport 0 0 w h))

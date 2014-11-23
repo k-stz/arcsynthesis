@@ -5,7 +5,7 @@ uniform vec4 base_color;
 
 out vec4 outputColor;
 
-void main()
-{
-	outputColor = interp_color * base_color;
+void main(){
+
+  outputColor = interp_color * base_color;
 }

@@ -42,7 +42,6 @@
   ;; was used to create the vao-obj. Hence related data such as CMD and TYPE can be
   ;; used. For now only CMD is really variable for each vao
   (loop for vao-obj in (vaos mesh)
-       
      for index-obj in (inds mesh) do
        (%gl:bind-vertex-array vao-obj)
        ;; TODO: ugh, again with this long function, create data needed upstream (make-mesh)
@@ -135,13 +134,12 @@
 
 
 
-
-(defun vertex-data (stp-obj)
+(defun vertex-data (mesh)
   ;; check out this APPLY use!! Could solve all problems of the sort
   ;; (append (list 1) (list 2)) `(1 ,@b 2) ??
   (arc:create-gl-array-from-vector
    (apply #'vector
-	  (data-from-element (get-element "attribute" stp-obj)))))
+	  (apply #'append (mapcar #'data (attrs mesh))))) )
 
 (defvar *index-buffer-object*)
 (defvar *index-data*)
@@ -173,10 +171,10 @@
 		 4))))
 
 (defun calc-color-data-offset (position-data-attribute)
-  (let* ((pda position-data-attribute) #|->|#  (number-of-vertices (length (data pda)))
+  (let* ((pda position-data-attribute) #|->|#  (number-of-elements (length (data pda)))
 	 (type (attr-type pda)) #|->|# (type-size (gl-type-byte-size type)))
     ;; (* #|size-of(float):|# 4 3 *number-of-vertices*)
-    (* type-size number-of-vertices)))
+    (* type-size number-of-elements)))
 
 (defun indices->index-buffer-objects (indices)
   (let* ((data-list (mapcar #'data indices))
@@ -208,7 +206,8 @@
        ;; this is opengl state setting code
 	 (loop for attribute in (attrs mesh)
 	    for data-offset = 0 then color-data-offset
-	    do
+	    do (format t "~%~a ~a ~a ~a"  (index attribute) (size attribute)
+		       (attr-type attribute) data-offset)
 	      (%gl:enable-vertex-attrib-array (index attribute))
 	      (%gl:vertex-attrib-pointer (index attribute)
 					 (size attribute)
@@ -225,25 +224,25 @@
 	 )
     ;; build vbo first
     (gl:bind-buffer :array-buffer vbo)
-    (gl:buffer-data :array-buffer :static-draw (vertex-data (so mesh)))
+    (gl:buffer-data :array-buffer :static-draw (vertex-data mesh))
     (gl:bind-buffer :array-buffer 0)
     
     (setf (vaos mesh) (build-vaos mesh vbo))))
 
 
-(defun initialize-vertex-buffer (stp-obj)
-  (setf *vertex-buffer-object* (first (gl:gen-buffers 1)))
+;; (defun initialize-vertex-buffer (stp-obj)
+;;   (setf *vertex-buffer-object* (first (gl:gen-buffers 1)))
 
-  (gl:bind-buffer :array-buffer *vertex-buffer-object*)
-  (gl:buffer-data :array-buffer :static-draw (vertex-data stp-obj))
-  (gl:bind-buffer :array-buffer 0)
+;;   (gl:bind-buffer :array-buffer *vertex-buffer-object*)
+;;   (gl:buffer-data :array-buffer :static-draw (vertex-data stp-obj))
+;;   (gl:bind-buffer :array-buffer 0)
 
-  ;; index-array time:
-  (setf *index-buffer-object* (first (gl:gen-buffers 1)))
+;;   ;; index-array time:
+;;   (setf *index-buffer-object* (first (gl:gen-buffers 1)))
 
-  (gl:bind-buffer :element-array-buffer *index-buffer-object*)
-  (gl:buffer-data :element-array-buffer :static-draw (index-data stp-obj))
-  (gl:bind-buffer :element-array-buffer  0))
+;;   (gl:bind-buffer :element-array-buffer *index-buffer-object*)
+;;   (gl:buffer-data :element-array-buffer :static-draw (index-data stp-obj))
+;;   (gl:bind-buffer :element-array-buffer  0))
 
 ;; (defun initialize-vertex-array-objects ()
 ;;   (setf *vao* (first (gl:gen-vertex-arrays 1)))
