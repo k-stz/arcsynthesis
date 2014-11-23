@@ -37,6 +37,7 @@
    #:set-mat3
    #:mat4-from-mat3
    #:mix
+   #:clamp
    ;;transformations:
    #:rotate-x
    #:rotate-y

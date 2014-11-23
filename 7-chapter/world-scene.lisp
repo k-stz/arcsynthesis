@@ -200,25 +200,29 @@ geometry coordinates and returned as a position vector."
     (sb-cga:matrix* rot-mat trans-mat)))
 
 (defun draw-look-at-point (model-matrix cam-pos)
+  ;; to draw the following on top regardless of any previously drawn objects, we
+  ;; disable the depth-test momentarily
   (gl:disable :depth-test)
 
   (let ((identity glm:+identity-mat4+)
 	(cam-aim-vec (glm:vec- *cam-target* cam-pos)))
     (glutil:with-transform (model-matrix)
+	;; cam-aim-vec from cam-pos to the look-at position, using a fresh matrix,
+	;; the identity-matrix, we can use that value to translate objects directly
+	;; into the look-at point by negating the vector (camera looks down negative
+	;; z-axis)
 	:translate 0.0 1.0 (- (sb-cga:vec-length cam-aim-vec))
 	:scale 1.0 1.0 1.0
 	:rotate-y 20.0
-	;; TODO use dedicated program-data
-	(gl:uniform-matrix (model-to-world-matrix-unif *uniform-color*) 4
+
+	(gl:use-program (the-program *object-color*))
+	(gl:uniform-matrix (model-to-world-matrix-unif *object-color*) 4
 			   (vector (glutil:top-ms model-matrix)) NIL)
-	(gl:uniform-matrix (world-to-camera-matrix-unif *uniform-color*) 4
+	(gl:uniform-matrix (world-to-camera-matrix-unif *object-color*) 4
 			   (vector identity) NIL)
-					;    (print (glutil:top-ms model-matrix))	
-	;; (%gl:draw-elements :triangles (gl::gl-array-size *index-data*)
-	;; 		       :unsigned-short 0)
-	))
-  (gl:enable :depth-test)
-  )
+	(framework:render *cube-color-mesh*)
+	(gl:use-program 0)))
+  (gl:enable :depth-test))
 
 (defun draw-tree (matrix-stack &optional (trunk-height 2.0) (cone-height 3.0))
   ;; Draw trunk
@@ -530,20 +534,23 @@ geometry coordinates and returned as a position vector."
 	;; 		   (vector (glutil:top-ms model-matrix)) NIL)
 	;; (framework:render *cone-mesh*)
 	;; (gl:use-program 0)
-	;; (when *draw-look-at-point*
-	;;   (draw-look-at-point model-matrix cam-pos))
 	) 
     ;; now that arc codes has onle "PUSH-MS" while here we use WITH-TRANSFORM
     ;; this works for arc because it uses separate namespaces { inside these }
     ;; model-matrix { push matrix-stack } code outside the curly-brackets refers to
     ;; model-matrix as if the code inside the {brackets} never happened!
     ;;Draw the trees:
+
     (draw-forest model-matrix)
 
     ;;draw building
     (glutil:with-transform (model-matrix)
 	:translate 20.0 0.0 -10.0
 	(draw-parthenon model-matrix))
+
+    (when *draw-look-at-point*
+      (draw-look-at-point model-matrix cam-pos))
+
     ))
 
 
@@ -635,7 +642,18 @@ geometry coordinates and returned as a position vector."
 	     (sdl2:push-event :quit)))
 	  (:quit () t)
 	  (:idle ()
-		 ;; TODO: *sphere-cam-rel-pos* clamp theta angle
+		 ;; preventing special cases:
+		 (setf (glm:vec. *sphere-cam-rel-pos* :y)
+		       (glm:clamp (glm:vec. *sphere-cam-rel-pos* :y) -78.75 1.0))
+		 (setf (glm:vec. *cam-target* :y)
+		       (if (> (glm:vec. *cam-target* :y) 0.0)
+			   (glm:vec. *cam-target* :y)
+			   0.0))
+		 ;; can't zoom in "through" the floor
+		 (setf (glm:vec. *sphere-cam-rel-pos* :z)
+		       (if (> (glm:vec. *sphere-cam-rel-pos* :z) 5.0)
+		 	   (glm:vec. *sphere-cam-rel-pos* :z)
+		 	   5.0))		 
 		 ;;main-loop:
 		 (display)
 		 

@@ -291,6 +291,13 @@
 ;;     `(mat4-place ,,mat4 0 ,,key)))
 
 
+(defun clamp (x min max)
+  (if (< x min)
+      min
+      (if (> x max)
+	  max
+	  x)))
+
 
 (defun mix (x y a)
   ;; from OpenGL description, probably this is only for a being [0,1]. Yep:

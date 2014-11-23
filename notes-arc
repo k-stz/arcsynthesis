@@ -692,11 +692,15 @@ world-scene example that reference point was a the camera-target, we simply
 could move around(phi) up/down(theta) and towards/away(r) from a relative point!
 
 Furthermore using the target point and the camera-point we can easily derive a look-at
-direction (by normalizing the subtraction of these points!) then using a fiat up
-direction (usually x=0 y=1 z=0) and the cross-product to yield perpendicular axis to build
-a rotation matrix so as to place the world relative to the cameras view direction.  But
-first we had take the camera position and offset the world by putting it as the origin of the
-coordinate system: translation matrix using the camera position negation!
+direction (by normalizing the subtraction of these points!) then using a fiat up direction
+(usually x=0 y=1 z=0) and the cross-product to yield perpendicular axis to build a
+rotation matrix so as to place the world relative to the cameras view direction.  But
+first we had take the camera position and offset the world by putting it as the origin of
+the coordinate system: translation matrix using the camera position negation!
+
+Also note Mr. McKesson's interesting remark:
+"'lines' in spherical gemoteries [as opposed to Euclidean geometry] are curves
+when seen relative to Euclidean gemoteries."!!
 
 --------------------------------------------------------------------------------
 DEFCONSTANT and the compilation environment
