@@ -33,7 +33,8 @@
    (data :accessor data)))
 
 (defclass indices ()
-  ((command :accessor cmd) (type :accessor indices-type) (data :accessor data)))
+  ((command :accessor cmd) (type :accessor indices-type) (data :accessor data)
+   (array-size :accessor array-size)))
 
 
 (defgeneric render (mesh))
@@ -44,12 +45,16 @@
   (loop for vao-obj in (vaos mesh)
      for index-obj in (inds mesh) do
        (%gl:bind-vertex-array vao-obj)
-       ;; TODO: ugh, again with this long function, create data needed upstream (make-mesh)
+     ;; TODO: ugh, again with this long function, create data needed upstream (make-mesh)
        (%gl:draw-elements (cmd index-obj)
-			  (gl::gl-array-size
-			   (arc::create-gl-array-of-unsigned-short-from-vector
-			    (apply #'vector
-				   (data index-obj))))
+			  (array-size index-obj)
+			  ;; this was causing heavy memory allocation
+			  ;; without being released, even after the demo was closed!
+			  ;; solution: store array-size in index-obj upon creation!
+			  ;; (gl::gl-array-size
+			  ;;  (arc::create-gl-array-of-unsigned-short-from-vector
+			  ;;   (apply #'vector
+			  ;; 	   (data index-obj))))
 			  (indices-type index-obj) 0)
        (%gl:bind-vertex-array 0)
        ))
@@ -104,8 +109,8 @@
       ;;(print *package*) ==> #<PACKAGE "COMMON-LISP-USER"> !
       (setf (cmd indx) (arc:string->gl-type c))
       (setf (indices-type indx) (arc:string->gl-type ty))
-      (setf (data indx) (list-from-string (stp:data (stp:first-child indx-node))))
-      )
+      (setf (data indx) (list-from-string (stp:data (stp:first-child indx-node)))))
+    (setf (array-size indx) (index->array-size indx))
     indx))
 
 (defun node-indices-list (element-nodes)
@@ -120,6 +125,10 @@
   (node-indices-list (list-element-nodes stp-obj)))
 ;;;/INDICES
 
+(defun index->array-size (index)
+  (gl::gl-array-size
+   (arc::create-gl-array-of-unsigned-short-from-vector
+    (apply #'vector (data index)))))
 
 (defun list-from-string (string)
   (with-input-from-string (str string)
@@ -206,8 +215,8 @@
        ;; this is opengl state setting code
 	 (loop for attribute in (attrs mesh)
 	    for data-offset = 0 then color-data-offset
-	    do (format t "~%~a ~a ~a ~a"  (index attribute) (size attribute)
-		       (attr-type attribute) data-offset)
+	    do ;; (format t "~%~a ~a ~a ~a"  (index attribute) (size attribute)
+	       ;; 	       (attr-type attribute) data-offset)
 	      (%gl:enable-vertex-attrib-array (index attribute))
 	      (%gl:vertex-attrib-pointer (index attribute)
 					 (size attribute)

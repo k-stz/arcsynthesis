@@ -104,13 +104,13 @@ glObjectParameteri(GL_MODIFY, GL_OBJECT_COUNT, 5);
 glObjectParameterf(GL_MODIFY, GL_OBJECT_OPACITY, 0.4f); 
 glObjectParameters(GL_MODIFY, GL_OBJECT_NAME, "Some String");  
 
-NONDE OF THESE ARE ACTUALL OPENGL COMMANDS, they're just here to give you an idea!!!
-and its a cool idea alright!! ^_^
+NONE OF THESE ARE ACTUALL OPENGL COMMANDS, they're just here to give you an idea!!!
+and it's a cool idea alright!! ^_^
 
 OpenGL owns the storage for all OpenGL objects, so the user must access those objects
 through unsigned integers (the GLuint) (teehee!)
 
-Objects are created by functions of the form: glGen* (* is the type of the objts)
+Objects are created by functions of the form: glGen* (* is the type of the objects)
 the first parameter to glGen* is the number of objects to create! and the second a
 GLuint* array that receives the newly created object names.
 
@@ -235,7 +235,7 @@ We can then set the value using (gl:uniform-2f <varName..> value1 value2)
 provided in our glsl we used a vec2 uniform ^  ;D
 that is in our *.glsl file:
     uniform vec2 offset --------------------------------------.
-corresposing code:                                            v
+corresponding code:                                           v
     (setf offset-location (gl:get-uniform-location program "offset")
     ...                                              |
     (gl:use-program program) <------------------------
@@ -247,7 +247,7 @@ they can only change the color of it.
 --------------------------------------------------------------------------------
 Globals in shaders!
 As you will remember "uniforms" are shared between all shader stages and GLSL
-won't even allow to use their name for differntly typed variables.
+won't even allow to use their name for differently typed variables.
 
 Other globals WHICH ARE SHARED BETWEEN SHADER STAGES include:
 in, out and uniforms
@@ -264,7 +264,7 @@ the same computation times the vertices in a shader vs. computing them once and 
 Indeed, performance-wise usually the common practice solution is to compute the
 value on the CPU and pass it as a uniform to the shader.
 --------------------------------------------------------------------------------
-gl:cull-face, don't render triangles classified as :back or front for performance
+gl:cull-face, don't render triangles classified as :back or :front for performance
 boost... "cull 'em out of the rendering!"
 
 Interesting: what classifies as back, depends on the vertex data. The outer faces
@@ -272,7 +272,7 @@ of any object should have such property when viewed from outside!!!
 --------------------------------------------------------------------------------
 "projection",
 is a term in the rendering pipeline, which describes a way to transform a world from
-done dimensionality to another.
+one dimensionality to another.
 
 "orthographic projection",
 e.g.: project a 2d world perpendicular to a 1d line
@@ -281,9 +281,9 @@ e.g.: project a 2d world perpendicular to a 1d line
 how human eyes model the world as a picture in the mind.
 In OpenGL our eye is the:
 
-Fristum,
+Frustum,
 a pyriamid with a choped of head. Instead of a cone, as the eye would use it, in
-OpenGL we use a fristum to project the 3d world on a "rectangular" image.
+OpenGL we use a frustum to project the 3d world on a "rectangular" image.
 
 Perspective Computation:
 the following vectors:
