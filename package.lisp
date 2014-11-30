@@ -180,3 +180,8 @@
   (:documentation "World in Motion")
   (:use :cl)
   (:export #:main))
+
+(defpackage #:arc-7.1
+  (:documentation "Shared Uniforms")
+  (:use :cl)
+  (:export #:main))

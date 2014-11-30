@@ -52,7 +52,8 @@ written in Common Lisp using cl-sdl2 and cl-opengl"
 			 (:file "test")
 			 (:file "hierarchy")))
    (:module "7-chapter"
-	    :components ((:file "world-scene")))
+	    :components ((:file "world-scene")
+			 (:file "world-with-ubo")))
    ))
 
 

@@ -1,6 +1,6 @@
 ;; TODO: about
 
-(in-package #:arc-7)
+(in-package #:arc-7.1)
 
 ;; TODO: this might solve the problem:
 ;; (print (uiop/lisp-build:current-lisp-file-pathname)) ?
@@ -17,9 +17,10 @@
 (defclass program-data ()
   ((the-program :accessor the-program)
    (model-to-world-matrix-unif :accessor model-to-world-matrix-unif)
-   (world-to-camera-matrix-unif :accessor world-to-camera-matrix-unif)
-   (camera-to-clip-matrix-unif :accessor camera-to-clip-matrix-unif)
-   (base-color-unif :accessor base-color-unif)))
+   (global-uniform-block-index :accessor global-uniform-block-index)
+   (base-color-unif :accessor base-color-unif)
+;   (thing :accessor thing) ;; TODO: what's the use of "thing"?
+   ))
 
 
 ;;program-data
@@ -43,23 +44,59 @@
     ;; hard-coding time: also this should undergo test if assignment was successful
     (setf (model-to-world-matrix-unif data)
 	  (gl:get-uniform-location (the-program data) "model_to_world_matrix"))
-    (setf (world-to-camera-matrix-unif data)
-	  (gl:get-uniform-location (the-program data) "world_to_camera_matrix"))
-    (setf (camera-to-clip-matrix-unif data)
-	  (gl:get-uniform-location (the-program data) "camera_to_clip_matrix"))
+
+    ;; stores a _uniform block index_ that is used to refer to a uniform block,
+    ;; in this case a block that is supposed to store w-to-cam-mat4 and cam-to-clip-mat4
+    (setf (global-uniform-block-index data)
+	  ;; TODO: pull request to cl-opengl of (gl:get-uniform-block-index ...) !! :>
+	  (cffi:with-foreign-string (s "global_matrices")
+	    (%gl:get-uniform-block-index (the-program data) s)))
+
     ;; TODO: if uniform doesn't really exist in shader, wasn't opengl lenient about it?
     (setf (base-color-unif data)
 	  (gl:get-uniform-location (the-program data) "base_color"))
+
+    ;; This tells a program where in the opengl context the uniform-buffer can
+    ;; be found. In this case it will find in in the handle stored in
+    ;; *global-matrices-binding-index*
+    (%gl:uniform-block-binding (the-program data) (global-uniform-block-index data)
+			       *global-matrices-binding-index*)
     data))
 
 
+(defvar *global-matrices-ubo*)
+(defparameter *global-matrices-binding-index* 0)
+
 (defun initialize-program ()
   (setf *uniform-color*
-	(load-program "pos-only-world-transform.vert" "color-uniform.frag"))
+	(load-program "pos-only-world-transform-ubo.vert" "color-uniform.frag"))
   (setf *object-color*
-  	(load-program "pos-color-world-transform.vert" "color-passthrough.frag"))
+  	(load-program "pos-color-world-transform-ubo.vert" "color-passthrough.frag"))
   (setf *uniform-color-tint*
-  	(load-program "pos-color-world-transform.vert" "color-mult-uniform.frag")))
+  	(load-program "pos-color-world-transform-ubo.vert" "color-mult-uniform.frag"))
+
+  ;; feeding the opengl context with the UBO data
+  (setf *global-matrices-ubo* (first (gl:gen-buffers 1)))
+  (gl:bind-buffer :uniform-buffer *global-matrices-ubo*)
+  ;(gl:buffer-data :uniform-buffer :stream-draw (gl:hmm) )
+  ;; for now better to not use convenience function, as we don't store the array needed
+  ;; as a global (it will be provided ad-hoc through glutil:perspective and
+  ;; (with-transform (matrix-stack) ...)    
+  (%gl:buffer-data :uniform-buffer #|float*16*2=|# 128
+		   (cffi-sys:null-pointer) ; 'NULL' , not: :null or NIL
+		   :stream-draw)
+  (gl:bind-buffer :uniform-buffer 0)
+
+  ;; now that the opengl program knows where to look for the uniform-buffer data
+  ;; (gl:block-binding ..) provided a 'binding-point' *global-matrices-binding-index* that
+  ;; tells the program where to look in the opengl context for it.  Now all we need to do
+  ;; is to actually bind the uniform-buffer object using this binding-point.
+  (%gl:bind-buffer-range :uniform-buffer *global-matrices-binding-index*
+			 *global-matrices-ubo*
+			 0	       ; where the uniform-blocks data supposed to begins
+			 #|size-of:mat4*2|# (* 64 2) ; and how big it is
+			 )
+  )
 
 
 (defparameter *cone-mesh* nil)
@@ -199,27 +236,39 @@ geometry coordinates and returned as a position vector."
     ;;return rotmat * transmat;
     (sb-cga:matrix* rot-mat trans-mat)))
 
-(defun draw-look-at-point (model-matrix cam-pos)
+(defun draw-look-at-point (model-matrix)
   ;; to draw the following on top regardless of any previously drawn objects, we
   ;; disable the depth-test momentarily
   (gl:disable :depth-test)
-
-  (let ((identity glm:+identity-mat4+)
-	(cam-aim-vec (glm:vec- *cam-target* cam-pos)))
+  ;; we use the as a translation, which is the one the camera is set up relative to,
+  ;; to always look at.. ideal for our look-at-point. In the last program we bypassed
+  ;; the world-to-camera-matrix (it was identity) we calculated a direction vector
+  ;; from cam-pos to cam-target and used its negated length to translate the draw-point
+  ;; negated because the perspective-divide set up by camera-to-clip-matrix wants
+  ;; the -z-axis to be the one we look at, at all time.
+  ;; This time around we can't bypass the world-to-cam matrix because of the UBO
+  ;; setting both. Well we could but its a performance issue to set them here and
+  ;; unset them afterwards.. so we use the cam-target to draw directly in front of the
+  ;; camera, which cam-target is for in the first place. Now the difference to
+  ;; the 'world-scene' program is that the look-at-cube will keep its orientation
+  ;; as the camera moves around it, because we use the same model-matrix looking
+  ;; at it from different world-to-cam->cam-to-world matrices, while in the last program
+  ;; we skipped the world-to-cam matrix thereby forcing the model-space orientation
+  ;; not being displayed relative to the world-to-cam-matrix 
+  (let ((x (aref *cam-target* 0))
+	(y (aref *cam-target* 1))
+	(z (aref *cam-target* 2)))
     (glutil:with-transform (model-matrix)
-	;; cam-aim-vec from cam-pos to the look-at position, using a fresh matrix,
-	;; the identity-matrix, we can use that value to translate objects directly
-	;; into the look-at point by negating the vector (camera looks down negative
-	;; z-axis)
-	:translate 0.0 1.0 (- (sb-cga:vec-length cam-aim-vec))
+	;;;:translate 0.0 1.0 (- (sb-cga:vec-length cam-aim-vec))
+	:translate x y z
 	:scale 1.0 1.0 1.0
 	:rotate-y 20.0
 
 	(gl:use-program (the-program *object-color*))
 	(gl:uniform-matrix (model-to-world-matrix-unif *object-color*) 4
 			   (vector (glutil:top-ms model-matrix)) NIL)
-	(gl:uniform-matrix (world-to-camera-matrix-unif *object-color*) 4
-			   (vector identity) NIL)
+	;; (gl:uniform-matrix (world-to-camera-matrix-unif *object-color*) 4
+	;; 		   (vector identity) NIL)
 	(framework:render *cube-color-mesh*)
 	(gl:use-program 0)))
   (gl:enable :depth-test))
@@ -504,17 +553,14 @@ geometry coordinates and returned as a position vector."
 
     (glutil:set-matrix cam-matrix
 		       (calc-look-at-matrix cam-pos *cam-target* (glm:vec3 0.0 1.0 0.0)))
-    ;; set world-to-camera matrix
-    (gl:use-program (the-program *uniform-color*))
-    (gl:uniform-matrix (world-to-camera-matrix-unif *uniform-color*) 4
-    		       (vector (glutil:top-ms cam-matrix)) NIL)
-    (gl:use-program (the-program *object-color*))
-    (gl:uniform-matrix (world-to-camera-matrix-unif *object-color*) 4
-		       (vector (glutil:top-ms cam-matrix)) NIL)
-    (gl:use-program (the-program *uniform-color-tint*))
-    (gl:uniform-matrix (world-to-camera-matrix-unif *uniform-color-tint*) 4
-		       (vector (glutil:top-ms cam-matrix)) NIL)
-    (gl:use-program 0)
+    ;; set world-to-camera matrix in UBO!
+    (gl:bind-buffer :uniform-buffer *global-matrices-ubo*)
+    (gl:buffer-sub-data :uniform-buffer
+    			(arc:create-gl-array-from-vector (glutil:top-ms cam-matrix))
+    			;; since its the 2nd matrix we :buffer-offset at
+			;; 64='mat4 size in bytes'
+    			:buffer-offset 64)
+    (gl:bind-buffer :uniform-buffer 0)
 
     ;; TODO: all the other camera-matrices setting
 
@@ -552,7 +598,7 @@ geometry coordinates and returned as a position vector."
 	(draw-parthenon model-matrix))
 
     (when *draw-look-at-point*
-      (draw-look-at-point model-matrix cam-pos))
+      (draw-look-at-point model-matrix))
 
     ))
 
@@ -563,11 +609,8 @@ geometry coordinates and returned as a position vector."
   (gl:clear :color-buffer-bit :depth-buffer-bit)
 
 
-;  (gl:bind-vertex-array *vao*)
-
   (draw)
   
-;  (gl:bind-vertex-array 0)
   ;;swap buffers: in main loop 
        )
 
@@ -578,17 +621,11 @@ geometry coordinates and returned as a position vector."
   ;; for now where we set the camera-to-clip perspective-matrix for the shaders
   (let ((pers-matrix (make-instance 'glutil:matrix-stack)))
     (glutil:perspective pers-matrix 45.0 (/ w h) *fz-near* *fz-far*)
-    ;; set camera-matrix for all programs
-    (%gl:use-program (the-program *uniform-color*))
-    (gl:uniform-matrix (camera-to-clip-matrix-unif *uniform-color*) 4
-		       (vector (glutil:top-ms pers-matrix)) NIL)
-    (gl:use-program (the-program *object-color*))
-    (gl:uniform-matrix (camera-to-clip-matrix-unif *object-color*) 4
-		       (vector (glutil:top-ms pers-matrix)) NIL)
-    (gl:use-program (the-program *uniform-color-tint*))
-    (gl:uniform-matrix (camera-to-clip-matrix-unif *uniform-color-tint*) 4
-		       (vector (glutil:top-ms pers-matrix)) NIL)
-    (%gl:use-program 0))
+    ;; set camera-matrix
+    (gl:bind-buffer :uniform-buffer *global-matrices-ubo*)
+    (gl:buffer-sub-data :uniform-buffer
+			(arc:create-gl-array-from-vector (glutil:top-ms pers-matrix)))
+    (gl:bind-buffer :uniform-buffer 0))
   (%gl:viewport 0 0 w h))
 
 (defun main ()
@@ -635,7 +672,6 @@ geometry coordinates and returned as a position vector."
    	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-o)
 	     (incf (glm:vec. *sphere-cam-rel-pos* :z) 1.5))
 
-	   ;; TODO: toggle look at point rendering 
 	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-space)
 	     (if *draw-look-at-point*
 		 (setf *draw-look-at-point* nil)
