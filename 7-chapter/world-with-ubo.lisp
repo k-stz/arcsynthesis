@@ -57,7 +57,7 @@
 	  (gl:get-uniform-location (the-program data) "base_color"))
 
     ;; This tells a program where in the opengl context the uniform-buffer can
-    ;; be found. In this case it will find in in the handle stored in
+    ;; be found. In this case it will find it in the handle stored in
     ;; *global-matrices-binding-index*
     (%gl:uniform-block-binding (the-program data) (global-uniform-block-index data)
 			       *global-matrices-binding-index*)

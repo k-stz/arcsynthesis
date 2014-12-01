@@ -17,10 +17,12 @@ uniform mat4 model_to_world_matrix;
 // that the mat4 matrices are col-major, all uniforms must be stored (no default
 // values if not set explicitly) and, what we want, multiple uniform programs can
 // use _the same_ uniform buffer
-// This is the uniform block, it is identified as "global_matrices":
+// This is the uniform block, it is identified as "global_matrices". It will
+// only take data from a uniform buffer object-- a UBO!
 layout(std140) uniform global_matrices {
   // order of these is crucial, as we will set these by using proper :buffer-offset
   // in gl:sub-buffer-data calls!
+  // Also mat4 stored here are col-major (part of std140 specification)
   mat4 camera_to_clip_matrix;
   mat4 world_to_camera_matrix; 
 };

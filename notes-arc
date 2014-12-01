@@ -732,3 +732,66 @@ DEFCONSTANT and the compilation environment
                         NIL
                       (BLOCK FOO 2))
                     NIL 'NIL (SB-C:SOURCE-LOCATION))))
+--------------------------------------------------------------------------------
+uniform buffer object UBO,
+'global', across-all programs, uniforms, so we can set data that is shared, so far
+read-only examples, by any number of opengl programs.
+
+basic setup:
+
+1. expose a handle to the uniform block called an 'uniform block index' in
+this case (setf handle (%gl:get-uniform-block-index "system-area-pointer-string"))
+
+2. Use that handle to associate the current program through it with a
+'binding-index' which is a 'slot in the opengl context'
+
+Build the uniform-buffer data somewhere, it must be stressed that data wise it
+is just an ordinary buffer object:
+(setf *ubo* (first (gl:gen-buffers 1)))
+(gl:bind-buffer :uniform-buffer *ubo*)
+;; format the buffers data to expect data input (:steam-draw), and give it
+;; a fixed size. The <null-pointer> tells opengl that we don't care about former
+;; content of this buffer. For us it means we will be filling it with data in the
+;; future
+;; optimizations:
+;; (%gl:buffer-data :uniform-buffer <null-pointer> <size-of(mat4)> :stream-draw)
+
+3. Fill (allocate) the buffer with dataaa
+ (gl:bind-buffer :uniform-buffer *ubo*)
+ (gl:buffer-sub-data :uniform-buffer <gl-array> &optional: <offset> <buffer-offset>)
+ ;; unbind: (gl:bind-buffer :uniform-buffer 0)
+
+4. Finally provide the connection between the opengl-program's uniform-block and the
+   uniform-buffer-object. Use the *ubo* handle and the 'binding-index':
+   (%gl:bind-buffer-range :uniform-buffer <binding-index> *ubo* ...)
+   
+
+ KA-BAM the opengl program has them datasss, due to the this voodoo spell:
+
+Data arrangement:
+
+[data(gl-array)]->[uniform buffer object]-.
+                                          v
+          [binding to context via _uniform buffer binding points_]
+                                          v
+[program-obj]<-[uniform-block-index]<-----'
+                                          '
+[other program-obj]<-[...]<---------------'					  
+                                          '
+					(...)
+
+Code arrangement:
+For gl Program:
+;; tell program where to find the uniform buffer:
+(gl:uniform-block-binding <prog>
+                          <uniform-block-index>
+                          <BINDING-INDEX>)
+
+For UBO:
+ ;; bind uniform-buffer to the 'binding point'
+ (gl:bind-buffer-range :uniform-buffer <BINDING-INDEX> *ubo* ...)
+
+For OpenGL context:
+ (defconstant +BINDING-INDEX+ 0) ; 0, 1, 2, 3, 4...
+
+--------------------------------------------------------------------------------					
