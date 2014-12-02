@@ -185,3 +185,8 @@
   (:documentation "Shared Uniforms")
   (:use :cl)
   (:export #:main))
+
+(defpackage #:arc-8
+  (:documentation "Getting Oriented - Gimbal Lock")
+  (:use :cl)
+  (:export #:main))
