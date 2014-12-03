@@ -6,19 +6,11 @@
 ;; (print (uiop/lisp-build:current-lisp-file-pathname)) ?
 (defvar *glsl-directory*
   (merge-pathnames #p "8-chapter/" (asdf/system:system-source-directory :arcsynthesis)))
-;; (defvar *data-dir*
-;;   (merge-pathnames #p "data/" *glsl-directory*))
+ (defvar *data-dir*
+   (merge-pathnames #p "data/" *glsl-directory*))
 
 ;;todo: fix this output to slime-repl solution
 (defvar out *standard-output*)  (defvar dbg *debug-io*) (defvar err *error-output*)
-
-(defclass program-data ()
-  ((the-program :accessor the-program)
-   (model-to-world-matrix-unif :accessor model-to-world-matrix-unif)
-   (world-to-camera-matrix-unif :accessor world-to-camera-matrix-unif)
-   (camera-to-clip-matrix-unif :accessor camera-to-clip-matrix-unif)
-   (base-color-unif :accessor base-color-unif)))
-
 
 ;;program-data
 ;; (defvar *uniform-color*)
@@ -50,14 +42,52 @@
 	  (gl:get-uniform-location (the-program data) "base_color"))
     data))
 
+(defvar *program*)
+(defvar *model-to-camera-matrix-unif*)
+(defvar *camera-to-clip-matrix-unif*)
+(defvar *base-color-unif*)
 
-;; (defun initialize-program ()
-;;   (setf *uniform-color*
-;; 	(load-program "pos-only-world-transform.vert" "color-uniform.frag"))
-;;   (setf *object-color*
-;;   	(load-program "pos-color-world-transform.vert" "color-passthrough.frag"))
-;;   (setf *uniform-color-tint*
-;;   	(load-program "pos-color-world-transform.vert" "color-mult-uniform.frag")))
+(defparameter *camera-to-clip-matrix* (glm:make-mat4 0.0))
+(defparameter *frustum-scale* (glutil::calc-frustum-scale 20.0)) 
+
+(defun initialize-program ()
+  (let ((shader-list (list)))
+    ;;oh c'mon how to make it local
+    (push (arc:create-shader
+	   :vertex-shader
+	   (arc:file-to-string
+	    (merge-pathnames "pos-color-local-transformation.vert" *glsl-directory*)))
+	  shader-list)
+    (push (arc:create-shader
+    	   :fragment-shader
+    	   (arc:file-to-string
+	    (merge-pathnames "color-mult-uniform.frag" *glsl-directory* )))
+    	  shader-list)
+    (setf *program* (arc:create-program-and-return-it shader-list)))
+
+  (setf *model-to-camera-matrix-unif*
+	(gl:get-uniform-location *program* "model_to_camera_matrix"))
+  (setf *camera-to-clip-matrix-unif*
+	(gl:get-uniform-location *program* "camera_to_clip_matrix"))
+  (setf *base-color-unif*
+	(gl:get-uniform-location *program* "base_color"))
+
+  (format t "a:~a b:~a" *model-to-camera-matrix-unif* *camera-to-clip-matrix-unif*)
+
+  (let ((fz-near 1.0)
+	(fz-far 600.0))
+    (glm:set-mat4 *camera-to-clip-matrix* 0 :x *frustum-scale*)
+    (glm:set-mat4 *camera-to-clip-matrix* 1 :y *frustum-scale*)
+    (glm:set-mat4 *camera-to-clip-matrix* 2 :z (/ (+ fz-far fz-near)
+						  (- fz-near fz-far)))
+    (glm:set-mat4 *camera-to-clip-matrix* 2 :w -1.0)
+    (glm:set-mat4 *camera-to-clip-matrix* 3 :z (/ (* 2 fz-far fz-near)
+						  (- fz-near fz-far)))
+
+    (%gl:use-program *program*)
+    (gl:uniform-matrix *camera-to-clip-matrix-unif*  4 (vector *camera-to-clip-matrix*)
+		       NIL))
+  (%gl:use-program 0))
 
 
 (defparameter *cone-mesh* nil)
@@ -78,32 +108,63 @@
 ;;   (setf *plane-mesh*
 ;; 	(framework::xml->mesh-obj (merge-pathnames *data-dir* "UnitPlane.xml"))))
 
+(defparameter *gimbal-meshes* (make-array 3 :initial-element NIL))
+(defvar *p-object*)
+
 (defun init ()
-	;;(initialize-program)
-	;;(init-meshes)
+  (initialize-program)
+  (let ((gimbal-names
+	 (mapcar #'(lambda (xml) (merge-pathnames *data-dir* xml))
+		 (list "LargeGimbal.xml"
+		       "MediumGimbal.xml"
+		       "SmallGimbal.xml"))))
+    (loop for i below (length *gimbal-meshes*)
+       for xmls in gimbal-names do
+	 (setf (aref *gimbal-meshes* i) (framework:xml->mesh-obj xmls))))
 
-	;; TODO: why doesn't this seem to affect the unit-plane when it is rotated 360?
-	;; this gotta be a pernicious bug, swapping the z-axis so that the winding order is
-	;; always clock-wise?
-	(gl:enable :cull-face)
-	(%gl:cull-face :back)
-	(%gl:front-face :cw) 
 
-	(gl:viewport 0 0 500 500)
+ (setf *p-object* (framework:xml->mesh-obj (merge-pathnames *data-dir* "UnitPlane.xml")))
+;;TODO extend 'framework.lisp' to deal with <vao ...> xml-attributes
+;; (setf *p-object* (framework:xml->mesh-obj (merge-pathnames *data-dir* "Ship.xml")))
 
-	(gl:enable :depth-test)
-	(gl:depth-mask :true)
-	(%gl:depth-func :lequal)
-	(gl:depth-range 0.0 1.0)
-	)
+
+ 
+  (gl:enable :cull-face)
+  (%gl:cull-face :back)
+  (%gl:front-face :cw) 
+
+  (gl:viewport 0 0 500 500)
+
+  (gl:enable :depth-test)
+  (gl:depth-mask :true)
+  (%gl:depth-func :lequal)
+  (gl:depth-range 0.0 1.0)
+  )
 
 
 
 
 
 (defun draw ()
-  ;; 'display'-code
-  )
+  (let ((curr-matrix (make-instance 'glutil:matrix-stack)))
+    (glutil:with-transform (curr-matrix)
+	:translate 0.0 0.0 -200.0
+	:scale 1.0 1.0 1.0
+	:rotate-x 20.0
+
+
+	(gl:use-program *program*)
+        (%gl:uniform-4f *base-color-unif* .5 .4 .9 1.0)
+	
+	(gl:uniform-matrix *model-to-camera-matrix-unif* 4
+			   (vector (glutil:top-ms curr-matrix)) NIL)
+		(framework:render (aref *gimbal-meshes* 0))
+	(gl:use-program 0)
+	)
+
+
+
+    ))
 
 
 (defun display ()
@@ -112,27 +173,22 @@
   (gl:clear :color-buffer-bit :depth-buffer-bit)
 
   (draw)
-  
+
   )
 
 (defparameter *fz-near* 1.0)
 (defparameter *fz-far* 1000.0)
 
 (defun reshape (w h)
-  ;; for now where we set the camera-to-clip perspective-matrix for the shaders
-  ;; (let ((pers-matrix (make-instance 'glutil:matrix-stack)))
-  ;;   (glutil:perspective pers-matrix 45.0 (/ w h) *fz-near* *fz-far*)
-  ;;   ;; set camera-matrix for all programs
-  ;;   (%gl:use-program (the-program *uniform-color*))
-  ;;   (gl:uniform-matrix (camera-to-clip-matrix-unif *uniform-color*) 4
-  ;; 		       (vector (glutil:top-ms pers-matrix)) NIL)
-  ;;   (gl:use-program (the-program *object-color*))
-  ;;   (gl:uniform-matrix (camera-to-clip-matrix-unif *object-color*) 4
-  ;; 		       (vector (glutil:top-ms pers-matrix)) NIL)
-  ;;   (gl:use-program (the-program *uniform-color-tint*))
-  ;;   (gl:uniform-matrix (camera-to-clip-matrix-unif *uniform-color-tint*) 4
-  ;; 		       (vector (glutil:top-ms pers-matrix)) NIL)
-  ;;   (%gl:use-program 0))
+  (glm:set-mat4 *camera-to-clip-matrix* 0 :x
+		(* *frustum-scale* (/ h w)))
+  (glm:set-mat4 *camera-to-clip-matrix* 1 :y *frustum-scale*)
+
+  (%gl:use-program *program*)
+  (gl:uniform-matrix *camera-to-clip-matrix-unif* 4 (vector *camera-to-clip-matrix*)
+		     NIL)
+  (%gl:use-program 0)
+
   (%gl:viewport 0 0 w h))
 
 (defun main ()
