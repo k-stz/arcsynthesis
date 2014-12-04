@@ -100,8 +100,10 @@
 (defmacro vec. (vector xyzw)
   "AREFable vector component returned. In the vein of C++ notation: vec.x vec.y etc."
   `(aref ,vector
-	 ,(case xyzw
-		(:x 0) (:y 1) (:z 2) (:w 3))))
+	 (case ,xyzw
+		(:x 0) (:y 1) (:z 2) (:w 3)
+		(t (format *error-output* "VEC. bad input:~a ;defaulting to 0!!" ,xyzw)
+		   0))))
 
 (defun vec3 (x &optional (y x) (z x))
   (let ((x (float x))

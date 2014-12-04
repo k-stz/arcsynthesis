@@ -139,6 +139,9 @@ the projection plane)"
 to facilitate the hierarchical model. Intuitive explanation: work with the current
 matrix (translating, scaling, rotating) and when your done, it will be returned to its
 former state"
+    ;;TODO: add searching &body for transform keywords, so as to implement nested
+    ;; constructs like:
+    ;; (with-transform (ms) (cons :this (:that :rotate-x 10.0) (:this :scale ..)))
   (labels ((try-key (car l exp)
 	     (cond ((null l)
 		    (nreverse exp))

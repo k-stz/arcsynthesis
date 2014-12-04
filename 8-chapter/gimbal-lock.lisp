@@ -12,36 +12,6 @@
 ;;todo: fix this output to slime-repl solution
 (defvar out *standard-output*)  (defvar dbg *debug-io*) (defvar err *error-output*)
 
-;;program-data
-;; (defvar *uniform-color*)
-;; (defvar *object-color*)
-;; (defvar *uniform-color-tint*)
-
-(defun load-program (str-vertex-shader str-fragment-shader)
-  "Create program-data object from shader strings. Hardcoded uniform reference."
-  (let ((shader-list (list))
-	(data (make-instance 'program-data)))
-    (push (arc:create-shader
-	   :vertex-shader
-	   (arc:file-to-string (merge-pathnames str-vertex-shader *glsl-directory*)))
-	  shader-list)
-    (push (arc:create-shader
-	   :fragment-shader
-	   (arc:file-to-string (merge-pathnames str-fragment-shader *glsl-directory*)))
-    	  shader-list)
-    (setf (the-program data) (arc:create-program shader-list))
-    ;; hard-coding time: also this should undergo test if assignment was successful
-    (setf (model-to-world-matrix-unif data)
-	  (gl:get-uniform-location (the-program data) "model_to_world_matrix"))
-    (setf (world-to-camera-matrix-unif data)
-	  (gl:get-uniform-location (the-program data) "world_to_camera_matrix"))
-    (setf (camera-to-clip-matrix-unif data)
-	  (gl:get-uniform-location (the-program data) "camera_to_clip_matrix"))
-    ;; TODO: if uniform doesn't really exist in shader, wasn't opengl lenient about it?
-    (setf (base-color-unif data)
-	  (gl:get-uniform-location (the-program data) "base_color"))
-    data))
-
 (defvar *program*)
 (defvar *model-to-camera-matrix-unif*)
 (defvar *camera-to-clip-matrix-unif*)
@@ -90,25 +60,7 @@
   (%gl:use-program 0))
 
 
-(defparameter *cone-mesh* nil)
-(defparameter *cylinder-mesh* nil)
-(defparameter *cube-tint-mesh* nil)
-(defparameter *cube-color-mesh* nil)
-(defparameter *plane-mesh* nil)
-
-;; (defun init-meshes ()
-;;   (setf *cone-mesh*
-;; 	(framework::xml->mesh-obj (merge-pathnames *data-dir* "UnitConeTint.xml")))
-;;   (setf *cylinder-mesh*
-;; 	(framework::xml->mesh-obj (merge-pathnames *data-dir* "UnitCylinderTint.xml")))
-;;   (setf *cube-tint-mesh*
-;; 	(framework::xml->mesh-obj (merge-pathnames *data-dir* "UnitCubeTint.xml")))
-;;   (setf *cube-color-mesh*
-;; 	(framework::xml->mesh-obj (merge-pathnames *data-dir* "UnitCubeColor.xml")))
-;;   (setf *plane-mesh*
-;; 	(framework::xml->mesh-obj (merge-pathnames *data-dir* "UnitPlane.xml"))))
-
-(defparameter *gimbal-meshes* (make-array 3 :initial-element NIL))
+(defvar *gimbal-meshes* (make-array 3 :initial-element NIL))
 (defvar *p-object*)
 
 (defun init ()
@@ -123,10 +75,9 @@
 	 (setf (aref *gimbal-meshes* i) (framework:xml->mesh-obj xmls))))
 
 
- (setf *p-object* (framework:xml->mesh-obj (merge-pathnames *data-dir* "UnitPlane.xml")))
-;;TODO extend 'framework.lisp' to deal with <vao ...> xml-attributes
-;; (setf *p-object* (framework:xml->mesh-obj (merge-pathnames *data-dir* "Ship.xml")))
-
+  (setf *p-object* (framework:xml->mesh-obj (merge-pathnames *data-dir* "UnitPlane.xml")))
+  ;;TODO extend 'framework.lisp' to deal with <vao ...> xml-attributes
+  ;; (setf *p-object* (framework:xml->mesh-obj (merge-pathnames *data-dir* "Ship.xml")))
 
  
   (gl:enable :cull-face)
@@ -142,23 +93,60 @@
   )
 
 
+(defclass gimbal-angles ()
+  ((angle-x :accessor angle-x :initform 0.0)
+   (angle-y :accessor angle-y :initform 0.0)
+   (angle-z :accessor angle-z :initform 0.0)))
 
+(defvar *angles* (make-instance 'gimbal-angles))
 
+(defun draw-gimbal (matrix-stack e-axis base-color)
+  ;; TODO: draw-gimbals space-button toggle
+
+  ;; TODO: more powerful WITH-TRANSFORM which finds transform keywords and repalces
+  ;; them with transformation functions
+  (glutil:with-transform (matrix-stack)
+      (case e-axis
+	(:x #|do nothing|#)
+	(:y
+	 (glutil::rotate-z matrix-stack 90.0)
+	 (glutil::rotate-x matrix-stack 90.0))
+	(:z
+	 (glutil::rotate-y matrix-stack 90.0)
+	 (glutil::rotate-x matrix-stack 90.0)))
+
+    (gl:use-program *program*)
+    ;;set the base color for this object
+    ;; 'count = 1' means: only a single variable will be modified. uniforms can
+    ;; consist of an entire array
+    (%gl:uniform-4f *base-color-unif*
+		    (glm:vec. base-color :x)
+		    (glm:vec. base-color :y)
+		    (glm:vec. base-color :z)
+		    (glm:vec. base-color :w)))
+  (gl:uniform-matrix *model-to-camera-matrix-unif* 4
+		     (vector (glutil:top-ms matrix-stack)) NIL)
+
+  (framework:render (glm:vec. *gimbal-meshes* e-axis))
+
+  (gl:use-program 0))
 
 (defun draw ()
   (let ((curr-matrix (make-instance 'glutil:matrix-stack)))
     (glutil:with-transform (curr-matrix)
 	:translate 0.0 0.0 -200.0
-	:scale 1.0 1.0 1.0
-	:rotate-x 20.0
+	:rotate-x (angle-x *angles*)
 
+	;;TODO DRAW-GIMBAL supposed to change curr-matrix?
+	
+	(draw-gimbal curr-matrix :y (glm:vec4 0.0 1.0 0.0 1.0))
 
 	(gl:use-program *program*)
         (%gl:uniform-4f *base-color-unif* .5 .4 .9 1.0)
 	
-	(gl:uniform-matrix *model-to-camera-matrix-unif* 4
-			   (vector (glutil:top-ms curr-matrix)) NIL)
-		(framework:render (aref *gimbal-meshes* 0))
+	;; (gl:uniform-matrix *model-to-camera-matrix-unif* 4
+	;; 		   (vector (glutil:top-ms curr-matrix)) NIL)
+	;; 	(framework:render (aref *gimbal-meshes* 0))
 	(gl:use-program 0)
 	)
 
