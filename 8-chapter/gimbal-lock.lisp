@@ -75,7 +75,7 @@
 	 (setf (aref *gimbal-meshes* i) (framework:xml->mesh-obj xmls))))
 
 
-  (setf *p-object* (framework:xml->mesh-obj (merge-pathnames *data-dir* "UnitPlane.xml")))
+  (setf *p-object* (framework:xml->mesh-obj (merge-pathnames *data-dir* "UnitCone.xml")))
   ;;TODO extend 'framework.lisp' to deal with <vao ...> xml-attributes
   ;; (setf *p-object* (framework:xml->mesh-obj (merge-pathnames *data-dir* "Ship.xml")))
 
@@ -106,14 +106,17 @@
   ;; TODO: more powerful WITH-TRANSFORM which finds transform keywords and repalces
   ;; them with transformation functions
   (glutil:with-transform (matrix-stack)
+
       (case e-axis
 	(:x #|do nothing|#)
 	(:y
-	 (glutil::rotate-z matrix-stack 90.0)
-	 (glutil::rotate-x matrix-stack 90.0))
+	 (glutil::rotate-z matrix-stack -90.0)
+	 (glutil::rotate-x matrix-stack 90.0)
+	 )
 	(:z
 	 (glutil::rotate-y matrix-stack 90.0)
-	 (glutil::rotate-x matrix-stack 90.0)))
+	 (glutil::rotate-x matrix-stack 90.0)
+	 ))
 
     (gl:use-program *program*)
     ;;set the base color for this object
@@ -123,36 +126,43 @@
 		    (glm:vec. base-color :x)
 		    (glm:vec. base-color :y)
 		    (glm:vec. base-color :z)
-		    (glm:vec. base-color :w)))
-  (gl:uniform-matrix *model-to-camera-matrix-unif* 4
-		     (vector (glutil:top-ms matrix-stack)) NIL)
+		    (glm:vec. base-color :w))
+    (gl:uniform-matrix *model-to-camera-matrix-unif* 4
+		       (vector (glutil:top-ms matrix-stack)) NIL)
 
-  (framework:render (glm:vec. *gimbal-meshes* e-axis))
+    (framework:render (glm:vec. *gimbal-meshes* e-axis))
 
-  (gl:use-program 0))
+    (gl:use-program 0)))
 
 (defun draw ()
   (let ((curr-matrix (make-instance 'glutil:matrix-stack)))
     (glutil:with-transform (curr-matrix)
 	:translate 0.0 0.0 -200.0
-	:rotate-x (angle-x *angles*)
-
 	;;TODO DRAW-GIMBAL supposed to change curr-matrix?
-	
+
+	;; Holy RAWR, this is awesome!!
+	:rotate-x (angle-x *angles*)
+	(draw-gimbal curr-matrix :x (glm:vec4 0.4 0.4 1.0 1.0))
+
+	:rotate-y (angle-y *angles*)
 	(draw-gimbal curr-matrix :y (glm:vec4 0.0 1.0 0.0 1.0))
 
+	:rotate-z (angle-z *angles*) 
+	(draw-gimbal curr-matrix :z (glm:vec4 1.0 0.3 0.3 1.0))
+
 	(gl:use-program *program*)
-        (%gl:uniform-4f *base-color-unif* .5 .4 .9 1.0)
+	:scale 5.0 7.0 10.0
+	:rotate-x -90.0
+	;; set the base color for this object
+        (%gl:uniform-4f *base-color-unif* 1.0 1.0 1.0 1.0)
 	
-	;; (gl:uniform-matrix *model-to-camera-matrix-unif* 4
-	;; 		   (vector (glutil:top-ms curr-matrix)) NIL)
-	;; 	(framework:render (aref *gimbal-meshes* 0))
-	(gl:use-program 0)
-	)
+	
+	(gl:uniform-matrix *model-to-camera-matrix-unif* 4
+			   (vector (glutil:top-ms curr-matrix)) NIL)
+	;;render object call:
+	(framework:render *p-object*)
 
-
-
-    ))
+	(gl:use-program 0))))
 
 
 (defun display ()
@@ -179,6 +189,10 @@
 
   (%gl:viewport 0 0 w h))
 
+(defconstant +standard-angle-increment+ 11.25)
+(defconstant +small-angle-increment+ 9.0)
+
+
 (defun main ()
   (sdl2:with-init (:everything)
     (progn (setf *standard-output* out) (setf *debug-io* dbg) (setf *error-output* err))
@@ -193,22 +207,24 @@
 	   (:keysym keysym)
 	   ;; TODO: capture in macro
 	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-a)
-	     )
+	     (incf (angle-y *angles*) +small-angle-increment+))
 	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-d)
-	     )
+	     (decf (angle-y *angles*) +small-angle-increment+))
 
 	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-w)
-	     )
+	     (incf (angle-x *angles*) +small-angle-increment+))
 	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-s)
-	     )
+	     (decf (angle-x *angles*) +small-angle-increment+))
 
-	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-e)
-	     )
-   	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-q)
-	     )
+	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-q)
+	     (incf (angle-z *angles*) +small-angle-increment+))
+   	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-e)
+	     (decf (angle-z *angles*) +small-angle-increment+))
 
 	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-space)
-	     (print "space pressed."))
+	     (format t "~%glv:~a glslv:~a ~%" (gl:gl-version) (gl:glsl-version))
+	     ;(print "space pressed.")
+	     )
 
 	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-escape)
 	     (sdl2:push-event :quit)))
