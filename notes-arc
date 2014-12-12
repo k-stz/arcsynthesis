@@ -794,4 +794,48 @@ For UBO:
 For OpenGL context:
  (defconstant +BINDING-INDEX+ 0) ; 0, 1, 2, 3, 4...
 
---------------------------------------------------------------------------------					
+--------------------------------------------------------------------------------
+GIMBAL LOCK,
+the gimbal simulation in chapter-8/gimbal-lock.lisp uses the hierarchical model:
+outer->middle->inner-gimbal->'ship'
+'gimbal lock' appears when the outer and middle gimbal have the same orientation
+because of the axis-wise perpendicular arrangement of the gimbals the outer
+and inner gimbal will exactle lie in the exact same plane 
+Different explanation (hierarchical model):
+each gimbal inherits an orientation from its predecessor gimbal with the
+outer gimbal being the 'Adam'. Successors have the intrinsic property of always
+being able to rotation-transform its children about a perpendicular axis from
+its predecessor. A strange, bizzare, effect can occur: a higher(in terms of the
+hierarchical model) gimbal can directly manipulate the rotation axis of its
+successor gimbal. And because every gimbal is perpendicular to one another
+it can actually 'fold' its successor axis INTO its PREDECESSOR axis.
+Now this gimbal, in the middle, can watch its predecessor and successor revolve
+about the same axis.. what a sick joke!
+Another note:
+every gimbal is always perpendicular to one another in the hierarchy, euclidean
+space provides 3 possible axis, that's why for this binary-relation to be
+always true 2-axis may suffice (two gimbals, next to each other, need each
+a different axis).
+
+But the main question remains: Why is this a big deal?
+We started out by proposing a way to express a arbitrary orientation in euclidean
+space using the three andles (in order of the gimbal-lock.lisp hierarchical model:
+pitch-yaw-roll.
+Note how we can't avoid using the 'hierarchical' model: If we wanted to move about
+an axis without manipulating another we would get non-perpendicular planes
+=> distortion of our object would occur
+
+Lets simplify our problem description,
+A system with 2-degrees of freedom is a theodolite, seems very similar to the
+description of spherical coordinates using two angles. It uses a altitude and
+azimuth angle. The altitude be set in such a way that it points to the zenith
+now chaning the azimuth _won't change the direction of the vector_ HENCE:
+GIMBAL LOCK occurs
+
+Now we can understand gimbal lock as "changing an angle doesn't changing the direction of
+a particular vector". Imagine yourself being in core of earth looking 'up' at the zenith
+and spining while keeping on looking up: you get dizzy, now you feel the nauseating
+gimbal lock!
+
+
+

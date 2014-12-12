@@ -384,6 +384,9 @@ be nested to facilitate the hierarchical model."
 
   (translate *model-to-camera-stack* *pos-base*)
   (rotate-y *model-to-camera-stack* *ang-base*)
+  ;; TODO: weird using rotate-x/rotate-z instead of the above rotate-y causes rotation
+  ;; about the same axis (like gimbal-lock) but for that a prior folding of the
+  ;; axis into one another should have taken place
 
   ;; Draw left base
   (with-transform () *model-to-camera-stack*

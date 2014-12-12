@@ -42,7 +42,7 @@
   (setf *base-color-unif*
 	(gl:get-uniform-location *program* "base_color"))
 
-  (format t "a:~a b:~a" *model-to-camera-matrix-unif* *camera-to-clip-matrix-unif*)
+  (format t "a:~a b:~a~%" *model-to-camera-matrix-unif* *camera-to-clip-matrix-unif*)
 
   (let ((fz-near 1.0)
 	(fz-far 600.0))
@@ -98,25 +98,26 @@
    (angle-y :accessor angle-y :initform 0.0)
    (angle-z :accessor angle-z :initform 0.0)))
 
-(defvar *angles* (make-instance 'gimbal-angles))
+(defparameter *angles* (make-instance 'gimbal-angles))
 
 (defun draw-gimbal (matrix-stack e-axis base-color)
-  ;; TODO: draw-gimbals space-button toggle
+
+  (unless *draw-gimbal* (return-from draw-gimbal NIL))
 
   ;; TODO: more powerful WITH-TRANSFORM which finds transform keywords and repalces
   ;; them with transformation functions
   (glutil:with-transform (matrix-stack)
 
       (case e-axis
-	(:x #|do nothing|#)
-	(:y
-	 (glutil::rotate-z matrix-stack -90.0)
-	 (glutil::rotate-x matrix-stack 90.0)
-	 )
-	(:z
-	 (glutil::rotate-y matrix-stack 90.0)
-	 (glutil::rotate-x matrix-stack 90.0)
-	 ))
+      	(:x #|do nothing|#)
+      	(:y
+      	 (glutil::rotate-z matrix-stack -90.0)
+      	 (glutil::rotate-x matrix-stack 90.0)
+      	 )
+      	(:z
+      	 (glutil::rotate-y matrix-stack 90.0)
+      	 (glutil::rotate-x matrix-stack 90.0)
+      	 ))
 
     (gl:use-program *program*)
     ;;set the base color for this object
@@ -138,25 +139,28 @@
   (let ((curr-matrix (make-instance 'glutil:matrix-stack)))
     (glutil:with-transform (curr-matrix)
 	:translate 0.0 0.0 -200.0
-	;;TODO DRAW-GIMBAL supposed to change curr-matrix?
 
+	;; this gimbal simulation uses the hierarchical model:
+
+	
 	;; Holy RAWR, this is awesome!!
+	;; transform outer gimbal
 	:rotate-x (angle-x *angles*)
 	(draw-gimbal curr-matrix :x (glm:vec4 0.4 0.4 1.0 1.0))
 
+	;; transform middle gimbal
 	:rotate-y (angle-y *angles*)
 	(draw-gimbal curr-matrix :y (glm:vec4 0.0 1.0 0.0 1.0))
 
+	;; transform inner-most gimbal
 	:rotate-z (angle-z *angles*) 
 	(draw-gimbal curr-matrix :z (glm:vec4 1.0 0.3 0.3 1.0))
 
 	(gl:use-program *program*)
-	:scale 5.0 7.0 10.0
+	:scale 7.0 2.0 10.0
 	:rotate-x -90.0
 	;; set the base color for this object
         (%gl:uniform-4f *base-color-unif* 1.0 1.0 1.0 1.0)
-	
-	
 	(gl:uniform-matrix *model-to-camera-matrix-unif* 4
 			   (vector (glutil:top-ms curr-matrix)) NIL)
 	;;render object call:
@@ -164,14 +168,12 @@
 
 	(gl:use-program 0))))
 
-
 (defun display ()
   (gl:clear-color 0.0 0.0 0.2 1)
   (gl:clear-depth 1.0)
   (gl:clear :color-buffer-bit :depth-buffer-bit)
 
   (draw)
-
   )
 
 (defparameter *fz-near* 1.0)
@@ -191,7 +193,15 @@
 
 (defconstant +standard-angle-increment+ 11.25)
 (defconstant +small-angle-increment+ 9.0)
+(defparameter *draw-gimbal* t)
 
+(defun animation ()
+  (let ((x (mod (+ (angle-x *angles*) .5) 360.0))
+	(y (mod (- (angle-y *angles*) 1.0) 360.0))
+	(z (mod (+ (angle-z *angles*) 1.5) 360.0)))
+    (setf (angle-x *angles*) x)
+    (setf (angle-y *angles*) y)
+    (setf (angle-z *angles*) z)))
 
 (defun main ()
   (sdl2:with-init (:everything)
@@ -222,8 +232,10 @@
 	     (decf (angle-z *angles*) +small-angle-increment+))
 
 	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-space)
-	     (format t "~%glv:~a glslv:~a ~%" (gl:gl-version) (gl:glsl-version))
-	     ;(print "space pressed.")
+	     (if *draw-gimbal*
+		 (setf *draw-gimbal* NIL)
+		 (setf *draw-gimbal* t))
+	     (format t "Draw gimbal: ~a~%" *draw-gimbal*)
 	     )
 
 	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-escape)
@@ -232,6 +244,7 @@
 	  (:idle ()
 		 ;;main-loop:
 		 (display)
+;		 (animation)
 		 
                  (sdl2:gl-swap-window win) ; wow, this can be forgotten easily -.-
 		 ))))))
