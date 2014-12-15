@@ -74,11 +74,10 @@
        for xmls in gimbal-names do
 	 (setf (aref *gimbal-meshes* i) (framework:xml->mesh-obj xmls))))
 
-
-  (setf *p-object* (framework:xml->mesh-obj (merge-pathnames *data-dir* "UnitCone.xml")))
   ;;TODO extend 'framework.lisp' to deal with <vao ...> xml-attributes
   ;; (setf *p-object* (framework:xml->mesh-obj (merge-pathnames *data-dir* "Ship.xml")))
-
+  ;; so as to finally being able to load the the "Ship.xml" as a mesh to be rendered
+  (setf *p-object* (framework:xml->mesh-obj (merge-pathnames *data-dir* "UnitCone.xml")))
  
   (gl:enable :cull-face)
   (%gl:cull-face :back)
@@ -139,9 +138,7 @@
   (let ((curr-matrix (make-instance 'glutil:matrix-stack)))
     (glutil:with-transform (curr-matrix)
 	:translate 0.0 0.0 -200.0
-
 	;; this gimbal simulation uses the hierarchical model:
-
 	
 	;; Holy RAWR, this is awesome!!
 	;; transform outer gimbal
@@ -157,7 +154,7 @@
 	(draw-gimbal curr-matrix :z (glm:vec4 1.0 0.3 0.3 1.0))
 
 	(gl:use-program *program*)
-	:scale 7.0 2.0 10.0
+	:scale 3.0 20.0 22.0
 	:rotate-x -90.0
 	;; set the base color for this object
         (%gl:uniform-4f *base-color-unif* 1.0 1.0 1.0 1.0)
@@ -196,9 +193,9 @@
 (defparameter *draw-gimbal* t)
 
 (defun animation ()
-  (let ((x (mod (+ (angle-x *angles*) .5) 360.0))
-	(y (mod (- (angle-y *angles*) 1.0) 360.0))
-	(z (mod (+ (angle-z *angles*) 1.5) 360.0)))
+  (let ((x (mod (+ (angle-x *angles*) .1) 360.0))
+	(y (mod (- (angle-y *angles*) .2) 360.0))
+	(z (mod (+ (angle-z *angles*) .0) 360.0)))
     (setf (angle-x *angles*) x)
     (setf (angle-y *angles*) y)
     (setf (angle-z *angles*) z)))

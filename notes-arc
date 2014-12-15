@@ -798,12 +798,12 @@ For OpenGL context:
 GIMBAL LOCK,
 the gimbal simulation in chapter-8/gimbal-lock.lisp uses the hierarchical model:
 outer->middle->inner-gimbal->'ship'
-'gimbal lock' appears when the outer and middle gimbal have the same orientation
+'gimbal lock' appears when the outer and middle gimbal lie in the same plane
 because of the axis-wise perpendicular arrangement of the gimbals the outer
-and inner gimbal will exactle lie in the exact same plane 
+and inner gimbal will be parallel -- rotate about the same axis.
 Different explanation (hierarchical model):
 each gimbal inherits an orientation from its predecessor gimbal with the
-outer gimbal being the 'Adam'. Successors have the intrinsic property of always
+outer gimbal being the parent. Successors have the intrinsic property of always
 being able to rotation-transform its children about a perpendicular axis from
 its predecessor. A strange, bizzare, effect can occur: a higher(in terms of the
 hierarchical model) gimbal can directly manipulate the rotation axis of its
@@ -818,24 +818,40 @@ always true 2-axis may suffice (two gimbals, next to each other, need each
 a different axis).
 
 But the main question remains: Why is this a big deal?
-We started out by proposing a way to express a arbitrary orientation in euclidean
-space using the three andles (in order of the gimbal-lock.lisp hierarchical model:
-pitch-yaw-roll.
-Note how we can't avoid using the 'hierarchical' model: If we wanted to move about
-an axis without manipulating another we would get non-perpendicular planes
-=> distortion of our object would occur
+We started out by proposing a way to express a arbitrary orientation in euclidean space
+using the three angles pitch,yaw and roll in order of the gimbal-lock.lisp hierarchical
+model: x->y->z Note how we can't avoid using the 'hierarchical' model: If we wanted to
+move about an axis without manipulating another we would get non-perpendicular planes =>
+distortion of our object would occur
 
-Lets simplify our problem description,
-A system with 2-degrees of freedom is a theodolite, seems very similar to the
-description of spherical coordinates using two angles. It uses a altitude and
-azimuth angle. The altitude be set in such a way that it points to the zenith
-now chaning the azimuth _won't change the direction of the vector_ HENCE:
-GIMBAL LOCK occurs
+Further excursion:
+Before we can talk about gimbal lock we need to understand:
+- axis have a HIERARCHY, higher ups TRANSFORM lower axis
+- axis are at 0-degree all perpendicular to one another
 
-Now we can understand gimbal lock as "changing an angle doesn't changing the direction of
-a particular vector". Imagine yourself being in core of earth looking 'up' at the zenith
-and spining while keeping on looking up: you get dizzy, now you feel the nauseating
-gimbal lock!
+There is a given hierarchy of axes, yes Euler angle can represent any orientatinon in
+euclidean space and finally, my personal last insight needed, gimbal lock is a problem of
+continuous movement. If we try to orient an object, when it is already in a certain
+orientation, such as, best example, in gimbal lock, we can't perform straight forward
+transformation because we lack a degree of freedom. We need to backtrack the rotation
+where the degree of freedom is restored and approach the orientation we wanted all over
+again. This backtracking is what is bad for animatiors as between keyframes there will be
+discontiuous or deviant movement from the path of 'apparent least resistance'.
 
+To directly feel the problem while facing it: set up the simulation of gimbal-lock.lisp
+into a gimbal lock. Notice how you can perform only two kinds of rotations directly:
+rotate it about two axes (the middle one, and the two aligned outer and inner gimbal axes)
+now try to perform the missing rotation in that gimbal lock position. You will now notice
+how you need to 'backtrack' the way you got into gimbal lock to perform the previously
+missing rotation.
 
+With this you can witness, first hand, the problem of gimbal lock.
 
+You may try to rotate the outer gimbal 90-degrees to gain the missing rotation, but again
+you will miss a degree of freedom. With this a new observation occurs: if you can't perform
+all three possible rotations at a given time you're in gimbal lock and have to transform
+the object in a non-straightforward way to reach an orientation. This non-straightforward
+transformation is especially problematic if we want to animate a fluent movement and
+the object changes orientation in a quirky manner we got gimbal lock'd!
+
+--------------------------------------------------------------------------------
