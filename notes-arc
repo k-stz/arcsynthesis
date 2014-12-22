@@ -854,4 +854,28 @@ the object in a non-straightforward way to reach an orientation. This non-straig
 transformation is especially problematic if we want to animate a fluent movement and
 the object changes orientation in a quirky manner we got gimbal lock'd!
 
+spherical coordinates - poorly defined nadir/zenith anecdote [from internet],
+You meet an Eskimo at the northpole and ask for direction to Europe. The Eskimo cheerfully
+tells you to go south. You look at your compass. The needle is spinning like crazy while
+whispering: any azimuth is at zenith, this be gimbal lock.
+
+The Eskimo breaks your focus shouting:"Where's your fourth Gimbal NOW?"  You fall out of
+bed, it was just a dream. You want to look at the clock behind you at the window so you
+look up at the ceiling, but your neck can only get you so far, so you turn around
+180-degree still facing straight up. As you lower your neck by a certain altitude you see
+the clock.  You wonder how whatever time it is, the trigger's of the clock (it is an
+analogue clock) always remain within the set of 12-hours. Actually adding 0-seconds to the
+time, doesn't change the time at all and if you add x-minutes with y-seconds or the other
+way around doesn't matter either, it still will show the same time.  For some reason you
+have to think of donuts and coffee, so you get up and go to the kitchen.  
+
+As you pass the many curves of your corridor, you imagine being the shadow of a fourth
+dimension that can move freely in the world.. anyway.  You finally get your mug of coffee,
+after some brewin. There is a small cookie in it. As you tilt the mug the cookie remains
+in its orientation - no discontiuous jumps between keyframes (lol).
+
+You think to yourself: If only there was an orientation possible that has the properties
+of the clock and which is as efficient your my compass. You chuckle, "that could only
+be possible in theory, you know, in a simulation".
+
 --------------------------------------------------------------------------------
