@@ -818,7 +818,7 @@ always true 2-axis may suffice (two gimbals, next to each other, need each
 a different axis).
 
 But the main question remains: Why is this a big deal?
-We started out by proposing a way to express a arbitrary orientation in euclidean space
+We started out by proposing a way to express an arbitrary orientation in euclidean space
 using the three angles pitch,yaw and roll in order of the gimbal-lock.lisp hierarchical
 model: x->y->z Note how we can't avoid using the 'hierarchical' model: If we wanted to
 move about an axis without manipulating another we would get non-perpendicular planes =>
@@ -854,7 +854,9 @@ the object in a non-straightforward way to reach an orientation. This non-straig
 transformation is especially problematic if we want to animate a fluent movement and
 the object changes orientation in a quirky manner we got gimbal lock'd!
 
-spherical coordinates - poorly defined nadir/zenith anecdote [from internet],
+
+Anecdote [from internet],
+spherical coordinates - poorly defined nadir/zenith
 You meet an Eskimo at the northpole and ask for direction to Europe. The Eskimo cheerfully
 tells you to go south. You look at your compass. The needle is spinning like crazy while
 whispering: any azimuth is at zenith, this be gimbal lock.
