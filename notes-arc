@@ -881,3 +881,56 @@ of the clock and which is as efficient as my compass. You chuckle, "that could o
 be possible in theory, you know, in a simulation".
 
 --------------------------------------------------------------------------------
+Orthonormal,
+once you polish up your english you'll know: perpendicular=orthogonal=at right angle to one
+another. And then you have a intuitively understandable term:
+A coordinate system, which a matrix represents, with orthogonal basis vectors of unit length
+(normalized) is called /orthonormal/!
+
+Quaternion,
+As introduced so far a 4d-vector (x,y,z,w) with x,y,z being the 'vector part' and w being
+the 'skaler part'. We represent an axis, with the vector part, and a rotation around this axis
+with the skaler part. This solves the problem of Euler Angle's gimbal lock, also matrix orientation
+representation whereby we'd have to orthonormalize the matrix representing an object on each
+transformation lest accumulating rounding imprecision.
+
+Quternion multiplication,
+two quaternions can be multiplied -- we get the intuitive composite orientation.  The
+multiplication is non-intuitive: it looks rather arbitrary and is therefore hard to
+remember. It is non-commutative and associative though, just like matrix multiplication.
+
+The main difference between matrix and quaternion representation is that they're easy to
+keep normalized -- simply applying vector normalization. This keeps them in unit-vector
+form.
+
+Note how it is actually difficult to keep a matrix orthonormalized, which:
+1. must be done on each frame of an animation to dodge rounding problems
+2. involves the three basis vectors
+3. once they're normalized they actually need to be all orthogonal to one another, but where
+   to put a reference basis vector so its position is right and hence the relative orthogonal
+   ones too? -- according to Mr. McKesson this can be solved but we will do it with quaternions
+   still for perfornamce reasons.
+
+Now we know how to composite quaternions, hence can fascilitate multiple changing orientations. But
+our product so far of a quternion multiplication is still just a quaternion we need something we
+know how to work with:
+
+Quaternion to (transformation)Matrix,
+given a quaternion: q = (x,y,z,w) and a component being represented q.x,..., q.w then we
+get a transformation matrix like so:
+
+[1-2*q.y*q.y-2q.z*q.z    2*q.x*q.y-2*q.w*q.z    2q.x*q.z+2q.y*q.w 0]
+[  2*q.x*q.y+2q.w*q.z  1-2*q.x*q.x-2*q.z*q.z    2q.y*q.z-2q.w*q.x 0]
+[  2*q.x*q.z-2q.w*q.y    2*q.y*q.z+2*q.w*q.x  1-2q.x*q.x-2q.y*q.y 0]
+[           0                     0                     0         1]
+
+I wouldn't be surprised if there is a typo in there. Anyway, it looks similar to creating
+a matrix from angle/axis rotation. But since we're dealing with quternions I think it is
+sensible to drop the aspiration of trying to understand them intuitively. I only barely
+understood matrix multiplication intuitively, with some fuzzy loopholes here and
+there. But those are 3D, here we're dealing with topological wizardry of 3-spheres --
+4-dimensional geometrical representation, a covering map that provides 'homeomorphism'. I
+don't know if it is worth trying to learn that stuff, if I won't encounter it again I
+shouldn't bother as it may be too special to be even worthwhile to know when tackling
+problems related to graphics programming.
+
