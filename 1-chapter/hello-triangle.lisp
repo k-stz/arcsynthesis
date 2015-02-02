@@ -114,7 +114,7 @@ outputColor = vec4(0.0f, 1.0f, 1.0f, 1.0f);
 		   (%gl:enable-vertex-attrib-array 0) 
 		   (%gl:vertex-attrib-pointer 0 4 :float :false 0 0)
 
-		   ;;now OpenGL knows where to get its vertex data; rendering 2 triangel (6 vertexes)
+		   ;;now OpenGL knows where to get its vertex data; rendering 2 triangle (6 vertexes)
                    (%gl:draw-arrays :triangles 0 6)
 		   (sdl2:gl-swap-window win) ; this should have been implicit
 		   )

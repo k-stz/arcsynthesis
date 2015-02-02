@@ -77,7 +77,8 @@
   ;;TODO extend 'framework.lisp' to deal with <vao ...> xml-attributes
   ;; (setf *p-object* (framework:xml->mesh-obj (merge-pathnames *data-dir* "Ship.xml")))
   ;; so as to finally being able to load the the "Ship.xml" as a mesh to be rendered
-  (setf *p-object* (framework:xml->mesh-obj (merge-pathnames *data-dir* "UnitCone.xml")))
+  ;;TODO: next
+  (setf *p-object* (framework:xml->mesh-obj (merge-pathnames *data-dir* "UnitPlane.xml")))
  
   (gl:enable :cull-face)
   (%gl:cull-face :back)
@@ -232,8 +233,7 @@
 	     (if *draw-gimbal*
 		 (setf *draw-gimbal* NIL)
 		 (setf *draw-gimbal* t))
-	     (format t "Draw gimbal: ~a~%" *draw-gimbal*)
-	     )
+	     (format t "Draw gimbal: ~a~%" *draw-gimbal*))
 
 	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-escape)
 	     (sdl2:push-event :quit)))

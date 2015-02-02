@@ -97,7 +97,8 @@
       (sb-cga:vec- a (sb-cga:vec* a 2.0))
       (sb-cga:vec- a b)))
 
-(defmacro vec. (vector xyzw)
+ (defmacro vec. (vector xyzw)
+   ;; TODO: isn't it "SETFable?"
   "AREFable vector component returned. In the vein of C++ notation: vec.x vec.y etc."
   `(aref ,vector
 	 (case ,xyzw
@@ -305,7 +306,7 @@
   ;; from OpenGL description, probably this is only for a being [0,1]. Yep:
   ;; 'a' is the distance between x and y as if mapped to 0 to 1.0. The rest abides
   ;; to linear interpolation
-  "linearly interpolate between two values x,y using a to weight between them"
+  "linearly interpolate between two values x,y using 'a' to weight between them"
   (+ (* x (1- a))
      (* y a))
   )

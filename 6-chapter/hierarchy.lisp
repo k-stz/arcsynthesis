@@ -570,7 +570,7 @@ be nested to facilitate the hierarchical model."
 	  (:idle ()
 		 ;;main-loop:
 		 (display)
-		 
+
                  (sdl2:gl-swap-window win) ; wow, this can be forgotten easily -.-
 		 ))))))
 

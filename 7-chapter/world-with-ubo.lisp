@@ -82,18 +82,18 @@
   ;; for now better to not use convenience function, as we don't store the array needed
   ;; as a global (it will be provided ad-hoc through glutil:perspective and
   ;; (with-transform (matrix-stack) ...)    
-  (%gl:buffer-data :uniform-buffer #|float*16*2=|# 128
+  (%gl:buffer-data :uniform-buffer #|float*16*2=|# 128  ;;aka: size-of:mat4*2 
 		   (cffi-sys:null-pointer) ; 'NULL' , not: :null or NIL
 		   :stream-draw)
   (gl:bind-buffer :uniform-buffer 0)
 
   ;; now that the opengl program knows where to look for the uniform-buffer data
-  ;; (gl:block-binding ..) provided a 'binding-point' *global-matrices-binding-index* that
+  ;; (gl:block-binding ..) provides a 'binding-point' *global-matrices-binding-index* that
   ;; tells the program where to look in the opengl context for it.  Now all we need to do
   ;; is to actually bind the uniform-buffer object using this binding-point.
   (%gl:bind-buffer-range :uniform-buffer *global-matrices-binding-index*
 			 *global-matrices-ubo*
-			 0	       ; where the uniform-blocks data supposed to begins
+			 0	       ; where the uniform-blocks data supposed to beginn
 			 #|size-of:mat4*2|# (* 64 2) ; and how big it is
 			 )
   )
@@ -196,7 +196,7 @@ geometry coordinates and returned as a position vector."
 (defun calc-look-at-matrix (camera-pt look-pt up-pt)
   ;; camera-pt already is set relative to look-pt by being added to it in
   ;; resolve-cam-position. negating the two yields the direction of the camera "through"
-  ;; look-pt. Unit vector, though normalize, is needed as we will use look-dir
+  ;; look-pt. Unit vector, through normalize, is needed as we will use look-dir
   ;; directly as the axis of the look-at-matrix, so as to prevent scaling!
   ;; With this we already have our Z axis
   (let* ((look-dir (sb-cga:normalize (sb-cga:vec- look-pt camera-pt)))
@@ -230,7 +230,7 @@ geometry coordinates and returned as a position vector."
     (setf rot-mat (sb-cga:transpose-matrix rot-mat))
 
     ;; oh, its just a translation matrix putting the camera-pt into origin! (and thereby
-    ;; every offseting every position send through this matrix by the camera pos
+    ;; offsetting every position sent through this matrix by the camera pos
     (glm:set-mat4-col trans-mat 3 (glm:vec4-from-vec3 (glm:vec- camera-pt) 1.0))
 
     ;;return rotmat * transmat;
@@ -557,7 +557,7 @@ geometry coordinates and returned as a position vector."
     (gl:bind-buffer :uniform-buffer *global-matrices-ubo*)
     (gl:buffer-sub-data :uniform-buffer
     			(arc:create-gl-array-from-vector (glutil:top-ms cam-matrix))
-    			;; since its the 2nd matrix we :buffer-offset at
+    			;; since it's the 2nd matrix we :buffer-offset at
 			;; 64='mat4 size in bytes'
     			:buffer-offset 64)
     (gl:bind-buffer :uniform-buffer 0)
@@ -595,7 +595,8 @@ geometry coordinates and returned as a position vector."
     ;;draw building
     (glutil:with-transform (model-matrix)
 	:translate 20.0 0.0 -10.0
-	(draw-parthenon model-matrix))
+	(draw-parthenon model-matrix)
+	)
 
     (when *draw-look-at-point*
       (draw-look-at-point model-matrix))
@@ -621,7 +622,9 @@ geometry coordinates and returned as a position vector."
   ;; for now where we set the camera-to-clip perspective-matrix for the shaders
   (let ((pers-matrix (make-instance 'glutil:matrix-stack)))
     (glutil:perspective pers-matrix 45.0 (/ w h) *fz-near* *fz-far*)
-    ;; set camera-matrix
+    ;; set camera-matrix, note this starts writing at the default offset=0, and it writes one perspective
+    ;; matrix into the uniform-buffer. The uniform buffer-block in the shader program starts hence
+    ;; with the mat4 camaera_to_clip_matrix;
     (gl:bind-buffer :uniform-buffer *global-matrices-ubo*)
     (gl:buffer-sub-data :uniform-buffer
 			(arc:create-gl-array-from-vector (glutil:top-ms pers-matrix)))

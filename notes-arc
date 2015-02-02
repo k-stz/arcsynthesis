@@ -739,7 +739,7 @@ read-only examples, by any number of opengl programs.
 
 basic setup:
 
-1. expose a handle to the uniform block called an 'uniform block index' in
+1. expose a handle to the uniform block called a 'uniform block index' in
 this case (setf handle (%gl:get-uniform-block-index "system-area-pointer-string"))
 
 2. Use that handle to associate the current program through it with a
@@ -909,7 +909,7 @@ Note how it is actually difficult to keep a matrix orthonormalized, which:
 3. once they're normalized they actually need to be all orthogonal to one another, but where
    to put a reference basis vector so its position is right and hence the relative orthogonal
    ones too? -- according to Mr. McKesson this can be solved but we will do it with quaternions
-   still for perfornamce reasons.
+   still for performance reasons.
 
 Now we know how to composite quaternions, hence can fascilitate multiple changing orientations. But
 our product so far of a quternion multiplication is still just a quaternion we need something we

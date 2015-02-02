@@ -356,6 +356,5 @@ the projection plane)"
 	  (:idle ()
 		 ;;main-loop:
 		 (display)
-		 
                  (sdl2:gl-swap-window win) ; wow, this can be forgotten easily -.-
 		 ))))))
