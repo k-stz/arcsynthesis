@@ -62,6 +62,7 @@
 
 (defvar *gimbal-meshes* (make-array 3 :initial-element NIL))
 (defvar *p-object*)
+(defvar *ship-vao*) ;; TODO: for test, remove and use *p-object* once it works
 
 (defun init ()
   (initialize-program)
@@ -79,6 +80,9 @@
   ;; so as to finally being able to load the the "Ship.xml" as a mesh to be rendered
   ;;TODO: next
   (setf *p-object* (framework:xml->mesh-obj (merge-pathnames *data-dir* "UnitPlane.xml")))
+  ;; test ship.xml
+
+  (setf *ship-vao* (framework::ship-xml->vao (merge-pathnames *data-dir* "Ship.xml")))
  
   (gl:enable :cull-face)
   (%gl:cull-face :back)
@@ -155,14 +159,16 @@
 	(draw-gimbal curr-matrix :z (glm:vec4 1.0 0.3 0.3 1.0))
 
 	(gl:use-program *program*)
-	:scale 3.0 20.0 22.0
+;	:scale 3.0 20.0 22.0
+	:scale 2.0 2.0 2.0
 	:rotate-x -90.0
 	;; set the base color for this object
         (%gl:uniform-4f *base-color-unif* 1.0 1.0 1.0 1.0)
 	(gl:uniform-matrix *model-to-camera-matrix-unif* 4
 			   (vector (glutil:top-ms curr-matrix)) NIL)
 	;;render object call:
-	(framework:render *p-object*)
+;	(framework:render *p-object*)
+	(framework::render-ship *ship-vao*) ;; TODO-NEXt: remove all the scaling above!?
 
 	(gl:use-program 0))))
 

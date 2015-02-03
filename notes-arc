@@ -405,7 +405,7 @@ context, as just described.
 --------------------------------------------------------------------------------
 Check this out:
 Mr McKesson suggests in a pseudo code for gl:draw-arrays, that they loop over some
-given range using indexed within it to call:
+given range using indices within it to call:
 
   VertexShader(position-attibute-array[some-index]
 

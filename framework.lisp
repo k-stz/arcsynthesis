@@ -144,8 +144,8 @@
 
 
 (defun vertex-data (mesh)
-  ;; check out this APPLY use!! Could solve all problems of the sort
-  ;; (append (list 1) (list 2)) `(1 ,@b 2) ??
+  "Takes all the attributes of a mesh, regardless of multiple occurences of different attribute tags in an xml,
+and puts them in a single gl-array in order of appearance of attributes"
   (arc:create-gl-array-from-vector
    (apply #'vector
 	  (apply #'append (mapcar #'data (attrs mesh))))) )
@@ -285,6 +285,61 @@ mesh))
 	(mesh (make-mesh stp-obj)))
     mesh))
 
+
+(defvar foo)
+;; brute-force, non reusable solution
+(defun ship-xml->vao (path-to-ship-xml)
+  (let ((mesh (xml->mesh-obj path-to-ship-xml)))
+    (setf foo mesh)
+
+    ;;building vbo of first attribute data for test:
+    (let ((vbo (first (gl:gen-buffers 1)))
+	  (vao (first (gl:gen-vertex-arrays 1))))
+
+      ;; vbo setup
+      (gl:bind-buffer :array-buffer vbo)
+      (gl:buffer-data :array-buffer :static-draw
+		      (arc::create-gl-array-from-vector
+		       (apply #'vector (data (first (attrs mesh))))))
+      (gl:bind-buffer :array-buffer 0)
+
+      ;; vao setup
+      (gl:bind-vertex-array vao)
+      (gl:bind-buffer :array-buffer vbo)
+      (%gl:enable-vertex-attrib-array (index (first (attrs mesh))))
+      (%gl:vertex-attrib-pointer (index (first (attrs mesh)))
+				(size (first (attrs mesh)))
+				(attr-type (first (attrs mesh))) :false 0
+				0)
+      ;;unbind vao, that we pieced together
+      (gl:bind-vertex-array 0)
+      vao) ;; just return the vao
+    ))
+
+(defun render-ship (ship-vao)
+  (%gl:bind-vertex-array ship-vao)
+  (%gl:draw-arrays :triangles 0 336)
+  )
+  ;; (attrs mesh) and (so mesh) exist, attrs returns list of attributes containing:
+  ;; (index ..) => 0, 1 or 3    (type ..) => all three float   (size ..)
+  ;;
+  ;; build-vaos-in-mesh
+  ;; 1. create vbo, fill with attributes of all tags in one buffer
+  ;; now call BUILD-VAOS called with mesh and the vbo
+
+
+;; ship.xml 3 attributes with 336 points
+;;          3 index (0,1,2)
+
+
+;; building two vao from it: 
+;;   1."flat" using attrib = 0
+;;   2."tint" using attrib = 0 and 1
+;;; current assumption:
+;;  index 0 attribute = triangle data
+;;  index 2 attribute = triangle data
+;;  index 1 attribute = color data
+;;;; also index 0 = positions , index 1 = colors using a pos-color-local-transformation.vert
 
 
 ;; (arc-7:main)
