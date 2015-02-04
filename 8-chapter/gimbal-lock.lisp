@@ -160,15 +160,16 @@
 
 	(gl:use-program *program*)
 ;	:scale 3.0 20.0 22.0
-	:scale 2.0 2.0 2.0
+	:scale 3.0 3.0 3.0
 	:rotate-x -90.0
 	;; set the base color for this object
+	;; the grey tones arise from interpolation with this color (in frag-shader theColor * base_color)!
         (%gl:uniform-4f *base-color-unif* 1.0 1.0 1.0 1.0)
 	(gl:uniform-matrix *model-to-camera-matrix-unif* 4
 			   (vector (glutil:top-ms curr-matrix)) NIL)
 	;;render object call:
 ;	(framework:render *p-object*)
-	(framework::render-ship *ship-vao*) ;; TODO-NEXt: remove all the scaling above!?
+	(framework::render-ship *ship-vao*) 
 
 	(gl:use-program 0))))
 

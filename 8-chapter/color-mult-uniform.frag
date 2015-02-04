@@ -6,5 +6,5 @@ uniform vec4 base_color;
 out vec4 outputColor;
 
 void main() {
-  outputColor = theColor * base_color;
+ outputColor = theColor * base_color;
 }
