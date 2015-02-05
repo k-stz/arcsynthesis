@@ -144,8 +144,9 @@
 
 
 (defun vertex-data (mesh)
-  "Takes all the attributes of a mesh, regardless of multiple occurences of different attribute tags in an xml,
-and puts them in a single gl-array in order of appearance of attributes"
+  "Takes all the attributes of a mesh, regardless of multiple occurences of different 
+attribute tags in an xml, and puts them in a single gl-array in order of appearance of
+attributes"
   (arc:create-gl-array-from-vector
    (apply #'vector
 	  (apply #'append (mapcar #'data (attrs mesh))))))
@@ -319,18 +320,24 @@ mesh))
       (%gl:vertex-attrib-pointer (index (third (attrs mesh)))
 				 (size (third (attrs mesh)))
 				 (attr-type (third (attrs mesh))) :false 0
-				 ;; number of vertices (336) x float-size (4) x points per vertex (3) = 4032;
-				 ;;   and we want to read the 3rd attribute block, which all are of equal size, (note
-				 ;; that the vbo holds all the attribute data of the Ship.xml in the sequence in
-				 ;; which it was provided)
-				 ;;so we multiply by two, skipping the first two: 4032x2=8064
+				 ;; number of vertices (336) x float-size (4) x points per
+				 ;; vertex (3) = 4032; and we want to read the 3rd
+				 ;; attribute block, which all are of equal size, (note
+				 ;; that the vbo holds all the attribute data of the
+				 ;; Ship.xml in the sequence in which it was provided) so
+				 ;; we multiply by two, skipping the first two:
+				 ;; 4032x2=8064
 				 8064
-				 ;; try lower values for funky colors, maybe more suitable as they make for a more 
-				 ;; distinguishable object. Actuall vbo data on the range: [0,12096] note: 4032 will be read
-				 ;; so the highest value to take, so we don't read default black colors, is in fact 8064
-				 ;; which is also where the supposedly for use color data is
+				 ;; try lower values for funky colors, maybe more suitable
+				 ;; as they make for a more distinguishable object. Actual
+				 ;; vbo data is on the range: [0,12096] note: 4032 will be
+				 ;; read to draw the ship (gl:draw-arrays :triangles 0
+				 ;; 336), so the highest value to take, so we don't read
+				 ;; default black colors, is in fact 8064 which is also
+				 ;; where the supposedly for use color data is
 				 )
-      ;;the VAO is now pieced in the opengl context vao-working-bench (binding via gl:bind-vertex-array), and can be now unbound
+      ;;the VAO is now pieced in the opengl context vao-working-bench (binding via
+      ;;gl:bind-vertex-array), and can be now unbound
       (gl:bind-vertex-array 0)
       vao) ;; just return the vao
     ))

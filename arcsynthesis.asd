@@ -55,7 +55,8 @@ written in Common Lisp using cl-sdl2 and cl-opengl"
 	    :components ((:file "world-scene")
 			 (:file "world-with-ubo")))
    (:module "8-chapter"
-	    :components ((:file "gimbal-lock")))
+	    :components ((:file "gimbal-lock")
+			 (:file "quaternion-YPR")))
    ))
 
 

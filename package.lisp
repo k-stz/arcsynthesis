@@ -190,3 +190,8 @@
   (:documentation "Getting Oriented - Gimbal Lock")
   (:use :cl)
   (:export #:main))
+
+(defpackage #:arc-8.1
+  (:documentation "Getting Oriented - Quaternion")
+  (:use :cl)
+  (:export #:main))

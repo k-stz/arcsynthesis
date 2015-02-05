@@ -5,10 +5,10 @@ adding vectors  v1 + v2 = v3
  v3 is the direction between v1's origin and v2's tip
 
 negation:
--postion: backwards
+-position: backwards
 -direction: 180-degree turn
  
-substracting: like addition but v2 is negated before adding it to v1
+subtracting: like addition but v2 is negated before adding it to v1
 -position:
  first go v1 then go v2 backwards
 -direction
@@ -22,7 +22,7 @@ results in longer/shorter vector
 
 length: sqrt(x^2,y^2,z^2...) of any dimension
 
-unit-vecotr: ^ atop vector name   v^ = v1 * 1/length(v1)
+unit-vector: ^ atop vector name   v^ = v1 * 1/length(v1)
 
 --------------------------------------------------------------------------------
 image = 2d-array of pixels
@@ -36,7 +36,7 @@ Rasterization:
 1.triangle goes in
 2.is it even in "clip space"? (region of the world we want to render)
 3.It resides in "clip space" and has "clip coordinates" (always 4:x,y,z,w)
-  Each vertex of a trinagle  in clip space has its own clip space cube of range [-w,w]
+  Each vertex of a triangle  in clip space has its own clip space cube of range [-w,w]
 4.Triangles outside clip space aren't operated upon further on
   Triangles partially in clip space will be broken down into smaller triangles which
   are entirely within clip space. This process is called clipping, hence the name clip
@@ -50,11 +50,11 @@ Rasterization:
   "sample": are of pixel determining if triangle overlapping said pixel will produce a
   "fragment"
   Guarantees: a) shared edges between triangles will never have sample gaps
-              b) same input trianlgle will always result in the same pixel-art fragments
+              b) same input triangle will always result in the same pixel-art fragments
   Fragments still have a z value, not only x,y!!!
 8.Fragment processing:
   transform fragment into color + depth value
-  note of understanding: fragments from differnt triangle can overlap UNDERSTAND??
+  note of understanding: fragments from different triangle can overlap UNDERSTAND??
   Fragments from one triangle must be all processed before another triangle is processed
   >>Direct3D calls this step: "pixel processing" or "pixel shading"... MISNOMER!!
 9.Fragment Writing: These mosaics of depth fragments which can overlap with other triangle
@@ -65,8 +65,8 @@ Shaders, programs run on GPU.
 shader-stages: at certain points in the rendering(rasterization)-process, we can program
 arbitrary algorithms to create a specific visual effect.
 Shader-stage examples: fragment writing, putting triangle vertex into clip space.
->>shaders run on the actual rendering hardware!! -> no cpu time wasted!!!!1
-  therefore downside: they have certain limits cpu code wouldn't have
+>>shaders run on the actual rendering hardware!! -> no CPU time wasted!!!!1
+  therefore downside: they have certain limits CPU code wouldn't have
 
 GLSL, the language used to write shaders.
 
@@ -92,7 +92,7 @@ functions: you know who you are!
 Complex data types are never directly exposed in OpenGL, e.g. structs in C++
 struct Object { int count; float opacity; char *name; };
 /* create storage: */ Object newObject;
-/* Put data into object: */ newObject.count = 5; newObject.opacits = 0.4f; ....
+/* Put data into object: */ newObject.count = 5; newObject.opacity = 0.4f; ....
 
 In OpenGL this would look like this:
 // create storage for the object:
@@ -104,7 +104,7 @@ glObjectParameteri(GL_MODIFY, GL_OBJECT_COUNT, 5);
 glObjectParameterf(GL_MODIFY, GL_OBJECT_OPACITY, 0.4f); 
 glObjectParameters(GL_MODIFY, GL_OBJECT_NAME, "Some String");  
 
-NONE OF THESE ARE ACTUALL OPENGL COMMANDS, they're just here to give you an idea!!!
+NONE OF THESE ARE ACTUAL OPENGL COMMANDS, they're just here to give you an idea!!!
 and it's a cool idea alright!! ^_^
 
 OpenGL owns the storage for all OpenGL objects, so the user must access those objects
@@ -119,7 +119,7 @@ first they need to be bound to different a location in the context (targets!) al
 have a _list of valid targets_
 
 fields in the Object:
-enumerators GL_OBJECT_* all name fields in the objet that can be set!!
+enumerators GL_OBJECT_* all name fields in the object that can be set!!
 
 Once an objects is generated, bound to a target, we can set parameter with in the object
 using the glObjectParameter family (like in the above example!)
@@ -143,7 +143,7 @@ buffer objects, data storages that OpenGL can "see", we fill them with our data
 Shaders are executed over a set of inputs and converts them into a set of outputs
 Example vertex shader:
 
-#version 330  //must alway state version
+#version 330  //must always state version
               // 1. the inputs:
               // variable position of type: vec4 (4-dim vector of float values);
               // layout will be explained later
@@ -163,10 +163,10 @@ The minimum a vertex shader must do is create a clip-space position. That is wha
 gl_Position is: the clip-space position of the vertex
 --------------------------------------------------------------------------------
 But where does "positions", the input, gets its data from. Inputs to a vertex
-shader are calleed "vertex attributes"
+shader are called "vertex attributes"
 
 Vertex attributes, are the inputs to a shader. They have a index location called
-"attribute index". The vertex attribute was definied with:
+"attribute index". The vertex attribute was defined with:
 layout(location = 0) in vec4 position;
 ^^^ the layout part assigns the attribute index 0 to position!!
 It was first hardcoded here:
@@ -176,7 +176,7 @@ And our "format-of-buffer-object-describing-function" deals with this exact inde
 ^^^^In effect it describes where the data for an attribute comes from
 
 Interesting OpenGL-state-machine fact:
-The order in whcih gl:enable-vertex-attrib-array and gl:vertex-attrib-pointer is
+The order in which gl:enable-vertex-attrib-array and gl:vertex-attrib-pointer is
 called doesn't matter. All that matters is that they are called before rendering
 takes place (gl:draw-arrays..) because we just set state in OpenGL!!
 --------------------------------------------------------------------------------
@@ -203,11 +203,11 @@ in GLSL a vec4 is a sequence of 4 floats (vec4 = size 16 bytes)
 We try to "move" a triangle,
 we change the data of inside our gl:gl-array *vertex-positions* by using
 glBufferSubData(). The difference to glBufferData() is that the latter ALLOCATES
-memoryspecifically of a certain size.
-glBufferSubData() transvers data to ALREADY existing memory!!
+memory specifically of a certain size.
+glBufferSubData() transfers data to ALREADY existing memory!!
 
 The C pro should think of glBufferData as combination of malloc + memcpy
-whlile glBufferSubData is just memcpy ;> TODO
+while glBufferSubData is just memcpy ;> TODO
 
 AS EXPECTED/(interesting!!!)
 the ominous parameter to glBufferData() :static-draw tells OpenGL that we only
@@ -220,7 +220,7 @@ the implementors where to work on performance wise!!!
 --------------------------------------------------------------------------------
 uniforms,
 unlike 'in' variables, these shader variables do not change every time the
-vertex shader is called. Instead theychange only between rendering call executions!
+vertex shader is called. Instead they change only between rendering call executions!
 And even then they only change if they're set explicitly!!
 
 Also 'in' variables of vertex shaders receive their input via :array-buffers etc.
@@ -253,12 +253,12 @@ Other globals WHICH ARE SHARED BETWEEN SHADER STAGES include:
 in, out and uniforms
 --------------------------------------------------------------------------------
 CPU vs. GPU performance,
-Our sin()/cos() offset computation is rather fascinating. Our inital CPU process
+Our sin()/cos() offset computation is rather fascinating. Our initial CPU process
 computes the offsets once and iterate over all the vertices to apply them, whereas
 the shader computes the SAME OFFSET every shader call, which must be called the number
 of vertices in the :array-buffer!
 
-We need therefore to weigh the operations performes in a shader and decide if computing
+We need therefore to weigh the operations performed in a shader and decide if computing
 the same computation times the vertices in a shader vs. computing them once and on the CPU.
 
 Indeed, performance-wise usually the common practice solution is to compute the
@@ -282,7 +282,7 @@ how human eyes model the world as a picture in the mind.
 In OpenGL our eye is the:
 
 Frustum,
-a pyriamid with a choped of head. Instead of a cone, as the eye would use it, in
+a pyramid with a chopped of head. Instead of a cone, as the eye would use it, in
 OpenGL we use a frustum to project the 3d world on a "rectangular" image.
 
 Perspective Computation:
@@ -322,10 +322,10 @@ NOW ALL WE NEED TO DO IS SET W to this in EACH vertex:
 and normalized device coordinates will yield a PERSPECTIVE PROJECTION!!!!!!
 
 E is a constant, only Pz can be an unknown if viewed from just any angle
-but I bet there is some mathamatical trick to yield proper perpedicularities!
+but I bet there is some mathematical trick to yield proper perpedicularities!
 
 ========================================================================================
-#     This conversion from clip-space to normalied device coordinate is called         #
+#     This conversion from clip-space to normalized device coordinate is called         #
 # "PERSPECTIVE DIVIDE" exactly because it is usually used for perspective projection!! #
 #=======================================================================================
 
@@ -334,7 +334,7 @@ coordinates as well hence:
 gl_Positions = positions // a no brainer for the VERTEX shader
 
 Now we want to change the inputs of our vertex shader, probably so that it will get
-a proper W value for NDC's perspective devide.
+a proper W value for NDC's perspective divide.
 
 We therefore define a new space for positions which leisurely call: CAMERA SPACE
 
@@ -346,7 +346,7 @@ from the -Z direction!! We assume the "eye" to be at the origin
 
 aaaanywho:
 The frustum is already finitely bound in the x and y directions now Z needs a
-finite boundery in camera space, we call them
+finite boundary in camera space, we call them
 
 camera zFar,
 the maximum distance a vertex can be before it is considered "not in view"
@@ -393,7 +393,7 @@ the VERTEX ARRAY OBJECT (VAO) is here to alleviate us of this burden!
 It essentially stores all the states needed, we set them implicitly, so our code
 looks cryptic and voodoo to the uninitiated and also we use real voodoo code
 ourselves because of API cruft! Aaaaanywho, it gets complicated but we still
-can get through it using the state-machine methaphor.
+can get through it using the state-machine metaphor.
 
 The end-product will be a VAO-object which we will (gl:bind-vertex-array *vao-obj*)
 and call (gl:draw-* ..) then we will set the next VAO-obj to draw a second object.
@@ -407,7 +407,7 @@ Check this out:
 Mr McKesson suggests in a pseudo code for gl:draw-arrays, that they loop over some
 given range using indices within it to call:
 
-  VertexShader(position-attibute-array[some-index]
+  VertexShader(position-attribute-array[some-index]
 
 (!) We're calling some "VertexShader" function implicitly!! (!)
 --------------------------------------------------------------------------------
@@ -428,8 +428,8 @@ sequence of "random access" which are stored in the element-array! Then they
 are read and there elements are indices to position/color-attrib-arrays!!
 --------------------------------------------------------------------------------
 Notes on C++ feature: #define directives
-They are preprossor commands, before the .cpp file is compiled any #-preceding
-line is interpreted as a preperation command before actuall compilation takes place
+They are preprocessor commands, before the .cpp file is compiled any #-preceding
+line is interpreted as a preparation command before actual compilation takes place
 it is simple:
 #define FOO 22
 int 1 + FOO;
@@ -444,7 +444,7 @@ macro.
 An Arcsynthesis example:
 #define ARRAY_COUNT( array ) (sizeof( array ) / (sizeof( array[0] )
 * (sizeof( array ) != sizeof(void*) || sizeof( array[0] ) <= sizeof(void*))))
-// note the above must be inline, newline should actually involve a '\' chatacter
+// note the above must be inline, newline should actually involve a '\' character
 
 ARRAY_COUNT(foo)
 
@@ -465,24 +465,24 @@ and it is inefficient and even incomplete(!):
 We sort objects from closest to farthest from the screen, then render them back
 to front, hence no overlapping of stuff actually in front can happen, right?
 
-Just imagine two triangles intersecting, or three overlapping eaach other
+Just imagine two triangles intersecting, or three overlapping each other
 domino-style we have no definite "front" candidate.
 
 The next naive solution naturally builds on the idea, and is still quite armchair
-feasable: we do the same thing with individual fragments: after all, there
+feasible: we do the same thing with individual fragments: after all, there
 are no intersecting fragments. The only problem is when multiple share the same
 z-value on a huge contiguous array of pixels on the screen. Then we get unique
 problems like: "z-fighting".
 
 tagging fragments,
 associate with every fragment its window-space z-value, compare which value is
-the smallest, hence closes to eye) and only draw those fragmetns! We store those
+the smallest, hence closes to eye) and only draw those fragments! We store those
 z-values in a:
 
 depth buffer,
 also called a the z-buffer, since it stores z-values!
 
-Interesting: Colors output from a fragmetn shader are stored in the:
+Interesting: Colors output from a fragment shader are stored in the:
 color image buffer, which together with the z-buffer is CREATED BY OPENGL
 automatically when it is initialized already!!
 
@@ -491,7 +491,7 @@ Stop the fragment from being written to the screen if it fails this test.
 We enable it with (gl:enable :depth-test), him so the rasterizer is smarter then
 we gave it credit?
 Also we need to call gl:depth-func to set the relation of the depth test. This
-relation can be :always (always write the fragmetn), :never now it gets interesting:
+relation can be :always (always write the fragment), :never now it gets interesting:
 :less, :greater :lequal :gequal :equal :notequal
 It's always the same (read left to right relation):
           1.                      2.                        3.
@@ -508,7 +508,7 @@ corresponding buffers: we set the bits, :depth-buffer-bit, and gl:clear them
 (gl:clear :color-buffer-bit :depth-buffer-bit)
 --------------------------------------------------------------------------------
 Translation,
-Use the origin of one space, and place it somewhere in another, the vertecis will
+Use the origin of one space, and place it somewhere in another, the vertices will
 follow relative to the new origin..
 or "how to offset -- vertex graphics programming style". We will be using matrices
 now because of advantages, yet to be explained. So we need a "offset" matrix, that
@@ -531,7 +531,7 @@ so if we want to offset a vector, we just need to put in the offset in there
   0, 0, 0, 1]      1]   0 + 0 + 0 + 1  =    1 ]
 
 Now I hope this visual doesn't confuse the you into thinking matrix multiplication works
-horizontally! But muliplying with a indentity-matrix sure makes it look like it!
+horizontally! But multiplying with a identity-matrix sure makes it look like it!
 --------------------------------------------------------------------------------
 Finally the grand Matrix mystery is solved!!
 The matrix is a numerical representation of a coordinate system! Its columns
@@ -569,8 +569,8 @@ we get the identity matrix as cos(0) = 1; sin(0) = 0
 "slowly" rotating will decrease e.g. cos(0.01) = 0.9 and increase sin
 We can make the mental image of the x-basis-vector to increase in its y value
 (look at the sin(rad) placement in the rotation matrix, it is at the 'y' for
-the x-basis vector) and decrese in its x value (...).
-And again the magic of the oscillating sinus and cosinus functions enchant us
+the x-basis vector) and decrease in its x value (...).
+And again the magic of the oscillating sinus and cosines functions enchant us
 as the inputs venture towards infinity the bounds persist: [-1, 1] which the rotation
 matrix captures by rotating our basis vectors!
 Though we want to restrain the inputs by taking the modulo of some global elapsed
@@ -606,7 +606,7 @@ Hierarchical model,
 very awesome stuff:
  We move points by translating, scaling and rotating then we draw intermediates. If we
  now continue to transform further we can draw again and we yield object relative to
- each other because tranformation is passing vertices from one coordinate system to
+ each other because transformation is passing vertices from one coordinate system to
  another, this also means that the higher coordinate system passes on its orientation
  to the one represented "within" it. We get results like spinning one axis spins every
  object drawn within child transformation coordinate systems.
@@ -618,32 +618,32 @@ The daunting task remains to imbue hierarchical models in collision logic!!!
 
 On scaling hierarchical models,
 if the main object used to draw all resulting objects from successive transformations
-has its vertices in different quadrants of a coordiante system we get a very convenient
+has its vertices in different quadrants of a coordinate system we get a very convenient
 effect: scaling now can be done intuitively as vertices being multiplied will move
 away from the origin and relative to each other at the same rate, or attract each
 other.
-This is very useful also to incrementatlly design hierarchical models as we can
-WATCH as scaling just blows the object appart or shrinks it IN PLACE.
+This is very useful also to incrementally design hierarchical models as we can
+WATCH as scaling just blows the object apart or shrinks it IN PLACE.
 
 Translation, scaling in hierarchical models,
 is nearly never problematic as it has an identity matrix in its first 3 rows/col
 and intuitively only offsets given points.
-But a scaling matrix, in contrast, would distort evena translation matrix, as it
+But a scaling matrix, in contrast, would distort even translation matrix, as it
 would change the 'w'-column due to its x, y, z non 1 values!
 
 --------------------------------------------------------------------------------
 Again on col-major, row-major arc/glsl syntax,
   col-major, row-major only matter in memory representation (col-major: columns are
-  contiguous). Anywho the syntax used by arc is bit confusing: mat[3] reads the 3rd column
+  contiguous). Anyway the syntax used by arc is bit confusing: mat[3] reads the 3rd column
   the rows however contain each a vectors x,y,z,w in order. So mat[..] will read a vector
-  of purely x,x,x,x or in the case of mat[3] w,w,w,w. This is infered by the implementation
+  of purely x,x,x,x or in the case of mat[3] w,w,w,w. This is inferred by the implementation
   of translation (sets mat[3] and scaling).
   The confusing part is this:
   mat[3].y reads the "2nd 'w'" because mat[3] = w,w,w,w e.g. (1.0 2.0 3.0 4.0) are all 'w' of
   the corresponding vectors in a row. So mat[3].y reads 2.0       ^y even though all are 'w'
   
 The core of the problem is that we want to read with our eyes row-major but in memory
-represent with col-major (as is what opengl wants)
+represent with col-major (as is what OpenGL wants)
 For example one very pernicious bug I've purged was the creation of a matrix.
 Simplification:
 2x2 matrix:
@@ -655,7 +655,7 @@ lists are read in sequence hence the matrix siphoning these values will look lik
  3 4]
 Where the printed representation is intuitive (columns are really vertical, rows horizontal).
 Therefore gl:uniform-matrix' defaulting to transposing its input can be quite handy when
-we want to read in row-major but have, because of opengl, deal in the background with
+we want to read in row-major but have, because of OpenGL, deal in the background with
 col-major.
 hence we can pass the (list 1 3             (list 1 3 2 4) :I
                             2 4) and transpose it upon setting the uniform.
@@ -699,8 +699,8 @@ first we had take the camera position and offset the world by putting it as the 
 the coordinate system: translation matrix using the camera position negation!
 
 Also note Mr. McKesson's interesting remark:
-"'lines' in spherical gemoteries [as opposed to Euclidean geometry] are curves
-when seen relative to Euclidean gemoteries."!!
+"'lines' in spherical geometries [as opposed to Euclidean geometry] are curves
+when seen relative to Euclidean geometries."!!
 
 --------------------------------------------------------------------------------
 DEFCONSTANT and the compilation environment
@@ -713,7 +713,7 @@ DEFCONSTANT and the compilation environment
 ;; wants to inline the appearance of +qux+ henceforth with (foo). In the eyes
 ;; of a programmer, or API user, it is supposed however to show it's not to be changed.
 ;; Which does clash in a way with the inline use, as builder functions are not
-;; evaluted in the compilation-environment!!
+;; evaluated in the compilation-environment!!
 
 ;; Furthermore DEFCONSTANT has problems with non number values etc. TODO
 (defconstant +qux+ (foo))
@@ -735,7 +735,7 @@ DEFCONSTANT and the compilation environment
 --------------------------------------------------------------------------------
 uniform buffer object UBO,
 'global', across-all programs, uniforms, so we can set data that is shared, so far
-read-only examples, by any number of opengl programs.
+read-only examples, by any number of OPENGL programs.
 
 basic setup:
 
@@ -743,20 +743,20 @@ basic setup:
 this case (setf handle (%gl:get-uniform-block-index "system-area-pointer-string"))
 
 2. Use that handle to associate the current program through it with a
-'binding-index' which is a 'slot in the opengl context'
+'binding-index' which is a 'slot in the OpenGL context'
 
 Build the uniform-buffer data somewhere, it must be stressed that data wise it
 is just an ordinary buffer object:
 (setf *ubo* (first (gl:gen-buffers 1)))
 (gl:bind-buffer :uniform-buffer *ubo*)
 ;; format the buffers data to expect data input (:steam-draw), and give it
-;; a fixed size. The <null-pointer> tells opengl that we don't care about former
+;; a fixed size. The <null-pointer> tells OpenGL that we don't care about former
 ;; content of this buffer. For us it means we will be filling it with data in the
 ;; future
-;; optimizations:
+;; optimization:
 ;; (%gl:buffer-data :uniform-buffer <null-pointer> <size-of(mat4)> :stream-draw)
 
-3. Fill (allocate) the buffer with dataaa
+3. Fill (allocate) the buffer with data
  (gl:bind-buffer :uniform-buffer *ubo*)
  (gl:buffer-sub-data :uniform-buffer <gl-array> &optional: <offset> <buffer-offset>)
  ;; unbind: (gl:bind-buffer :uniform-buffer 0)
@@ -805,7 +805,7 @@ Different explanation (hierarchical model):
 each gimbal inherits an orientation from its predecessor gimbal with the
 outer gimbal being the parent. Successors have the intrinsic property of always
 being able to rotation-transform its children about a perpendicular axis from
-its predecessor. A strange, bizzare, effect can occur: a higher(in terms of the
+its predecessor. A strange, bizarre, effect can occur: a higher(in terms of the
 hierarchical model) gimbal can directly manipulate the rotation axis of its
 successor gimbal. And because every gimbal is perpendicular to one another
 it can actually 'fold' its successor axis INTO its PREDECESSOR axis.
@@ -829,14 +829,14 @@ Before we can talk about gimbal lock we need to understand:
 - axis have a HIERARCHY, higher ups TRANSFORM lower axis
 - axis are at 0-degree all perpendicular to one another
 
-There is a given hierarchy of axes, yes Euler angle can represent any orientatinon in
+There is a given hierarchy of axes, yes Euler angle can represent any orientation in
 euclidean space and finally, my personal last insight needed, gimbal lock is a problem of
 continuous movement. If we try to orient an object, when it is already in a certain
 orientation, such as, best example, in gimbal lock, we can't perform straight forward
 transformation because we lack a degree of freedom. We need to backtrack the rotation
 where the degree of freedom is restored and approach the orientation we wanted all over
-again. This backtracking is what is bad for animatiors as between keyframes there will be
-discontiuous or deviant movement from the path of 'apparent least resistance'.
+again. This backtracking is what is bad for animators as between keyframes there will be
+discontinuous or deviant movement from the path of 'apparent least resistance'.
 
 To directly feel the problem while facing it: set up the simulation of gimbal-lock.lisp
 into a gimbal lock. Notice how you can perform only two kinds of rotations directly:
@@ -874,7 +874,7 @@ have to think of donuts and coffee, so you get up and go to the kitchen.
 As you pass the many curves of your corridor, you imagine being the shadow of a fourth
 dimension that can move freely in the world.. anyway.  You finally get your mug of coffee,
 after some brewin. There is a small cookie in it. As you tilt the mug the cookie remains
-in its orientation - no discontiuous jumps between keyframes (lol).
+in its orientation - no discontinuous jumps between keyframes (lol).
 
 You think to yourself: If only there was an orientation possible that has the properties
 of the clock and which is as efficient as my compass. You chuckle, "that could only
@@ -882,22 +882,23 @@ be possible in theory, you know, in a simulation".
 
 --------------------------------------------------------------------------------
 Orthonormal,
-once you polish up your english you'll know: perpendicular=orthogonal=at right angle to one
+once you polish up your English you'll know: perpendicular=orthogonal=at right angle to one
 another. And then you have a intuitively understandable term:
 A coordinate system, which a matrix represents, with orthogonal basis vectors of unit length
 (normalized) is called /orthonormal/!
 
 Quaternion,
 As introduced so far a 4d-vector (x,y,z,w) with x,y,z being the 'vector part' and w being
-the 'skaler part'. We represent an axis, with the vector part, and a rotation around this axis
-with the skaler part. This solves the problem of Euler Angle's gimbal lock, also matrix orientation
+the 'scalar part'. We represent an axis, with the vector part, and a rotation around this axis
+with the scalar part. This solves the problem of Euler Angle's gimbal lock, also matrix orientation
 representation whereby we'd have to orthonormalize the matrix representing an object on each
 transformation lest accumulating rounding imprecision.
 
-Quternion multiplication,
-two quaternions can be multiplied -- we get the intuitive composite orientation.  The
-multiplication is non-intuitive: it looks rather arbitrary and is therefore hard to
-remember. It is non-commutative and associative though, just like matrix multiplication.
+Quaternion multiplication,
+two orientation quaternions can be multiplied -- we get the intuitive composite
+orientation.  The multiplication is non-intuitive: it looks rather arbitrary and is
+therefore hard to remember. It is non-commutative and associative though, just like matrix
+multiplication.
 
 The main difference between matrix and quaternion representation is that they're easy to
 keep normalized -- simply applying vector normalization. This keeps them in unit-vector
@@ -911,8 +912,8 @@ Note how it is actually difficult to keep a matrix orthonormalized, which:
    ones too? -- according to Mr. McKesson this can be solved but we will do it with quaternions
    still for performance reasons.
 
-Now we know how to composite quaternions, hence can fascilitate multiple changing orientations. But
-our product so far of a quternion multiplication is still just a quaternion we need something we
+Now we know how to composite quaternions, hence can facilitate multiple changing orientations. But
+our product so far of a quaternion multiplication is still just a quaternion we need something we
 know how to work with:
 
 Quaternion to (transformation)Matrix,
@@ -925,7 +926,7 @@ get a transformation matrix like so:
 [           0                     0                     0         1]
 
 I wouldn't be surprised if there is a typo in there. Anyway, it looks similar to creating
-a matrix from angle/axis rotation. But since we're dealing with quternions I think it is
+a matrix from angle/axis rotation. But since we're dealing with quaternions I think it is
 sensible to drop the aspiration of trying to understand them intuitively. I only barely
 understood matrix multiplication intuitively, with some fuzzy loopholes here and
 there. But those are 3D, here we're dealing with topological wizardry of 3-spheres --
