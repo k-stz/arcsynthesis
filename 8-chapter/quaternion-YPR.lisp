@@ -67,7 +67,7 @@
 (defun init ()
   (initialize-program)
 
-  (setf *ship-vao* (framework::ship-xml->vao (merge-pathnames *data-dir* "Ship.xml")))
+  (setf *ship-vao* (framework:ship-xml->vao (merge-pathnames *data-dir* "Ship.xml")))
  
   (gl:enable :cull-face)
   (%gl:cull-face :back)
@@ -87,8 +87,12 @@
   (let ((curr-matrix (make-instance 'glutil:matrix-stack)))
     (glutil:with-transform (curr-matrix)
 	:translate 0.0 0.0 -200.0
-	;; this gimbal simulation uses the hierarchical model:
+	;; here be the code deviating from gimbal-lock.lisp:
 
+	;;NEXT-TODO: implement offset-orientation using *orientation* and a cast-matrix that translates a quaternion
+	;;           to a transformation matrix
+
+	
 	(gl:use-program *program*)
 	:scale 3.0 3.0 3.0
 	:rotate-x -90.0
@@ -97,9 +101,8 @@
         (%gl:uniform-4f *base-color-unif* 1.0 1.0 1.0 1.0)
 	(gl:uniform-matrix *model-to-camera-matrix-unif* 4
 			   (vector (glutil:top-ms curr-matrix)) NIL)
-	;;render object call:
-;	(framework:render *p-object*)
-	(framework::render-ship *ship-vao*) 
+	
+	(framework:render-ship *ship-vao*) 
 
 	(gl:use-program 0))))
 
@@ -130,6 +133,22 @@
 (defconstant +small-angle-increment+ 9.0)
 
 
+(defparameter *orientation* (glm:vec4 1.0 0.0 0.0 0.0)) ; TODO: making a quaternion class
+
+
+(defun offset-orientation (vec3-axis ang-deg)
+  (let* ((ang-rad (framework:deg-to-rad ang-deg))
+	 (vec3-axis (glm:normalize vec3-axis))
+	 (vec3-axis (sb-cga:vec* vec3-axis (sin (/ ang-rad 2.0))))
+	 (scalar (cos (/ ang-rad 2.0)))
+	 (offset )) ;; TODO-NEXT offset must be of a quaternion class so that we can perform a,
+                    ;; specialized, quaternion multiplication
+
+    (print (list vec3-axis scalar))
+
+    ;; comoponent-wise multiplication sin(ang-rad/2)* vec3-axis
+    ))
+
 (defun main ()
   (sdl2:with-init (:everything)
     (progn (setf *standard-output* out) (setf *debug-io* dbg) (setf *error-output* err))
@@ -143,15 +162,17 @@
 	  (:keydown
 	   (:keysym keysym)
 	   ;; TODO: capture in macro
+	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-w)
+	     
+	     )
+	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-s)
+	     )
+
 	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-a)
 	     )
 	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-d)
 	     )
 
-	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-w)
-	     )
-	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-s)
-	     )
 
 	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-q)
 	     )

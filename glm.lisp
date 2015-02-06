@@ -312,6 +312,20 @@
   )
 
 
+;;Quaternions-------------------------------------------------------------------
+(defclass quat ()
+  ((qt-vec4 :initform (glm:vec4 1.0) :initarg :vec4 :accessor qt-vec4)))
+
+;;strangely arcsynthesis code seems to represent quaternions (scalaer, x ,y z) instead
+;;of how it is repsredented in the book itself: (x y z scalar). We will follow the
+;;code example
+(defun make-quat (scalar axis-x axis-y axis-z)
+  (make-instance 'quat :vec4 (glm:vec4 scalar axis-x axis-y axis-z)))
+
+(defgeneric quat* (quat quat))
+(defmethod quat* ((q1 quat) (q2 quat))
+   ;;NEXT-TODO: implement
+  )
 
 ;;Experimental------------------------------------------------------------------
 ;; TODO: experiment later using a class :I, maybe just use it to have a neat

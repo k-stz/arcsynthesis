@@ -65,6 +65,8 @@
    #:deg-to-rad
    #:render
    #:xml->mesh-obj
+   #:render-ship
+   #:ship-xml->vao
    )
   )
 
