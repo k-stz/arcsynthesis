@@ -316,16 +316,74 @@
 (defclass quat ()
   ((qt-vec4 :initform (glm:vec4 1.0) :initarg :vec4 :accessor qt-vec4)))
 
+
 ;;strangely arcsynthesis code seems to represent quaternions (scalaer, x ,y z) instead
 ;;of how it is repsredented in the book itself: (x y z scalar). We will follow the
 ;;code example
-(defun make-quat (scalar axis-x axis-y axis-z)
-  (make-instance 'quat :vec4 (glm:vec4 scalar axis-x axis-y axis-z)))
+(defmacro make-quat (angle (axis-x axis-y axis-z))
+  "Providing an angle in degree and an axis a quaternion is created and returned.
+If the axis provided is of unit length the resulting quaternion will also be of
+unit length"
+  `(vec4->quat (glm:vec4 (float ,angle 1.0)
+			 (float ,axis-x 1.0)
+			 (float ,axis-y 1.0)
+			 (float ,axis-z 1.0))))
 
+
+(defun vec4->quat (vec4)
+  "Transform a 4D vector to get a quaternion. Input is treated as: 
+ (theta axis-x axis-y axis-z). If the axis provided is already of unit length,
+the result is a _unit quaternion_."
+  (let* ((theta (framework:deg-to-rad (vec. vec4 :x)))
+	 (x (* (vec. vec4 :y) (sin (/ theta 2))))
+	 (y (* (vec. vec4 :z) (sin (/ theta 2))))
+	 (z (* (vec. vec4 :w) (sin (/ theta 2)))))
+    (make-instance 'quat :vec4
+		   ;;note the deviation from the form used in the book
+		   (vec4 (cos (/ theta 2))
+			 x
+			 y
+			 z))))
+
+;; naming this just '*' as in providing operator overloading, is not possible
+;; error will be singnaled: "'*' already names an ordinary function or a macro."
 (defgeneric quat* (quat quat))
+;; TODO: TEST
 (defmethod quat* ((q1 quat) (q2 quat))
-   ;;NEXT-TODO: implement
-  )
+  "Quaternion multiplication"
+  (let* ((qv1 (qt-vec4 q1)) (qv2 (qt-vec4 q2)))
+    (multiple-value-bind (a.w a.x a.y a.z)
+	(values-list (loop for i across qv1 collecting i))
+      (multiple-value-bind (b.w b.x b.y b.z)
+	  (values-list (loop for i across qv2 collecting i))
+	(list a.w a.z a.y a.x)
+	(glm:vec4 (- (+ (* a.w b.x) (* a.x b.w) (* a.y b.z)) (* a.z b.y))
+		  (- (+ (* a.w b.y) (* a.y b.w) (* a.z b.x)) (* a.x b.z))
+		  (- (+ (* a.w b.z) (* a.z b.w) (* a.x b.y)) (* a.y b.x))
+		  (- (* a.w b.w) (* a.x b.x) (* a.y b.y) (* a.z b.z)))))))
+
+;; supposed to cast from multiple structures or types to a matrix, for now only
+;; from quaternion 
+(defgeneric mat4-cast (t))
+(defmethod mat4-cast ((q1 quat))
+  "Retruns the transformation matrix the input quaternion is representing"
+  (multiple-value-bind (w x y z)
+      (values-list (loop for i across (qt-vec4 q1) collecting i))
+    (let ((mat4 (glm:make-mat4 1.0)))
+      (glm:set-mat4-row mat4 0
+			(glm:vec4 (- 1 (* 2 y y) (* 2 z z))
+				  (- (* 2 x y) (* 2 w z))
+				  (+ (* 2 x z) (* 2 w y)) 0))
+      (glm:set-mat4-row mat4 1
+			(glm:vec4 (+ (* 2 x y) (* 2 w z))
+				  (- 1 (* 2 x x) (* 2 z z))
+				  (- (* 2 y z) (* 2 w x)) 0))
+      (glm:set-mat4-row mat4 2
+			(glm:vec4 
+			 (- (* 2 x z) (* 2 w y))
+			 (+ (* 2 y z) (* 2 w x))
+			 (- 1 (* 2 x x) (* 2 y y)) 0))
+      mat4)))
 
 ;;Experimental------------------------------------------------------------------
 ;; TODO: experiment later using a class :I, maybe just use it to have a neat
