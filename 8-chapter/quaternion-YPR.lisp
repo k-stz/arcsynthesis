@@ -61,7 +61,6 @@
 
 
 (defvar *gimbal-meshes* (make-array 3 :initial-element NIL))
-(defvar *p-object*)
 (defvar *ship-vao*) ;; TODO: for test, remove and use *p-object* once it works
 
 (defun init ()
@@ -89,15 +88,12 @@
 	:translate 0.0 0.0 -200.0
 	;; here be the code deviating from gimbal-lock.lisp:
 
-	;;NEXT-TODO: implement offset-orientation using *orientation* and a cast-matrix that translates a quaternion
-	;;           to a transformation matrix
-
+	;:translate 30.0 0.0 0.0
+	:apply-matrix (glm:mat4-cast *orientation*)
 	
 	(gl:use-program *program*)
 	:scale 3.0 3.0 3.0
 	:rotate-x -90.0
-	;; set the base color for this object
-	;; the grey tones arise from interpolation with this color (in frag-shader theColor * base_color)!
         (%gl:uniform-4f *base-color-unif* 1.0 1.0 1.0 1.0)
 	(gl:uniform-matrix *model-to-camera-matrix-unif* 4
 			   (vector (glutil:top-ms curr-matrix)) NIL)
@@ -133,21 +129,32 @@
 (defconstant +small-angle-increment+ 9.0)
 
 
-(defparameter *orientation* (glm:vec4 1.0 0.0 0.0 0.0)) ; TODO: making a quaternion class
+(defparameter *orientation* (make-instance 'glm:quat :vec4 (glm:vec4 1.0 0.0 0.0 0.0)))
 
+(defparameter *right-multiply-p* t) ; switch inside the OFFSET-ORIENTATION function
 
 (defun offset-orientation (vec3-axis ang-deg)
-  (let* ((ang-rad (framework:deg-to-rad ang-deg))
-	 (vec3-axis (glm:normalize vec3-axis))
-	 (vec3-axis (sb-cga:vec* vec3-axis (sin (/ ang-rad 2.0))))
-	 (scalar (cos (/ ang-rad 2.0)))
-	 (offset )) ;; TODO-NEXT offset must be of a quaternion class so that we can perform a,
-                    ;; specialized, quaternion multiplication
+  ;; (let* ((ang-rad (framework:deg-to-rad ang-deg))
+  ;; 	 (vec3-axis (glm:normalize vec3-axis))
+  ;; 	 (vec3-axis (sb-cga:vec* vec3-axis (sin (/ ang-rad 2.0))))
+  ;; 	 (scalar (cos (/ ang-rad 2.0)))
+  ;; 	 (offset ))
+;; )
+  (let ((f-quat-offset
+	 (glm:normalize-quat
+	  (glm:make-quat
+	   (framework:deg-to-rad ang-deg) ((glm:vec. vec3-axis :x)
+					   (glm:vec. vec3-axis :y)
+					   (glm:vec. vec3-axis :z))))))
 
-    (print (list vec3-axis scalar))
+    (setf q1 f-quat-offset)
+    
+    (if *right-multiply-p*
+	(setf *orientation* (glm:quat* *orientation* f-quat-offset))
+	(setf *orientation* (glm:quat* f-quat-offset *orientation*)))
 
-    ;; comoponent-wise multiplication sin(ang-rad/2)* vec3-axis
-    ))
+    ;; TODO: try skipping this step
+    (setf *orientation* (glm:normalize-quat *orientation*))))
 
 (defun main ()
   (sdl2:with-init (:everything)
@@ -163,14 +170,21 @@
 	   (:keysym keysym)
 	   ;; TODO: capture in macro
 	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-w)
-	     
+;	     (offset-orientation (glm:vec3 1.0 0.0 0.0) +small-angle-increment+)
+	     (offset-orientation (glm:vec3 1.0 0.0 0.0) 90.0)
 	     )
 	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-s)
+	     (offset-orientation (glm:vec3 1.0 0.0 0.0) (- +small-angle-increment+))
+	     (print (glm:qt-vec4 *orientation*))
+
 	     )
 
 	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-a)
+	     (offset-orientation (glm:vec3 0.0 0.0 1.0) 0.1)
 	     )
 	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-d)
+	     (offset-orientation (glm:vec3 0.0 0.0 1.0) (- 0.1))
+
 	     )
 
 

@@ -32,6 +32,15 @@
    #:vec4
    #:normalize
    #:vec4-from-vec3
+   ;;quaternions:
+   #:quat
+   #:qt-vec4 #:qt-scalar #:qt-axis-v4
+   #:make-quat
+   #:vec4->quat
+   #:quat*
+   #:mat4-cast
+   #:normalize-quat
+   ;;
    #:set-mat4-diagonal
    #:make-mat3
    #:set-mat3

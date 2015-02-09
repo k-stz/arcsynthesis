@@ -135,9 +135,7 @@
        and i from 0
 	 do
 	 (setf (aref vec i) (/ element length)))
-    vec)
-
-  )
+    vec))
 
 
 (defun vec4-from-vec3 (vec3 &optional w)
@@ -313,13 +311,37 @@
 
 
 ;;Quaternions-------------------------------------------------------------------
-(defclass quat ()
-  ((qt-vec4 :initform (glm:vec4 1.0) :initarg :vec4 :accessor qt-vec4)))
 
+;;TODO: change print representation to show the qt-vec4!
+(defclass quat ()
+  ((qt-vec4 :initform (glm:vec4 1.0) :initarg :vec4 :accessor qt-vec4)
+   (qt-scalar :accessor qt-scalar) ; as radians
+   (qt-axis-v3 :accessor qt-axis-v3)))
+
+
+;; Initilize-instance :after works like a constructor in OOP languages. In the body of which
+;; we can access the instance created 'q' of class QUAT and set some values before unleaching
+;; the object to the general public:
+(defmethod initialize-instance :after ((q quat) &key &allow-other-keys)
+  (setf (qt-scalar q) (vec. (qt-vec4 q) :x))
+  (setf (qt-axis-v3 q) (vec3 (vec. (qt-vec4 q) :y)
+			     (vec. (qt-vec4 q) :z)
+			     (vec. (qt-vec4 q) :w))))
+
+;;alas using a class to represent quaternions (useful as '*' can't be casted so we need
+;;'quat*' for a quaternion multiplication procedure. Now because our quaternion is a class
+;; we can't use NORMALIZE on it, and again need to create a new name for it:
+;; Anyway this distinction may be favorable as quaternion normalization may be a bit different
+;; as it only involves the normalization of the axis part of the quaternion (not the scalar)
+;; TODO: confirm this
+(defgeneric normalize-quat (quat))
+(defmethod normalize-quat ((q quat))
+  (setf (qt-axis-v3 q) (sb-cga:normalize (qt-axis-v3 q)))
+  q)
 
 ;;strangely arcsynthesis code seems to represent quaternions (scalaer, x ,y z) instead
 ;;of how it is repsredented in the book itself: (x y z scalar). We will follow the
-;;code example
+;;code example. TODO: repeated use of MAKE-class look into INITIALIZE-INSTANCE usage
 (defmacro make-quat (angle (axis-x axis-y axis-z))
   "Providing an angle in degree and an axis a quaternion is created and returned.
 If the axis provided is of unit length the resulting quaternion will also be of
@@ -330,11 +352,12 @@ unit length"
 			 (float ,axis-z 1.0))))
 
 
+
 (defun vec4->quat (vec4)
   "Transform a 4D vector to get a quaternion. Input is treated as: 
- (theta axis-x axis-y axis-z). If the axis provided is already of unit length,
-the result is a _unit quaternion_."
-  (let* ((theta (framework:deg-to-rad (vec. vec4 :x)))
+ (theta axis-x axis-y axis-z). Where theta is treated as RADIAN. If 
+the axis provided is already of unit length, the result is a _unit quaternion_."
+  (let* ((theta (vec. vec4 :x))
 	 (x (* (vec. vec4 :y) (sin (/ theta 2))))
 	 (y (* (vec. vec4 :z) (sin (/ theta 2))))
 	 (z (* (vec. vec4 :w) (sin (/ theta 2)))))
@@ -348,22 +371,31 @@ the result is a _unit quaternion_."
 ;; naming this just '*' as in providing operator overloading, is not possible
 ;; error will be singnaled: "'*' already names an ordinary function or a macro."
 (defgeneric quat* (quat quat))
-;; TODO: TEST
+;; NEXT-TODO: ORDER IN BOOK REVERSED??
 (defmethod quat* ((q1 quat) (q2 quat))
   "Quaternion multiplication"
   (let* ((qv1 (qt-vec4 q1)) (qv2 (qt-vec4 q2)))
-    (multiple-value-bind (a.w a.x a.y a.z)
+    (multiple-value-bind ;(a.w a.x a.y a.z)
+	  (a.x a.y a.z a.w)
 	(values-list (loop for i across qv1 collecting i))
-      (multiple-value-bind (b.w b.x b.y b.z)
+      (multiple-value-bind ;(b.w b.x b.y b.z)
+	    (b.x b.y b.z b.w)
 	  (values-list (loop for i across qv2 collecting i))
-	(list a.w a.z a.y a.x)
-	(glm:vec4 (- (+ (* a.w b.x) (* a.x b.w) (* a.y b.z)) (* a.z b.y))
-		  (- (+ (* a.w b.y) (* a.y b.w) (* a.z b.x)) (* a.x b.z))
-		  (- (+ (* a.w b.z) (* a.z b.w) (* a.x b.y)) (* a.y b.x))
-		  (- (* a.w b.w) (* a.x b.x) (* a.y b.y) (* a.z b.z)))))))
+	;; Quaternion multiplication being a composition orientation the result is already
+	;; a quaternion. Hence we directly make an instance without MAKE-QUATERNION
+	(make-instance
+	 'quat :vec4
+	 (glm:vec4 (- (+ (* a.w b.x) (* a.x b.w) (* a.y b.z)) (* a.z b.y))
+		   (- (+ (* a.w b.y) (* a.y b.w) (* a.z b.x)) (* a.x b.z))
+		   (- (+ (* a.w b.z) (* a.z b.w) (* a.x b.y)) (* a.y b.x))
+		   (-    (* a.w b.w) (* a.x b.x) (* a.y b.y)  (* a.z b.z))))))))
+
+
 
 ;; supposed to cast from multiple structures or types to a matrix, for now only
-;; from quaternion 
+;; from quaternion
+;; For intuitition: inspecting the (mat4-cast (make-quat 45.0 (0.0 1.0 0.0))), for example, shows
+;; that quaternion perform a clock-wise rotation around the axis they represent (in direction of the axis)
 (defgeneric mat4-cast (t))
 (defmethod mat4-cast ((q1 quat))
   "Retruns the transformation matrix the input quaternion is representing"

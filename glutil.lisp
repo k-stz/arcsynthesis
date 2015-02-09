@@ -66,6 +66,18 @@ the projection plane)"
     (set-matrix ms m)))
 
 
+;; apply arbitrary matrix to the top matrix, m-curr-mat.
+;; TODO: how to write methods which should only take 'matrix' type '(SIMPLE-ARRAY SINGLE-FLOAT (16))
+;; note that a DEFGENERIC seems to just be a name and a specific amount of parameters, where
+;; the defmethod is the only one specifying a class:
+;; ==> (defmethod foo ((var-name class) no-class) <body>)
+(defgeneric apply-matrix (matrix-stack matrix))
+;;       as it is now "transform-matrix" can take any symbole because it was not closer specified
+(defmethod apply-matrix ((ms matrix-stack) transform-matrix)
+  (setf (m-curr-mat ms)
+   (sb-cga:matrix* (m-curr-mat ms) transform-matrix)))
+
+
 ;; TODO: defmethod lambda-list displayed with class-name instead of "offset-vec3"
 ;; it's "simple-array"
 (defgeneric translate (matrix-stack simple-array))
@@ -137,8 +149,8 @@ the projection plane)"
 (defmacro with-transform ((matrix-stack) &body body)
     "Creates PUSH-MS POP-MS wrapper around its input, so many with-transform can be nested
 to facilitate the hierarchical model. Intuitive explanation: work with the current
-matrix (translating, scaling, rotating) and when your done, it will be returned to its
-former state"
+matrix (translating, scaling, rotating or arbitrary applying a transform matrix) and when your done, 
+it will be returned to its former state"
     ;;TODO: add searching &body for transform keywords, so as to implement nested
     ;; constructs like:
     ;; (with-transform (ms) (cons :this (:that :rotate-x 10.0) (:this :scale ..)))
@@ -156,6 +168,7 @@ former state"
 			(:rotate-x (make-rot 'rotate-x (cdr l) exp))
 			(:rotate-y (make-rot 'rotate-y (cdr l) exp))
 			(:rotate-z (make-rot 'rotate-z (cdr l) exp))
+			(:apply-matrix (make-apply-matrix 'apply-matrix (cdr l) exp))
 			(t (format *error-output* "~a is not a known transform" car))
 			))))
 	   (make-trans (key l exp)
@@ -164,6 +177,13 @@ former state"
 	      exp)
 	     (try-key (cadddr l) (cdddr l) exp))
 	   (make-rot (key l exp)
+	     (push
+	      `(,key ,matrix-stack ,(first l))
+	      exp)
+	     (try-key (cadr l) (cdr l) exp))
+	   ;; like make-rot we only read one sexp after the keyword - it wants a mat4 instead of aj
+	   ;; angle
+	   (make-apply-matrix (key l exp)
 	     (push
 	      `(,key ,matrix-stack ,(first l))
 	      exp)
