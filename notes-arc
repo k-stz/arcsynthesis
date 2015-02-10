@@ -887,7 +887,8 @@ another. And then you have a intuitively understandable term:
 A coordinate system, which a matrix represents, with orthogonal basis vectors of unit length
 (normalized) is called /orthonormal/!
 
-Quaternion,
+--------------------------------------------------------------------------------
+Quaternions,
 As introduced so far a 4d-vector (x,y,z,w) with x,y,z being the 'vector part' and w being
 the 'scalar part'. We represent an axis, with the vector part, and a rotation around this axis
 with the scalar part. This solves the problem of Euler Angle's gimbal lock, also matrix orientation
@@ -900,9 +901,9 @@ orientation.  The multiplication is non-intuitive: it looks rather arbitrary and
 therefore hard to remember. It is non-commutative and associative though, just like matrix
 multiplication.
 
-The main difference between matrix and quaternion representation is that they're easy to
-keep normalized -- simply applying vector normalization. This keeps them in unit-vector
-form.
+The main difference between matrix and quaternion representation is that they're more
+efficient, for example they're  easy to keep  normalized -- simply applying vector normalization.
+This keeps them in unit-vector form.
 
 Note how it is actually difficult to keep a matrix orthonormalized, which:
 1. must be done on each frame of an animation to dodge rounding problems
@@ -935,3 +936,56 @@ don't know if it is worth trying to learn that stuff, if I won't encounter it ag
 shouldn't bother as it may be too special to be even worthwhile to know when tackling
 problems related to graphics programming.
 
+Putting it all together intutively:
+The usage of quaternions is to be understood as a more efficient solution to the gimbal lock problem.
+The gimbal lock problem arises from trying to represent orientation as a sequence of hierarchical
+rotations. This is space efficient, three angles is all you need. But interlocking planes (gimbals)
+may drop the degree of freedom.
+What we want is a transformation that changes the current orientation relatively, so we can always
+perform a object relative pitch so that a rendered space-ship will always pitch instead of some
+absolute orientation. This can be solved using a transformation matrix to represent the orientation
+and then multiplying it with another to get this relative transformation.
+This is indeed a solution, but there is a problem to it, it is inefficient:
+1. We need to store a whole matrix,
+2. as we apply multiple transforms per frame rendered, expecting 30 frames per second we can see
+   that rounding problems - floating point imprecision may accumulate.
+3. To fight these imprecisions we want to keep the matrix othonormal, a costly operation: every
+   base-vector needs to stay normalized and, bit more problematic, the base-vectors must stay
+   perpendicular to one another.
+
+This can be certainly done but there is a much more efficient solution that allows easy normalization
+and less values to represent the orientaion:
+
+                                         The Quaternions
+
+1. A quaternion can represent a transformation matrix (rotation about a arbitrary axis by an arbitrary
+angle), we can easily transform a quaternion into a transformation matrix.
+2. We don't need to multiply the resulting matrix, the underlying quaternions, of each matrix, can also
+   be multiplied with each other - Quaternion Multiplication - and the result can be, on each frame,
+   transformed back into a transformation matrix.
+3. The quternion having a scalar-part (the angle of rotation) and a vector-part (axis to be rotated about)
+   can be easily normalized using simple vector-normalization.
+
+Transformation matrix need multiple normalization, quaternion only one per transform.
+Transformation matrix take up a lot of space, quaternion being a 4d-vector much less.
+Transformation matrix multiplication is more expensive and involves more multiplicaiton in general
+wheres quaternion multiplication involves much less.
+
+
+The gimbal lock problem solution can be thus abstracted like so:
+
+Input          current coordinate system     transformation                    new orientation (new current
+               representation                                                  coordinate system)
+               
+point  ==>     transformation-matrix   ==>   matrix multiplication      ==>    transformation-matrix
+
+                    ^                                                                  ^
+		    |                                                                  |
+          <quaternions can be always turned back into a transformation matrix, at any of these two points>
+		    |                                                                  |
+
+OR:              quaternion		     quaternion multiplication         matrix-casting a composite
+	                                     the result being a                quaternion
+					     composite quaterion
+
+--------------------------------------------------------------------------------

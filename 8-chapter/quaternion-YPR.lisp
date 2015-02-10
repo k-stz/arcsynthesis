@@ -125,36 +125,40 @@
 
   (%gl:viewport 0 0 w h))
 
-(defconstant +standard-angle-increment+ 11.25)
-(defconstant +small-angle-increment+ 9.0)
 
 
-(defparameter *orientation* (make-instance 'glm:quat :vec4 (glm:vec4 1.0 0.0 0.0 0.0)))
+(defparameter *orientation* (make-instance 'glm:quat :vec4 (glm:vec4 0.0 0.0 0.0 1.0)))
 
 (defparameter *right-multiply-p* t) ; switch inside the OFFSET-ORIENTATION function
 
 (defun offset-orientation (vec3-axis ang-deg)
-  ;; (let* ((ang-rad (framework:deg-to-rad ang-deg))
-  ;; 	 (vec3-axis (glm:normalize vec3-axis))
-  ;; 	 (vec3-axis (sb-cga:vec* vec3-axis (sin (/ ang-rad 2.0))))
-  ;; 	 (scalar (cos (/ ang-rad 2.0)))
-  ;; 	 (offset ))
-;; )
   (let ((f-quat-offset
-	 (glm:normalize-quat
-	  (glm:make-quat
-	   (framework:deg-to-rad ang-deg) ((glm:vec. vec3-axis :x)
-					   (glm:vec. vec3-axis :y)
-					   (glm:vec. vec3-axis :z))))))
+  	 (glm:normalize-quat
+  	  (glm:make-quat
+  	   (framework:deg-to-rad ang-deg) ((glm:vec. vec3-axis :x)
+  					   (glm:vec. vec3-axis :y)
+  					   (glm:vec. vec3-axis :z))))))
 
-    (setf q1 f-quat-offset)
-    
+    ;; Check out this sweet treat right here:
+    ;; 1. (quat* *orientation* f-quat-offset) => represent the f-quat-offset inside *orientation*
+    ;; this means that the orientation is the base coordinate system and the f-quat-offset
+    ;; is being represented relative to that base orientation ===> current orientation relative transformation
+    ;; 2. (quat* f-quat-offset *orientation*) ==> f-quat-offset is a simple rotation about a
+    ;; base-vector, the complex orientation accumulating in *orientation* will be represented
+    ;; slightly "offset" by this base-vector deviation represented by f-quat-offset, somewhat like
+    ;; an ===> base coordinate system "absolute" transformation (if we consider the ident-matrix coordianate
+    ;; system as an "absolute" coordinate system, this only works seem to work because the provided
+    ;; vec3-axis are either one of the three base-vectors: 1 0 0, 0 1 0, 0 0 1
     (if *right-multiply-p*
-	(setf *orientation* (glm:quat* *orientation* f-quat-offset))
-	(setf *orientation* (glm:quat* f-quat-offset *orientation*)))
+  	(setf *orientation* (glm:quat* *orientation* f-quat-offset))
+  	(setf *orientation* (glm:quat* f-quat-offset *orientation*)))
 
-    ;; TODO: try skipping this step
-    (setf *orientation* (glm:normalize-quat *orientation*))))
+    (setf *orientation* (glm:normalize-quat *orientation*))
+    )
+  )
+
+(defconstant +standard-angle-increment+ 11.25)
+(defconstant +small-angle-increment+ 9.0)
 
 (defun main ()
   (sdl2:with-init (:everything)
@@ -170,30 +174,30 @@
 	   (:keysym keysym)
 	   ;; TODO: capture in macro
 	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-w)
-;	     (offset-orientation (glm:vec3 1.0 0.0 0.0) +small-angle-increment+)
-	     (offset-orientation (glm:vec3 1.0 0.0 0.0) 90.0)
+	     (offset-orientation (glm:vec3 1.0 0.0 0.0) +small-angle-increment+)
 	     )
 	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-s)
 	     (offset-orientation (glm:vec3 1.0 0.0 0.0) (- +small-angle-increment+))
-	     (print (glm:qt-vec4 *orientation*))
-
 	     )
 
 	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-a)
-	     (offset-orientation (glm:vec3 0.0 0.0 1.0) 0.1)
+	     (offset-orientation (glm:vec3 0.0 0.0 1.0) +small-angle-increment+)
 	     )
 	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-d)
-	     (offset-orientation (glm:vec3 0.0 0.0 1.0) (- 0.1))
-
+	     (offset-orientation (glm:vec3 0.0 0.0 1.0) (- +small-angle-increment+))
 	     )
-
 
 	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-q)
+	     (offset-orientation (glm:vec3 0.0 1.0 0.0) +small-angle-increment+)
 	     )
    	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-e)
+	     (offset-orientation (glm:vec3 0.0 1.0 0.0) (- +small-angle-increment+))
 	     )
 
 	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-space)
+	     (if *right-multiply-p*
+		 (setf *right-multiply-p* nil)
+		 (setf *right-multiply-p* t))
 	     )
 
 	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-escape)
@@ -205,4 +209,3 @@
 		 
                  (sdl2:gl-swap-window win) ; wow, this can be forgotten easily -.-
 		 ))))))
-

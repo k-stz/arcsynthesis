@@ -1,0 +1,3 @@
+to "synchronize" git repositories with Magit:
+
+F C-u F -> origin -> master
