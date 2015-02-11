@@ -988,4 +988,7 @@ OR:              quaternion		     quaternion multiplication         matrix-casti
 	                                     the result being a                quaternion
 					     composite quaterion
 
+GLSL: note that GLSL doesn't provide types for quaternions or any quaternion arithmetic.
+
+					     
 --------------------------------------------------------------------------------

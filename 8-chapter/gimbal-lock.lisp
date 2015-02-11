@@ -104,6 +104,9 @@
 
 (defparameter *angles* (make-instance 'gimbal-angles))
 
+
+(defparameter *draw-gimbal* t)
+
 (defun draw-gimbal (matrix-stack e-axis base-color)
 
   (unless *draw-gimbal* (return-from draw-gimbal NIL))
@@ -197,7 +200,6 @@
 
 (defconstant +standard-angle-increment+ 11.25)
 (defconstant +small-angle-increment+ 9.0)
-(defparameter *draw-gimbal* t)
 
 (defun animation ()
   (let ((x (mod (+ (angle-x *angles*) .1) 360.0))

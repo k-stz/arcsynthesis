@@ -206,3 +206,8 @@
   (:documentation "Getting Oriented - Quaternion")
   (:use :cl)
   (:export #:main))
+
+(defpackage #:arc-8.2
+  (:documentation "Getting Oriented - Camera Relative Orientation")
+  (:use :cl)
+  (:export #:main))

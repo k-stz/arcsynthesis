@@ -316,17 +316,17 @@
 (defclass quat ()
   ((qt-vec4 :initform (glm:vec4 1.0) :initarg :vec4 :accessor qt-vec4)
    (qt-scalar :accessor qt-scalar) ; as radians
-   (qt-axis-v3 :accessor qt-axis-v3)))
+   (qt-axis-v3 :accessor qt-axis-v3)
+   ))
 
 
-;; Initilize-instance :after works like a constructor in OOP languages. In the body of this function
-;; we can access the instance created 'q' of class QUAT and set some values before unleashing
-;; the object to the general public:
-(defmethod initialize-instance :after ((q quat) &key &allow-other-keys)
-  (setf (qt-scalar q) (vec. (qt-vec4 q) :x))
-  (setf (qt-axis-v3 q) (vec3 (vec. (qt-vec4 q) :y)
-			     (vec. (qt-vec4 q) :z)
-			     (vec. (qt-vec4 q) :w))))
+;; TODO-NEXT: bad solution, not SETFable, should work on QUAT slots that are interdependent?
+;;            so that changing one changes the other? Or maybe have QUAT just a scalar slot
+;;            and axis-vec3 slot and have a method yielding the vec4 from these for every
+;;            other method/function that cares to operate on the quaternion?
+;; (defgeneric qt-scalar (quat))
+;; (defmethod qt-scalar ((q quat))
+;;   (vec. (qt-vec4 q) :w))
 
 ;;alas using a class to represent quaternions (useful as '*' can't be casted so we need
 ;;'quat*' for a quaternion multiplication procedure. Now because our quaternion is a class
@@ -336,7 +336,8 @@
 ;; TODO: confirm this
 (defgeneric normalize-quat (quat))
 (defmethod normalize-quat ((q quat))
-  (setf (qt-axis-v3 q) (sb-cga:normalize (qt-axis-v3 q)))
+  ;; NEXT-TODO: qt-axis is not changing actuall quaternion (QT-VEC4) value!
+  ;;(setf (qt-axis-v3 q) (sb-cga:normalize (qt-axis-v3 q)))
   q)
 
 (defmacro make-quat (angle-radians (axis-x axis-y axis-z))
@@ -386,10 +387,28 @@ the axis provided is already of unit length, the result is a _unit quaternion_."
 		   (- (+ (* a.w b.z) (* a.z b.w) (* a.x b.y)) (* a.y b.x))
 		   (-    (* a.w b.w) (* a.x b.x) (* a.y b.y)  (* a.z b.z))))))))
 
+;; argh, lock on symbol "CONJUGATE". In quaternion lingo the inverse of a quaternion
+;; called the "conjugate quaternion"
+;; (defun conjugate-quat (quat)
+;;   "Return the conjugate quaternion of the input quaternion."
+;;   ;; TODO: is the input quaternion a fresh quaternion? I think not
+;;   ;; TODO-NEXT: QT-SCALAR and QT-AXIS are independent of QT-VEC4! setting them won't change
+;;   ;; the quaternion at all! 
+;;   (let* ((-scalar (- (qt-scalar quat)))
+;; 	 (qx (make-instance 'quat)))
+;; 	 (setf (qt-scalar qx) -scalar)
+;;     ;; 	 (v4 (qt-vec4 quat))
+;;     ;; 	 (x (vec. v4 :y))
+;;     ;; 	 (y (vec. v4 :z))
+;;     ;; 	 (z (vec. v4 :w))
+;;     ;; (format t "-:~a +:~a" -scalar scalar)
+;;     ;; (make-instance 'quat :vec4 (glm:vec4 -scalar x y z))))
+;;     quat))
 
 
 ;; supposed to cast from multiple structures or types to a matrix, for now only
 ;; from quaternion
+;; TODO: revisit this 'intitition' I think it was clock-wise in the former implementation
 ;; For intuitition: inspecting the (mat4-cast (make-quat 45.0 (0.0 1.0 0.0))), for example, shows
 ;; that quaternion perform a clock-wise rotation around the axis they represent (in direction of the axis)
 (defgeneric mat4-cast (t))
