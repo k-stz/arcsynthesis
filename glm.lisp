@@ -312,33 +312,41 @@
 
 ;;Quaternions-------------------------------------------------------------------
 
-;;TODO: change print representation to show the qt-vec4!
+;; note this quaternion representation is not accurate in mathematics quaternions
+;; seem to be represented by imaginary numbers. This representation, however, not
+;; only suffices, it also provides a very simple model of a quaternion: a 4D vector
+;; with a scalar and a axial part. This model seems, so far, to fully suffice for
+;; the purpose of arcsynthesis, and maybe even for all of graphics programming.
 (defclass quat ()
   ((qt-vec4 :initform (glm:vec4 1.0) :initarg :vec4 :accessor qt-vec4)
-   (qt-scalar :accessor qt-scalar) ; as radians
-   (qt-axis-v3 :accessor qt-axis-v3)
+ ;   (qt-scalar :accessor qt-scalar) ; as radians
+ ;  (qt-axis-v3 :accessor qt-axis-v3)
    ))
 
 
-;; TODO-NEXT: bad solution, not SETFable, should work on QUAT slots that are interdependent?
-;;            so that changing one changes the other? Or maybe have QUAT just a scalar slot
-;;            and axis-vec3 slot and have a method yielding the vec4 from these for every
-;;            other method/function that cares to operate on the quaternion?
-;; (defgeneric qt-scalar (quat))
-;; (defmethod qt-scalar ((q quat))
-;;   (vec. (qt-vec4 q) :w))
+;;setting for simple solution:
+(defun set-qt-scalar (quat new-scalar)
+  (setf (vec. (qt-vec4 quat) :w) new-scalar))
+
 
 ;;alas using a class to represent quaternions (useful as '*' can't be casted so we need
 ;;'quat*' for a quaternion multiplication procedure. Now because our quaternion is a class
-;; we can't use NORMALIZE on it, and again need to create a new name for it:
-;; Anyway this distinction may be favorable as quaternion normalization may be a bit different
-;; as it only involves the normalization of the axis part of the quaternion (not the scalar)
-;; TODO: confirm this
+;;we can't use NORMALIZE on it, and again need to create a new name for it: Anyway this
+;;distinction may be favorable as quaternion normalization may be a bit different as it
+;;only involves the normalization of the axis part of the quaternion (not the scalar)
+;;TODO: confirm this
 (defgeneric normalize-quat (quat))
 (defmethod normalize-quat ((q quat))
-  ;; NEXT-TODO: qt-axis is not changing actuall quaternion (QT-VEC4) value!
-  ;;(setf (qt-axis-v3 q) (sb-cga:normalize (qt-axis-v3 q)))
-  q)
+  ;; TODO: this function is destructive
+  (let*((q-v4 (qt-vec4 q))
+	(x (vec. q-v4 :x))
+	(y (vec. q-v4 :y))
+	(z (vec. q-v4 :z))
+	(norm-v3 (sb-cga:normalize (glm:vec3 x y z))))
+    (setf (qt-vec4 q)
+	  (vec4-from-vec3 norm-v3
+			  (vec. q-v4 :w)))
+    q))
 
 (defmacro make-quat (angle-radians (axis-x axis-y axis-z))
   "Providing an angle in degree and an axis a quaternion is created and returned.
@@ -389,26 +397,24 @@ the axis provided is already of unit length, the result is a _unit quaternion_."
 
 ;; argh, lock on symbol "CONJUGATE". In quaternion lingo the inverse of a quaternion
 ;; called the "conjugate quaternion"
-;; (defun conjugate-quat (quat)
-;;   "Return the conjugate quaternion of the input quaternion."
-;;   ;; TODO: is the input quaternion a fresh quaternion? I think not
-;;   ;; TODO-NEXT: QT-SCALAR and QT-AXIS are independent of QT-VEC4! setting them won't change
-;;   ;; the quaternion at all! 
-;;   (let* ((-scalar (- (qt-scalar quat)))
-;; 	 (qx (make-instance 'quat)))
-;; 	 (setf (qt-scalar qx) -scalar)
-;;     ;; 	 (v4 (qt-vec4 quat))
-;;     ;; 	 (x (vec. v4 :y))
-;;     ;; 	 (y (vec. v4 :z))
-;;     ;; 	 (z (vec. v4 :w))
-;;     ;; (format t "-:~a +:~a" -scalar scalar)
-;;     ;; (make-instance 'quat :vec4 (glm:vec4 -scalar x y z))))
-;;     quat))
+ (defun conjugate-quat (quat)
+   "Return the conjugate quaternion of the input quaternion."
+   ;; we simply reverse the angle of rotation, thereby rotating the quat "back" into
+   ;; its purely axial form - a identity matrix representation. Thereby achieving
+   ;; the inverse quaternion in quaternion lingo, though, called /conjugate quaternion/.
+   (let* ((-scalar (- (vec. (qt-vec4 quat) :w)))
+	  (new-quat
+	   ;; note SBCL reuses the vector data, hence without copy-seq
+	   ;; we would create a conjugate quat would share the data with the
+	   ;; input quaternion, this would be a destructive function too.
+	   (make-instance 'quat :vec4 (copy-seq (qt-vec4 quat)))))
+     (set-qt-scalar new-quat -scalar)
+     new-quat))
 
 
 ;; supposed to cast from multiple structures or types to a matrix, for now only
 ;; from quaternion
-;; TODO: revisit this 'intitition' I think it was clock-wise in the former implementation
+;; TODO: revisit this 'initiation' I think it was clock-wise in the former implementation
 ;; For intuitition: inspecting the (mat4-cast (make-quat 45.0 (0.0 1.0 0.0))), for example, shows
 ;; that quaternion perform a clock-wise rotation around the axis they represent (in direction of the axis)
 (defgeneric mat4-cast (t))
