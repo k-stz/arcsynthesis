@@ -39,7 +39,7 @@
    #:vec4->quat
    #:quat*
    #:mat4-cast
-   #:normalize-quat
+   #:quat-normalize
    ;;
    #:set-mat4-diagonal
    #:make-mat3

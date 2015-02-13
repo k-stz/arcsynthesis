@@ -335,18 +335,21 @@
 ;;distinction may be favorable as quaternion normalization may be a bit different as it
 ;;only involves the normalization of the axis part of the quaternion (not the scalar)
 ;;TODO: confirm this
-(defgeneric normalize-quat (quat))
-(defmethod normalize-quat ((q quat))
-  ;; TODO: this function is destructive
-  (let*((q-v4 (qt-vec4 q))
-	(x (vec. q-v4 :x))
-	(y (vec. q-v4 :y))
-	(z (vec. q-v4 :z))
-	(norm-v3 (sb-cga:normalize (glm:vec3 x y z))))
-    (setf (qt-vec4 q)
-	  (vec4-from-vec3 norm-v3
-			  (vec. q-v4 :w)))
-    q))
+(defgeneric quat-normalize (quat))
+(defmethod quat-normalize ((q quat))
+  ;; from cprogramming.com By "confuted":
+  ;; magnitude = sqrt(w2 + x2 + y2 + z2)
+  ;; w = w / magnitude
+  ;; x = x /  magnitude
+  ;; y = y / magnitude
+  ;; z = z / magnitude
+  ;; which means quaternion normalization is quite simple
+  ;; Note the normalization process doesn't seem to retain the
+  ;; precise angle of rotation, therefore before each application the rotation angle
+  ;; should be cached and after the normalization overwritten.
+  (setf (qt-vec4 q)
+	(normalize (qt-vec4 q)))
+  q)
 
 (defmacro make-quat (angle-radians (axis-x axis-y axis-z))
   "Providing an angle in degree and an axis a quaternion is created and returned.
@@ -367,7 +370,6 @@ the axis provided is already of unit length, the result is a _unit quaternion_."
 	 (y (* (vec. vec4 :y) (sin (/ theta 2))))
 	 (z (* (vec. vec4 :z) (sin (/ theta 2)))))
     (make-instance 'quat :vec4
-		   ;;note the deviation from the form used in the book
 		   (vec4 x
 			 y
 			 z

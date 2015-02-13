@@ -214,12 +214,12 @@ geometry coordinates and returned as a position vector."
 (defparameter *offset-relative* #(:model-relative :world-relative :camera-relative))
 
 (defun offset-orientation (vec3-axis ang-deg)
-  (let ((f-quat-offset
-  	 (glm:normalize-quat
-  	  (glm:make-quat
-  	   (framework:deg-to-rad ang-deg) ((glm:vec. vec3-axis :x)
-  					   (glm:vec. vec3-axis :y)
-  					   (glm:vec. vec3-axis :z))))))
+  (let* ((vec3-axis (sb-cga:normalize vec3-axis))
+	(f-quat-offset
+  	 (glm:make-quat
+	  (framework:deg-to-rad ang-deg) ((glm:vec. vec3-axis :x)
+					  (glm:vec. vec3-axis :y)
+					  (glm:vec. vec3-axis :z)))))
 
     (case (aref *offset-relative* *i-offset*)
       (:model-relative
@@ -239,7 +239,7 @@ geometry coordinates and returned as a position vector."
 	 ;; )
 	 )))
     ;; NEXT-TODO: implement this once quaternion representation solution has been found
-    (setf *orientation* (glm:normalize-quat *orientation*))
+    (setf *orientation* (glm:quat-normalize *orientation*))
     )
   )
 

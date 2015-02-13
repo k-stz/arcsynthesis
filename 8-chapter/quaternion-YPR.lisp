@@ -132,12 +132,12 @@
 (defparameter *right-multiply-p* t) ; switch inside the OFFSET-ORIENTATION function
 
 (defun offset-orientation (vec3-axis ang-deg)
-  (let ((f-quat-offset
-  	 (glm:normalize-quat
-  	  (glm:make-quat
-  	   (framework:deg-to-rad ang-deg) ((glm:vec. vec3-axis :x)
-  					   (glm:vec. vec3-axis :y)
-  					   (glm:vec. vec3-axis :z))))))
+  (let* ((vec3-axis (sb-cga:normalize vec3-axis))
+	(f-quat-offset
+  	 (glm:make-quat
+	  (framework:deg-to-rad ang-deg) ((glm:vec. vec3-axis :x)
+					  (glm:vec. vec3-axis :y)
+					  (glm:vec. vec3-axis :z)))))
 
     ;; Check out this sweet treat right here:
     ;; 1. (quat* *orientation* f-quat-offset) => represent the f-quat-offset inside *orientation*
@@ -153,7 +153,7 @@
   	(setf *orientation* (glm:quat* *orientation* f-quat-offset))
   	(setf *orientation* (glm:quat* f-quat-offset *orientation*)))
 
-    (setf *orientation* (glm:normalize-quat *orientation*))
+    (setf *orientation* (glm:quat-normalize *orientation*))
     )
   )
 
@@ -174,7 +174,7 @@
 	   (:keysym keysym)
 	   ;; TODO: capture in macro
 	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-w)
-	     (offset-orientation (glm:vec3 1.0 0.0 0.0) +small-angle-increment+)
+	     (offset-orientation (glm:vec3 2.0 0.0 0.0) +small-angle-increment+)
 	     )
 	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-s)
 	     (offset-orientation (glm:vec3 1.0 0.0 0.0) (- +small-angle-increment+))
