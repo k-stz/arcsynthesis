@@ -545,8 +545,6 @@ geometry coordinates and returned as a position vector."
 (defparameter *draw-look-at-point* nil)
 
 (defun draw ()
-  ;; TODO: as the demo runns sbcl's memory usage grows without stopping
-  ;; once back to the REPL it isn't released
   (let ((cam-pos (resolve-cam-position))
 	(cam-matrix (make-instance 'glutil:matrix-stack))
 	(model-matrix (make-instance 'glutil:matrix-stack)))

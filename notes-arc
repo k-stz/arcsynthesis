@@ -121,7 +121,7 @@ have a _list of valid targets_
 fields in the Object:
 enumerators GL_OBJECT_* all name fields in the object that can be set!!
 
-Once an objects is generated, bound to a target, we can set parameter with in the object
+Once an objects is generated, bound to a target, we can set parameter within the object
 using the glObjectParameter family (like in the above example!)
 Since OpenGL is a C API, it has to name each differently typed variation differently:
 "Parameteri for integer parameters, "Parameterf for float ... etc.
@@ -192,7 +192,7 @@ void main
 }
 --------------------------------------------------------------------------------
 A SHADER STRING gets compiled into a shader object; analogous to C object file
-(when a c program is compiled it a object file is created)
+(when a c program is compiled a object file is created)
 One or more SHADER OBJECT can be linked into a: PROGRAM OBJECT.
 
 These program objects contain aaaal the shaders to be used for rendering!
@@ -225,7 +225,7 @@ And even then they only change if they're set explicitly!!
 
 Also 'in' variables of vertex shaders receive their input via :array-buffers etc.
 uniforms, however, receive it by directly setting them via program objects
-Remember: program object = linked shader object
+Remember: program object = linked shader objects
 Unlike 'in' variables, we can't set the location ourselves, we NEED TO QUERY it:
 offsetLocation = glGetUniformLocation(theProgram, "<varName-in-shader-program>"
                                                    ^^^ wa-wa-wi-wa
@@ -279,7 +279,7 @@ e.g.: project a 2d world perpendicular to a 1d line
 
 "perspective projection",
 how human eyes model the world as a picture in the mind.
-In OpenGL our eye is the:
+In OpenGL our eye's view field is within the:
 
 Frustum,
 a pyramid with a chopped of head. Instead of a cone, as the eye would use it, in
@@ -299,7 +299,7 @@ Imagine P being on a straight line with Eye. Then E/R*P would of course result
 in P having the length of E to the projection plane. Now as we move P left and right
 (perpendicular to the projection plane!!)
 we just create a diagonal line from P to E intersecting the plane of projection left
-and right. It should be possible now to imagine that the ration of E/P multiplied with
+and right. It should be possible now to imagine that the ratio of E/P multiplied with
 P will result in that projection!!
 Which is in effect not a resource heavy computation at all!
 
@@ -325,9 +325,9 @@ E is a constant, only Pz can be an unknown if viewed from just any angle
 but I bet there is some mathematical trick to yield proper perpedicularities!
 
 ========================================================================================
-#     This conversion from clip-space to normalized device coordinate is called         #
+#     This conversion from clip-space to normalized device coordinate is called        #
 # "PERSPECTIVE DIVIDE" exactly because it is usually used for perspective projection!! #
-#=======================================================================================
+========================================================================================
 
 Up until now our vertex shaders received clip space coordinates and output clip space
 coordinates as well hence:
@@ -336,7 +336,7 @@ gl_Positions = positions // a no brainer for the VERTEX shader
 Now we want to change the inputs of our vertex shader, probably so that it will get
 a proper W value for NDC's perspective divide.
 
-We therefore define a new space for positions which leisurely call: CAMERA SPACE
+We therefore define a new space for positions which we leisurely call: CAMERA SPACE
 
 projection plane,
 part of the Frustum, on which all the projection will take place. It extends in
@@ -357,7 +357,7 @@ the minimum distance from the eye, before we decide it's not in view.
 Those are the definitions for camera space, later we will reuse these words
 connoting other meanings :I
 --------------------------------------------------------------------------------
-swizzle selection,
+swizzle selection (GLSL syntax),
 access multiple components of a vector and return them as a proper dimensional
 vertex:
   vertex.zy => returns: vec2(vertex.z, vertex.y)
@@ -476,11 +476,11 @@ problems like: "z-fighting".
 
 tagging fragments,
 associate with every fragment its window-space z-value, compare which value is
-the smallest, hence closes to eye) and only draw those fragments! We store those
+the smallest, hence closes to eye, and only draw those fragments! We store those
 z-values in a:
 
 depth buffer,
-also called a the z-buffer, since it stores z-values!
+also called the z-buffer, since it stores z-values!
 
 Interesting: Colors output from a fragment shader are stored in the:
 color image buffer, which together with the z-buffer is CREATED BY OPENGL
@@ -522,7 +522,7 @@ Here's how it looks like:
   0, 1, 0, 0
   0, 0, 1, 0
   0, 0, 0, 1]
-Now remember the special properties of OpenGL matrices: The 'w'-row is 1.0 by default,
+Now remember the special properties of OpenGL matrices: The 'w'-column is 1.0 by default,
 so if we want to offset a vector, we just need to put in the offset in there
 
  [1, 0, 0, x      [2    2 + 0 + 0 + x  =  [2+x
@@ -530,13 +530,13 @@ so if we want to offset a vector, we just need to put in the offset in there
   0, 0, 1, z       3    0 + 0 + 3 + z  =   3+z
   0, 0, 0, 1]      1]   0 + 0 + 0 + 1  =    1 ]
 
-Now I hope this visual doesn't confuse the you into thinking matrix multiplication works
+Now I hope this visual doesn't confuse you into thinking matrix multiplication works
 horizontally! But multiplying with a identity-matrix sure makes it look like it!
 --------------------------------------------------------------------------------
 Finally the grand Matrix mystery is solved!!
-The matrix is a numerical representation of a coordinate system! Its columns
-left to right are the basis vectors of the coordinate system. The final column
-is the offset applied to the it all, the origin.
+The matrix is a numerical representation of a coordinate system! Its rows
+left to right are the basis vectors of the coordinate system. The final row
+is the offset applied to it all, the origin.
 Taking the identity matrix:
  [1, 0, 0, 0 
   0, 1, 0, 0
@@ -687,7 +687,7 @@ using lambda and phi as angles and starting at the equator.
 The use of polar coordinates is useful for the camera, as we can change a single
 angle and emulate a rotation about a reference point: as changing a single
 angle makes the position move on a circle relative to a center point. In the
-world-scene example that reference point was a the camera-target, we simply
+world-scene example that reference point was the camera-target, we simply
 (glm:vec+ ..) added the resulting vector with the camera-target and now we
 could move around(phi) up/down(theta) and towards/away(r) from a relative point!
 
@@ -695,7 +695,7 @@ Furthermore using the target point and the camera-point we can easily derive a l
 direction (by normalizing the subtraction of these points!) then using a fiat up direction
 (usually x=0 y=1 z=0) and the cross-product to yield perpendicular axis to build a
 rotation matrix so as to place the world relative to the cameras view direction.  But
-first we had take the camera position and offset the world by putting it as the origin of
+first we took the camera position and offset the world by putting it as the origin of
 the coordinate system: translation matrix using the camera position negation!
 
 Also note Mr. McKesson's interesting remark:
@@ -745,7 +745,7 @@ this case (setf handle (%gl:get-uniform-block-index "system-area-pointer-string"
 2. Use that handle to associate the current program through it with a
 'binding-index' which is a 'slot in the OpenGL context'
 
-Build the uniform-buffer data somewhere, it must be stressed that data wise it
+Build the uniform-buffer data somewhere, it must be stressed that data-wise it
 is just an ordinary buffer object:
 (setf *ubo* (first (gl:gen-buffers 1)))
 (gl:bind-buffer :uniform-buffer *ubo*)
@@ -852,7 +852,7 @@ you will miss a degree of freedom. With this a new observation occurs: if you ca
 all three possible rotations at a given time you're in gimbal lock and have to transform
 the object in a non-straightforward way to reach an orientation. This non-straightforward
 transformation is especially problematic if we want to animate a fluent movement and
-the object changes orientation in a quirky manner we got gimbal lock'd!
+the object changes orientation in a quirky manner - we got gimbal lock'd!
 
 
 Anecdote [from internet],
@@ -892,7 +892,7 @@ Quaternions,
 As introduced so far a 4d-vector (x,y,z,w) with x,y,z being the 'vector part' and w being
 the 'scalar part'. We represent an axis, with the vector part, and a rotation around this axis
 with the scalar part. This solves the problem of Euler Angle's gimbal lock, also matrix orientation
-representation whereby we'd have to orthonormalize the matrix representing an object on each
+representation whereby we'd have to orthonormalize the matrix representing an orientation on each
 transformation lest accumulating rounding imprecision.
 
 Quaternion multiplication,
@@ -950,7 +950,7 @@ This is indeed a solution, but there is a problem to it, it is inefficient:
 2. as we apply multiple transforms per frame rendered, expecting 30 frames per second we can see
    that rounding problems - floating point imprecision may accumulate.
 3. To fight these imprecisions we want to keep the matrix othonormal, a costly operation: every
-   base-vector needs to stay normalized and, bit more problematic, the base-vectors must stay
+   base-vector needs to stay normalized and, a bit more problematic, the base-vectors must stay
    perpendicular to one another.
 
 This can be certainly done but there is a much more efficient solution that allows easy normalization

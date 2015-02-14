@@ -181,7 +181,7 @@ it will be returned to its former state"
 	      `(,key ,matrix-stack ,(first l))
 	      exp)
 	     (try-key (cadr l) (cdr l) exp))
-	   ;; like make-rot we only read one sexp after the keyword - it wants a mat4 instead of aj
+	   ;; like make-rot we only read one sexp after the keyword - it wants a mat4 instead of an
 	   ;; angle
 	   (make-apply-matrix (key l exp)
 	     (push

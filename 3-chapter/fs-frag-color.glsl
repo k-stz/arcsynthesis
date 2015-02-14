@@ -23,7 +23,7 @@ void main() {
   // mix returns a value on the range [firstColor, secondColor]
   // depending on its third parameter (currLerp) which must be on the range [0.0,1.0]
   // or the outcome will be undefined!
-  // also mix has the added benefit on being able to operate on vec4 types!
+  // also mix has the added benefit of being able to operate on vec4 types!
 
   // Bonus: oscilate between 0 and 1, with tricky sin 2*pi call
   outputColor = mix(firstColor, secondColor, sin(3.141592 * 2 * currLerp));

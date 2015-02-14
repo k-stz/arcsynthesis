@@ -318,15 +318,25 @@
 ;; with a scalar and a axial part. This model seems, so far, to fully suffice for
 ;; the purpose of arcsynthesis, and maybe even for all of graphics programming.
 (defclass quat ()
-  ((qt-vec4 :initform (glm:vec4 1.0) :initarg :vec4 :accessor qt-vec4)
- ;   (qt-scalar :accessor qt-scalar) ; as radians
- ;  (qt-axis-v3 :accessor qt-axis-v3)
+  ((w :initform 0.0 :initarg :w :accessor q.w)
+   (x :initform 1.0 :initarg :x :accessor q.x)
+   (y :initform 0.0 :initarg :y :accessor q.y)
+   (z :initform 0.0 :initarg :z :accessor q.z)
    ))
+
+;; nice, works! 
+(defmethod print-object ((q quat) stream)
+  ;; #<object> those #<> signal to the cl READer that these objects can't be read
+  ;; back from their printed form, and the reader will in fact singnal an error
+  ;; trying to do this
+  (format stream "#<QT:[~a ~a ~a ~a]>"
+	  (q.w q) (q.x q) (q.y q) (q.z q)))
 
 
 ;;setting for simple solution:
-(defun set-qt-scalar (quat new-scalar)
-  (setf (vec. (qt-vec4 quat) :w) new-scalar))
+;;; NEXT-TODO:
+;; (defun set-qt-scalar (quat new-scalar)
+;;   (setf (vec. (qt-vec4 quat) :w) new-scalar))
 
 
 ;;alas using a class to represent quaternions (useful as '*' can't be casted so we need
@@ -347,71 +357,176 @@
   ;; Note the normalization process doesn't seem to retain the
   ;; precise angle of rotation, therefore before each application the rotation angle
   ;; should be cached and after the normalization overwritten.
-  (setf (qt-vec4 q)
-	(normalize (qt-vec4 q)))
+
+  ;; NEXT-TODO
+  ;; (setf (qt-vec4 q)
+  ;; 	(normalize (qt-vec4 q)))
   q)
+
+
+;;; TODO: quat-cast directy translation is, alas, not working q.q
+;; this is a straight translation from the GLM library, minus the templates
+;; https://github.com/g-truc/glm/blob/master/glm/gtc/quaternion.inl
+;; which is the same library used by the arcsynthesis code
+(defun quat-cast-1st (mat4)
+  ;; in the C++ glm code "template <typename T, precision P>" is used, which seems to
+  ;; be a function overloading shorthand, wheras the function must be specified
+  ;; once using those templates(...) as input/output and the compiler will create
+  ;; all the functions overloading needed depending on function use: foo(int), foo(double)
+  ;; would then work. For us this means we will ignore that and just focus on a mat4-float
+  ;; implementation of quat-cast.
+  ;;
+  ;; TODO: the original GLM quat_cast functino uses mat3's, is it ok to just treat the
+  ;; mat4 as mat3?
+  ;; matrix:            mat4-place
+  ;; m00 m01 m02 ...    m0x m0y m0z ..
+  ;; m10                m1y
+  ;; m20                m2z
+  ;; ..                 ..
+  (flet ((m (row col)
+	   (aref mat4 (+ row (* 4 col))))) ;; maybe the other way around ...?
+    (let* ((four-x-squared-minus-1 (- (m 0 0) (m 1 1) (m 2 2)))
+	   (four-y-squared-minus-1 (- (m 1 1) (m 0 0) (m 2 2)))
+	   (four-z-squared-minus-1 (- (m 2 2) (m 0 0) (m 1 1)))
+	   (four-w-squared-minus-1 (+ (m 0 0) (m 1 1) (m 2 2)))
+
+	   (biggest-index 0)
+	   (four-biggest-squared-minus-1 four-w-squared-minus-1))
+      (if (> four-x-squared-minus-1 four-biggest-squared-minus-1)
+	  (setf four-biggest-squared-minus-1 four-x-squared-minus-1)
+	  (setf biggest-index 1))
+
+      (if (> four-y-squared-minus-1 four-biggest-squared-minus-1)
+	  (setf four-biggest-squared-minus-1 four-y-squared-minus-1)
+	  (setf biggest-index 2))
+
+      (if (> four-z-squared-minus-1 four-biggest-squared-minus-1)
+	  (setf four-biggest-squared-minus-1 four-z-squared-minus-1)
+	  (setf biggest-index 3))
+
+      ;; TODO: in GLM's code 'T(1) T(0.5)' ? Anyhow tests indicate that
+      ;; all the values are SINGLE-FLOAT
+      (let* ((biggest-val (* (sqrt (1+ four-biggest-squared-minus-1))  0.5))
+	     (mult (/ 0.25 biggest-val))
+	     (result))			; quaternion to be returned
+	
+	(setf
+	 result
+	 (make-instance 'quat :vec4
+			(case biggest-index
+			  (0
+			   (vec4 biggest-val
+				 (* (- (m 1 2) (m 2 1)) mult)
+				 (* (- (m 2 0) (m 0 2)) mult)
+				 (* (- (m 0 1) (m 1 0)) mult))
+			   )
+			  (1
+			   (vec4 (* (- (m 1 2) (m 2 1)) mult)
+				 biggest-val
+				 (* (+ (m 0 1) (m 1 0)) mult)
+				 (* (+ (m 2 0) (m 0 2)) mult))
+			   )
+			  (2
+			   (vec4 (* (- (m 2 0) (m 0 2)) mult)
+				 (* (+ (m 0 1) (m 1 0)) mult)
+				 biggest-val
+				 (* (+ (m 1 2) (m 2 1)) mult))
+			   )
+			  (3 
+			   (vec4 (* (- (m 0 1) (m 1 0)) mult)
+				 (* (+ (m 2 0) (m 0 2)) mult)
+				 (* (+ (m 1 2) (m 2 1)) mult)
+				 biggest-val
+				 )
+			   )
+			  (t (error "'biggest-index' out of bounds")))))
+	result))))
+
+
+;;2nd try, using information from:
+;; www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToQuaternion/
+;; Knock on wood!
+(defun quat-cast (mat4)
+  (flet ((m (r c)
+	   (aref mat4 (+ r (* 4 c)))))
+    (let* ((w  (/ (sqrt (+ 1.0 (m 0 0) ( m 1 1) (m 2 2))) 2.0))
+	   (w4 (* 4.0 w))
+	   (x (/ (- (m 2 1) (m 1 2)) w4))
+	   (y (/ (- (m 0 2) (m 2 0)) w4))
+	   (z (/ (- (m 1 0) (m 0 1)) w4)))
+
+      (format t "w:~a~%" w)
+
+      (let ((q (make-instance 'quat :w w :x x :y y :z z)))
+	q))))
+
+
+;; 3rd try direct translation of "calculateRotation" from the same webpage (see above)
+;; TODO...
+;; (defun 3-qc (mat4)
+;;   (flet ((m (r c)
+;; 	   (aref mat4 (+ r (* 4 c)))))
+;;     (let* (trace (+ (m 0 0) (m 1 1) (m 2 2))))))
 
 (defmacro make-quat (angle-radians (axis-x axis-y axis-z))
   "Providing an angle in degree and an axis a quaternion is created and returned.
 If the axis provided is of unit length the resulting quaternion will also be of
 unit length"
-  `(vec4->quat (glm:vec4 (float ,axis-x 1.0)
+  `(vec4->quat (glm:vec4 (float ,angle-radians 1.0)
+			 (float ,axis-x 1.0)
 			 (float ,axis-y 1.0)
 			 (float ,axis-z 1.0)
-                         (float ,angle-radians 1.0))))
+                         )))
 
 
 (defun vec4->quat (vec4)
   "Transform a 4D vector to get a quaternion. Input is treated as: 
  (theta axis-x axis-y axis-z). Where theta is treated as RADIAN. If 
 the axis provided is already of unit length, the result is a _unit quaternion_."
-  (let* ((theta (vec. vec4 :w))
-	 (x (* (vec. vec4 :x) (sin (/ theta 2))))
-	 (y (* (vec. vec4 :y) (sin (/ theta 2))))
-	 (z (* (vec. vec4 :z) (sin (/ theta 2)))))
-    (make-instance 'quat :vec4
-		   (vec4 x
-			 y
-			 z
-			 (cos (/ theta 2))
-			 ))))
+  (let* ((theta (vec. vec4 :x))
+	 (x (* (vec. vec4 :y) (sin (/ theta 2))))
+	 (y (* (vec. vec4 :z) (sin (/ theta 2))))
+	 (z (* (vec. vec4 :w) (sin (/ theta 2)))))
+    (make-instance 'quat
+		   :w (cos (/ theta 2))
+		   :x x
+		   :y y
+		   :z z
+		   )))
 
 ;; naming this just '*' as in providing operator overloading, is not possible
 ;; error will be singnaled: "'*' already names an ordinary function or a macro."
 (defgeneric quat* (quat quat))
 (defmethod quat* ((q1 quat) (q2 quat))
   "Quaternion multiplication"
-  (let* ((qv1 (qt-vec4 q1)) (qv2 (qt-vec4 q2)))
-    (multiple-value-bind ;(a.w a.x a.y a.z)
-	  (a.x a.y a.z a.w)
-	(values-list (loop for i across qv1 collecting i))
-      (multiple-value-bind ;(b.w b.x b.y b.z)
-	    (b.x b.y b.z b.w)
-	  (values-list (loop for i across qv2 collecting i))
-	;; Quaternion multiplication being a composition orientation the result is already
-	;; a quaternion. Hence we directly make an instance without MAKE-QUATERNION
-	(make-instance
-	 'quat :vec4
-	 (glm:vec4 (- (+ (* a.w b.x) (* a.x b.w) (* a.y b.z)) (* a.z b.y))
-		   (- (+ (* a.w b.y) (* a.y b.w) (* a.z b.x)) (* a.x b.z))
-		   (- (+ (* a.w b.z) (* a.z b.w) (* a.x b.y)) (* a.y b.x))
-		   (-    (* a.w b.w) (* a.x b.x) (* a.y b.y)  (* a.z b.z))))))))
+  (let* ((a.w (q.w q1)) (a.x (q.x q1)) (a.y (q.y q1)) (a.z (q.z q1))
+	 (b.w (q.w q2)) (b.x (q.x q2)) (b.y (q.y q2)) (b.z (q.z q2)))
+    ;; Quaternion multiplication being a composition orientation the result is already
+    ;; a quaternion. Hence we directly make an instance without MAKE-QUATERNION
+    (make-instance
+     'quat
+     :x (- (+ (* a.w b.x) (* a.x b.w) (* a.y b.z)) (* a.z b.y))
+     :y (- (+ (* a.w b.y) (* a.y b.w) (* a.z b.x)) (* a.x b.z))
+     :z (- (+ (* a.w b.z) (* a.z b.w) (* a.x b.y)) (* a.y b.x))
+     :w (-    (* a.w b.w) (* a.x b.x) (* a.y b.y)  (* a.z b.z)) )))
 
 ;; argh, lock on symbol "CONJUGATE". In quaternion lingo the inverse of a quaternion
 ;; called the "conjugate quaternion"
- (defun conjugate-quat (quat)
-   "Return the conjugate quaternion of the input quaternion."
-   ;; we simply reverse the angle of rotation, thereby rotating the quat "back" into
-   ;; its purely axial form - a identity matrix representation. Thereby achieving
-   ;; the inverse quaternion in quaternion lingo, though, called /conjugate quaternion/.
-   (let* ((-scalar (- (vec. (qt-vec4 quat) :w)))
-	  (new-quat
-	   ;; note SBCL reuses the vector data, hence without copy-seq
-	   ;; we would create a conjugate quat would share the data with the
-	   ;; input quaternion, this would be a destructive function too.
-	   (make-instance 'quat :vec4 (copy-seq (qt-vec4 quat)))))
-     (set-qt-scalar new-quat -scalar)
-     new-quat))
+
+;;NEXT-TODO:
+ ;; (defun conjugate-quat (quat)
+ ;;   "Return the conjugate quaternion of the input quaternion."
+ ;;   ;; we simply reverse the angle of rotation, thereby rotating the quat "back" into
+ ;;   ;; its purely axial form - a identity matrix representation. Thereby achieving
+ ;;   ;; the inverse quaternion in quaternion lingo, though, called /conjugate quaternion/.
+ ;;   (let* ((-scalar (- (vec. (qt-vec4 quat) :w)))
+ ;; 	  (new-quat
+ ;; 	   ;; note SBCL reuses the vector data, hence without copy-seq
+ ;; 	   ;; we would create a conjugate quat would share the data with the
+ ;; 	   ;; input quaternion, this would be a destructive function too.
+ ;; 	   (make-instance 'quat :vec4 (copy-seq (qt-vec4 quat)))))
+ ;;     (set-qt-scalar new-quat -scalar)
+ ;;     new-quat))
 
 
 ;; supposed to cast from multiple structures or types to a matrix, for now only
@@ -422,23 +537,25 @@ the axis provided is already of unit length, the result is a _unit quaternion_."
 (defgeneric mat4-cast (t))
 (defmethod mat4-cast ((q1 quat))
   "Retruns the transformation matrix the input quaternion is representing"
-  (multiple-value-bind (x y z w)
-      (values-list (loop for i across (qt-vec4 q1) collecting i))
-    (let ((mat4 (glm:make-mat4 1.0)))
-      (glm:set-mat4-row mat4 0
-			(glm:vec4 (- 1 (* 2 y y) (* 2 z z))
-				  (- (* 2 x y) (* 2 w z))
-				  (+ (* 2 x z) (* 2 w y)) 0))
-      (glm:set-mat4-row mat4 1
-			(glm:vec4 (+ (* 2 x y) (* 2 w z))
-				  (- 1 (* 2 x x) (* 2 z z))
-				  (- (* 2 y z) (* 2 w x)) 0))
-      (glm:set-mat4-row mat4 2
-			(glm:vec4 
-			 (- (* 2 x z) (* 2 w y))
-			 (+ (* 2 y z) (* 2 w x))
-			 (- 1 (* 2 x x) (* 2 y y)) 0))
-      mat4)))
+  (let ((w (q.w q1))
+	(x (q.x q1))
+	(y (q.y q1))
+	(z (q.z q1))
+	(mat4 (glm:make-mat4 1.0)))
+    (glm:set-mat4-row mat4 0
+		      (glm:vec4 (- 1 (* 2 y y) (* 2 z z))
+				(- (* 2 x y) (* 2 w z))
+				(+ (* 2 x z) (* 2 w y)) 0))
+    (glm:set-mat4-row mat4 1
+		      (glm:vec4 (+ (* 2 x y) (* 2 w z))
+				(- 1 (* 2 x x) (* 2 z z))
+				(- (* 2 y z) (* 2 w x)) 0))
+    (glm:set-mat4-row mat4 2
+		      (glm:vec4 
+		       (- (* 2 x z) (* 2 w y))
+		       (+ (* 2 y z) (* 2 w x))
+		       (- 1 (* 2 x x) (* 2 y y)) 0))
+    mat4))
 
 ;;Experimental------------------------------------------------------------------
 ;; TODO: experiment later using a class :I, maybe just use it to have a neat

@@ -127,7 +127,7 @@
 
 
 
-(defparameter *orientation* (make-instance 'glm:quat :vec4 (glm:vec4 0.0 0.0 0.0 1.0)))
+(defparameter *orientation* (make-instance 'glm:quat :w 1.0 :x 0.0 :y 0.0 :z 0.0))
 
 (defparameter *right-multiply-p* t) ; switch inside the OFFSET-ORIENTATION function
 
@@ -174,7 +174,7 @@
 	   (:keysym keysym)
 	   ;; TODO: capture in macro
 	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-w)
-	     (offset-orientation (glm:vec3 2.0 0.0 0.0) +small-angle-increment+)
+	     (offset-orientation (glm:vec3 1.0 0.0 0.0) +small-angle-increment+)
 	     )
 	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-s)
 	     (offset-orientation (glm:vec3 1.0 0.0 0.0) (- +small-angle-increment+))

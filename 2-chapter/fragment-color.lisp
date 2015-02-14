@@ -37,7 +37,7 @@
 (defun set-up-opengl-state ()
   (setf position-buffer-object (first (gl:gen-buffers 1)))
   (%gl:bind-buffer :array-buffer position-buffer-object)
-  ;; TODO: don't use arc-1::*vertex-positions*
+
   (gl:buffer-data :array-buffer :static-draw *vertex-positions*)
   (gl:bind-buffer :array-buffer 0)
   (gl:bind-buffer :array-buffer position-buffer-object)

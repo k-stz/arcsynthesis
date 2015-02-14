@@ -34,12 +34,13 @@
    #:vec4-from-vec3
    ;;quaternions:
    #:quat
-   #:qt-vec4 #:qt-scalar #:qt-axis-v4
+   #:qt-vec4
    #:make-quat
    #:vec4->quat
    #:quat*
    #:mat4-cast
    #:quat-normalize
+   #:conjugate-quat
    ;;
    #:set-mat4-diagonal
    #:make-mat3

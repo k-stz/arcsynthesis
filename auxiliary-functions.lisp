@@ -134,7 +134,7 @@ will be COERCEd to SINGLE-FLOAT"
     ;; finally we need to tell OpenGL that rendering commands should use
     ;; our program object instead of its default rendering state:
     ;; arcsyntheses: "it, glUseProgram, is later called with 0 to indicate that no
-    ;;                program will be used for rendering
+    ;;                program will be used for rendering"
     program
     ))
 

@@ -207,7 +207,7 @@ geometry coordinates and returned as a position vector."
 
 
 
-(defparameter *orientation* (make-instance 'glm:quat :vec4 (glm:vec4 0.0 0.0 0.0 1.0)))
+(defparameter *orientation* (make-instance 'glm:quat :w 1.0 :x 0.0 :y 0.0 :z 0.0))
 
 
 (defparameter *i-offset* 0)
@@ -227,19 +227,19 @@ geometry coordinates and returned as a position vector."
       (:world-relative
        (setf *orientation* (glm:quat* f-quat-offset *orientation*)))
       (:camera-relative
-       (let ((cam-pos (resolve-cam-position))
-	     (cam-mat (calc-look-at-matrix cam-pos *cam-target* (glm:vec3 0.0 1.0 0.0)))
-	     (view-quat #|TODO: (quat-cast cam-mat)|#)
-	     (invViewQuat #|TODO: (conjugate view-quat)|#)
+       (let* ((cam-pos (resolve-cam-position))
+	      (cam-mat (calc-look-at-matrix cam-pos *cam-target* (glm:vec3 0.0 1.0 0.0)))
+	      (view-quat (glm::quat-cast cam-mat))
+	      (inv-view-quat (glm:conjugate-quat view-quat))
 
-					;(world-quat )
-	     )
-	 ;;NEXT-TODO: implement necessary inversion mathematic
-	 ;; (setf *orientation* (glm:quat* world-quat *orientation*)
-	 ;; )
+	      (world-quat (glm:quat* (glm:quat* inv-view-quat f-quat-offset) view-quat))
+	      )
+	 ;;NEXT-TODO: implement QUAT-CAST
+	 (setf *orientation* (glm:quat* world-quat *orientation*))
+
 	 )))
     ;; NEXT-TODO: implement this once quaternion representation solution has been found
-    (setf *orientation* (glm:quat-normalize *orientation*))
+     (setf *orientation* (glm:quat-normalize *orientation*))
     )
   )
 
