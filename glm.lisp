@@ -333,12 +333,6 @@
 	  (q.w q) (q.x q) (q.y q) (q.z q)))
 
 
-;;setting for simple solution:
-;;; NEXT-TODO:
-;; (defun set-qt-scalar (quat new-scalar)
-;;   (setf (vec. (qt-vec4 quat) :w) new-scalar))
-
-
 ;;alas using a class to represent quaternions (useful as '*' can't be casted so we need
 ;;'quat*' for a quaternion multiplication procedure. Now because our quaternion is a class
 ;;we can't use NORMALIZE on it, and again need to create a new name for it: Anyway this
@@ -358,10 +352,12 @@
   ;; precise angle of rotation, therefore before each application the rotation angle
   ;; should be cached and after the normalization overwritten.
 
-  ;; NEXT-TODO
-  ;; (setf (qt-vec4 q)
-  ;; 	(normalize (qt-vec4 q)))
-  q)
+
+  (let ((q-v4 (vec4 (q.w q) (q.x q) (q.y q) (q.z q))))
+    (multiple-value-bind (w x y z)
+	(values-list
+	 (loop for i across (normalize q-v4) collecting i))
+      (make-instance 'quat :w w :x x :y y :z z))))
 
 
 ;;; TODO: quat-cast directy translation is, alas, not working q.q
@@ -412,34 +408,37 @@
 	
 	(setf
 	 result
-	 (make-instance 'quat :vec4
-			(case biggest-index
-			  (0
-			   (vec4 biggest-val
-				 (* (- (m 1 2) (m 2 1)) mult)
-				 (* (- (m 2 0) (m 0 2)) mult)
-				 (* (- (m 0 1) (m 1 0)) mult))
-			   )
-			  (1
-			   (vec4 (* (- (m 1 2) (m 2 1)) mult)
-				 biggest-val
-				 (* (+ (m 0 1) (m 1 0)) mult)
-				 (* (+ (m 2 0) (m 0 2)) mult))
-			   )
-			  (2
-			   (vec4 (* (- (m 2 0) (m 0 2)) mult)
-				 (* (+ (m 0 1) (m 1 0)) mult)
-				 biggest-val
-				 (* (+ (m 1 2) (m 2 1)) mult))
-			   )
-			  (3 
-			   (vec4 (* (- (m 0 1) (m 1 0)) mult)
-				 (* (+ (m 2 0) (m 0 2)) mult)
-				 (* (+ (m 1 2) (m 2 1)) mult)
-				 biggest-val
-				 )
-			   )
-			  (t (error "'biggest-index' out of bounds")))))
+	 (case biggest-index
+	   (0
+	    (make-instance 'quat
+			   :w biggest-val
+			   :x (* (- (m 1 2) (m 2 1)) mult)
+			   :y (* (- (m 2 0) (m 0 2)) mult)
+			   :z (* (- (m 0 1) (m 1 0)) mult))
+	    )
+	   (1
+	    (make-instance 'quat
+			   :w (* (- (m 1 2) (m 2 1)) mult)
+			   :x biggest-val
+			   :y (* (+ (m 0 1) (m 1 0)) mult)
+			   :z (* (+ (m 2 0) (m 0 2)) mult))
+	    )
+	   (2
+	    (make-instance 'quat
+			   :w (* (- (m 2 0) (m 0 2)) mult)
+			   :x (* (+ (m 0 1) (m 1 0)) mult)
+			   :y biggest-val
+			   :z (* (+ (m 1 2) (m 2 1)) mult))
+	    )
+	   (3 
+	    (make-instance 'quat
+			   :w (* (- (m 0 1) (m 1 0)) mult)
+			   :x (* (+ (m 2 0) (m 0 2)) mult)
+			   :y (* (+ (m 1 2) (m 2 1)) mult)
+			   :z biggest-val
+		  )
+	    )
+	   (t (error "'biggest-index' out of bounds"))))
 	result))))
 
 
@@ -455,18 +454,8 @@
 	   (y (/ (- (m 0 2) (m 2 0)) w4))
 	   (z (/ (- (m 1 0) (m 0 1)) w4)))
 
-      (format t "w:~a~%" w)
-
       (let ((q (make-instance 'quat :w w :x x :y y :z z)))
 	q))))
-
-
-;; 3rd try direct translation of "calculateRotation" from the same webpage (see above)
-;; TODO...
-;; (defun 3-qc (mat4)
-;;   (flet ((m (r c)
-;; 	   (aref mat4 (+ r (* 4 c)))))
-;;     (let* (trace (+ (m 0 0) (m 1 1) (m 2 2))))))
 
 (defmacro make-quat (angle-radians (axis-x axis-y axis-z))
   "Providing an angle in degree and an axis a quaternion is created and returned.
@@ -512,21 +501,15 @@ the axis provided is already of unit length, the result is a _unit quaternion_."
 
 ;; argh, lock on symbol "CONJUGATE". In quaternion lingo the inverse of a quaternion
 ;; called the "conjugate quaternion"
-
-;;NEXT-TODO:
- ;; (defun conjugate-quat (quat)
- ;;   "Return the conjugate quaternion of the input quaternion."
- ;;   ;; we simply reverse the angle of rotation, thereby rotating the quat "back" into
- ;;   ;; its purely axial form - a identity matrix representation. Thereby achieving
- ;;   ;; the inverse quaternion in quaternion lingo, though, called /conjugate quaternion/.
- ;;   (let* ((-scalar (- (vec. (qt-vec4 quat) :w)))
- ;; 	  (new-quat
- ;; 	   ;; note SBCL reuses the vector data, hence without copy-seq
- ;; 	   ;; we would create a conjugate quat would share the data with the
- ;; 	   ;; input quaternion, this would be a destructive function too.
- ;; 	   (make-instance 'quat :vec4 (copy-seq (qt-vec4 quat)))))
- ;;     (set-qt-scalar new-quat -scalar)
- ;;     new-quat))
+(defun conjugate-quat (quat)
+  "Return the conjugate quaternion of the input quaternion."
+  ;; we simply reverse the angle of rotation, thereby rotating the quat "back" into
+  ;; its purely axial form - a identity matrix representation. Thereby achieving
+  ;; the inverse quaternion in quaternion lingo, though, called /conjugate quaternion/.
+  (let* ((-scalar (- (q.w quat)))
+	 (new-quat
+	  (make-instance 'quat :w -scalar :x (q.x quat) :y (q.y quat) :z (q.z quat))))
+    new-quat))
 
 
 ;; supposed to cast from multiple structures or types to a matrix, for now only

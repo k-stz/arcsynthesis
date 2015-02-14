@@ -215,11 +215,11 @@ geometry coordinates and returned as a position vector."
 
 (defun offset-orientation (vec3-axis ang-deg)
   (let* ((vec3-axis (sb-cga:normalize vec3-axis))
-	(f-quat-offset
-  	 (glm:make-quat
-	  (framework:deg-to-rad ang-deg) ((glm:vec. vec3-axis :x)
-					  (glm:vec. vec3-axis :y)
-					  (glm:vec. vec3-axis :z)))))
+	 (f-quat-offset
+	  (glm:make-quat
+	   (framework:deg-to-rad ang-deg) ((glm:vec. vec3-axis :x)
+					   (glm:vec. vec3-axis :y)
+					   (glm:vec. vec3-axis :z)))))
 
     (case (aref *offset-relative* *i-offset*)
       (:model-relative
@@ -229,17 +229,16 @@ geometry coordinates and returned as a position vector."
       (:camera-relative
        (let* ((cam-pos (resolve-cam-position))
 	      (cam-mat (calc-look-at-matrix cam-pos *cam-target* (glm:vec3 0.0 1.0 0.0)))
+
 	      (view-quat (glm::quat-cast cam-mat))
 	      (inv-view-quat (glm:conjugate-quat view-quat))
 
-	      (world-quat (glm:quat* (glm:quat* inv-view-quat f-quat-offset) view-quat))
-	      )
-	 ;;NEXT-TODO: implement QUAT-CAST
+	      (world-quat (glm:quat* (glm:quat* inv-view-quat f-quat-offset) view-quat)))
+	 ;;NEXT-TODO: QUAT-CAST for all edge cases (see quat-cast-1st)
 	 (setf *orientation* (glm:quat* world-quat *orientation*))
 
 	 )))
-    ;; NEXT-TODO: implement this once quaternion representation solution has been found
-     (setf *orientation* (glm:quat-normalize *orientation*))
+    (setf *orientation* (glm:quat-normalize *orientation*))
     )
   )
 
