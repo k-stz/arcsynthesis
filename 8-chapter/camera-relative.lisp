@@ -160,9 +160,10 @@ geometry coordinates and returned as a position vector."
 
 
     (gl:use-program *program*)
-    
+
     (glutil:with-transform (curr-matrix)
 	:scale 100.0 1.0 100.0
+
 	(%gl:uniform-4f *base-color-unif* 0.2 0.5 0.2 1.0)
 
 	(gl:uniform-matrix *model-to-camera-matrix-unif* 4
@@ -223,21 +224,31 @@ geometry coordinates and returned as a position vector."
 
     (case (aref *offset-relative* *i-offset*)
       (:model-relative
+       ;; we add to the *orientation* the base-vector transform, changing the
+       ;; the ship orientation relative to its current orientation
        (setf *orientation* (glm:quat* *orientation* f-quat-offset)))
       (:world-relative
+       ;; because f-quat-offset is along the base-vectors 1 0 0, 0 1 0, 0 0 1 the
+       ;; same as our world space, we do a "world relative" transform
        (setf *orientation* (glm:quat* f-quat-offset *orientation*)))
       (:camera-relative
+       ;; it helps to understand the the camera look direction is the -z axis towards
+       ;; negative infinity
        (let* ((cam-pos (resolve-cam-position))
 	      (cam-mat (calc-look-at-matrix cam-pos *cam-target* (glm:vec3 0.0 1.0 0.0)))
 
-	      (view-quat (glm::quat-cast cam-mat))
+	      (view-quat (glm:quat-cast cam-mat))
 	      (inv-view-quat (glm:conjugate-quat view-quat))
 
+	      ;; for the sake of abstraction matrix=quaternion and conjugate-quaternion=
+	      ;; inverse-matrix because we have all the casting functions available:
+	      ;; QUAT-CAST and MAT4-CAST.
+	      ;; C^-1 = inv-view-quat, R = f-quat-offset, view-quat = C:
+	      ;; C^-1 *(R*C):
 	      (world-quat (glm:quat* (glm:quat* inv-view-quat f-quat-offset) view-quat)))
-	 ;;NEXT-TODO: QUAT-CAST for all edge cases (see quat-cast-1st)
-	 (setf *orientation* (glm:quat* world-quat *orientation*))
 
-	 )))
+	 
+	 (setf *orientation* (glm:quat* world-quat *orientation*)))))
     (setf *orientation* (glm:quat-normalize *orientation*))
     )
   )

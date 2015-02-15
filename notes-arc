@@ -992,3 +992,58 @@ GLSL: note that GLSL doesn't provide types for quaternions or any quaternion ari
 
 					     
 --------------------------------------------------------------------------------
+Inversion,
+We wanted to apply an orientation offset to our points, and so far we've been doing
+this using the same equation, or order of transformation that is hardcoded in
+our shader program:
+1. model-space (our cute ship model)
+2. world-space (where should the ship be)
+3. camera-space (from where we look at the world scene)
+(4.) projection divide
+
+Or as a matrix transformation: C*O*p (dunno why the auther uses O for world space)
+
+In the camera-relative.lisp example we're only allowed to change transformations
+changing the C with a right-hand multiplication, this change is the R-matrix:
+ C*R*O*p
+but we wanted to perform transformation relative to our "eye" the camera
+matrix, so what we really wanted was:
+R*C*O*p
+
+This restriction, of using the R in place C*R*O*p but still achive camera-relative
+orientation: R*C*O*p can be solved by learning about inversion!
+
+Inversions have this cute property that they can be yielded from any matrix (I think
+there are mathematical exception but as far as graphics orientation matricies are
+concerned we always can yield those). This inversion matrix of a matrix M is called
+M^-1 and if we multiply them _in any order_ we get the IDENTITY matrix:
+ M*M^-1 = Identity-matrix = M^-1*M
+
+hence, because an identity matrix is the neutral element of matrix multiplicaiton, in our
+example C*R*O*p the 'R' can "kill" C by turning into a C^-1:
+
+C*C^-1*O*p = O*p (yay)
+
+or, furthermore, we can turn 'R' into a amalgam of C^-1 and C and we "kill" our R:
+C*C^-1*C*O*p   = C*O*p
+  ^^^^^^= our R
+
+and to finally make it sensible we sandwich between our amalgam C^-1*C a real
+transformation we care about, namely the R to begin with, hence new-R = C^-1*R*C
+and put it in the equation:
+  C*new-R*O*p   turns into:
+  C*C^-1*R*C*O*p
+  ^^^^^^death
+         R*C*O*p
+
+and boooom we have our desired camera-relative transformation, without hardcoding the
+order of multiplications for the whole formula.
+
+From an intuitive perspective an inversion matrix can kill its neighbors left and right,
+and therefore build a bridge to different relative transformations.
+
+In the code example in camera-relative.lisp we could put a "C" inside the R transform
+because we had access to the current camera-matrix through functions that could
+readily compute it (resolve-cam-position) and (calc-look-at-matrix ...).
+
+--------------------------------------------------------------------------------

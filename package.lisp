@@ -38,6 +38,7 @@
    #:make-quat
    #:vec4->quat
    #:quat*
+   #:quat-cast
    #:mat4-cast
    #:quat-normalize
    #:conjugate-quat

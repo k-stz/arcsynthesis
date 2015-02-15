@@ -360,11 +360,24 @@
       (make-instance 'quat :w w :x x :y y :z z))))
 
 
-;;; TODO: quat-cast directy translation is, alas, not working q.q
+
+;; TODO: test this function, not safe to use yet:
+;; This function is only for tests, rounding is not working the way it is expected
+;; e.g. (round 1.5) => 2.0!
+(defun round-matrix (mat4)
+  (sb-cga:transpose-matrix
+   (apply #'sb-cga:matrix
+	  (loop for x across mat4
+	     collecting (coerce (round x) 'single-float)))))
+
+(defun m. (row col mat4)
+  (aref mat4 (+ row (* 4 col))))
+
 ;; this is a straight translation from the GLM library, minus the templates
 ;; https://github.com/g-truc/glm/blob/master/glm/gtc/quaternion.inl
 ;; which is the same library used by the arcsynthesis code
-(defun quat-cast-1st (mat4)
+(defun quat-cast (mat4)
+  "Return the quaternion representing the input transformation matrix."
   ;; in the C++ glm code "template <typename T, precision P>" is used, which seems to
   ;; be a function overloading shorthand, wheras the function must be specified
   ;; once using those templates(...) as input/output and the compiler will create
@@ -372,15 +385,10 @@
   ;; would then work. For us this means we will ignore that and just focus on a mat4-float
   ;; implementation of quat-cast.
   ;;
-  ;; TODO: the original GLM quat_cast functino uses mat3's, is it ok to just treat the
-  ;; mat4 as mat3?
-  ;; matrix:            mat4-place
-  ;; m00 m01 m02 ...    m0x m0y m0z ..
-  ;; m10                m1y
-  ;; m20                m2z
-  ;; ..                 ..
-  (flet ((m (row col)
-	   (aref mat4 (+ row (* 4 col))))) ;; maybe the other way around ...?
+  ;; note the switched col/row :I GLM seems to represent matrices differently or
+  ;; transposes somewhere or.. whatever it works
+  (flet ((m (col row) 
+	   (aref mat4 (+ row (* 4 col)))))
     (let* ((four-x-squared-minus-1 (- (m 0 0) (m 1 1) (m 2 2)))
 	   (four-y-squared-minus-1 (- (m 1 1) (m 0 0) (m 2 2)))
 	   (four-z-squared-minus-1 (- (m 2 2) (m 0 0) (m 1 1)))
@@ -388,24 +396,28 @@
 
 	   (biggest-index 0)
 	   (four-biggest-squared-minus-1 four-w-squared-minus-1))
-      (if (> four-x-squared-minus-1 four-biggest-squared-minus-1)
-	  (setf four-biggest-squared-minus-1 four-x-squared-minus-1)
-	  (setf biggest-index 1))
+      ;; oh wow: c++ if(statement) { if statement true;
+      ;;                             every line within these;
+      ;;                             will be executed because;}
+      ;;                           else {
+      ;;                             There is an explicit;
+      ;;                             ELSE block!!!;};
+      ;;  hence a single if(predicate) { code;}; is equal to cl's WHEN
+      (when (> four-x-squared-minus-1 four-biggest-squared-minus-1)
+	(setf four-biggest-squared-minus-1 four-x-squared-minus-1)
+	(setf biggest-index 1))
 
-      (if (> four-y-squared-minus-1 four-biggest-squared-minus-1)
-	  (setf four-biggest-squared-minus-1 four-y-squared-minus-1)
-	  (setf biggest-index 2))
+      (when (> four-y-squared-minus-1 four-biggest-squared-minus-1)
+	(setf four-biggest-squared-minus-1 four-y-squared-minus-1)
+	(setf biggest-index 2))
 
-      (if (> four-z-squared-minus-1 four-biggest-squared-minus-1)
-	  (setf four-biggest-squared-minus-1 four-z-squared-minus-1)
-	  (setf biggest-index 3))
+      (when (> four-z-squared-minus-1 four-biggest-squared-minus-1)
+	(setf four-biggest-squared-minus-1 four-z-squared-minus-1)
+	(setf biggest-index 3))
 
-      ;; TODO: in GLM's code 'T(1) T(0.5)' ? Anyhow tests indicate that
-      ;; all the values are SINGLE-FLOAT
-      (let* ((biggest-val (* (sqrt (1+ four-biggest-squared-minus-1))  0.5))
+      (let* ((biggest-val (* (sqrt (+ four-biggest-squared-minus-1 1.0))  0.5))
 	     (mult (/ 0.25 biggest-val))
 	     (result))			; quaternion to be returned
-	
 	(setf
 	 result
 	 (case biggest-index
@@ -414,30 +426,25 @@
 			   :w biggest-val
 			   :x (* (- (m 1 2) (m 2 1)) mult)
 			   :y (* (- (m 2 0) (m 0 2)) mult)
-			   :z (* (- (m 0 1) (m 1 0)) mult))
-	    )
+			   :z (* (- (m 0 1) (m 1 0)) mult)))
 	   (1
 	    (make-instance 'quat
 			   :w (* (- (m 1 2) (m 2 1)) mult)
 			   :x biggest-val
 			   :y (* (+ (m 0 1) (m 1 0)) mult)
-			   :z (* (+ (m 2 0) (m 0 2)) mult))
-	    )
+			   :z (* (+ (m 2 0) (m 0 2)) mult)))
 	   (2
 	    (make-instance 'quat
 			   :w (* (- (m 2 0) (m 0 2)) mult)
 			   :x (* (+ (m 0 1) (m 1 0)) mult)
 			   :y biggest-val
-			   :z (* (+ (m 1 2) (m 2 1)) mult))
-	    )
+			   :z (* (+ (m 1 2) (m 2 1)) mult)))
 	   (3 
 	    (make-instance 'quat
 			   :w (* (- (m 0 1) (m 1 0)) mult)
 			   :x (* (+ (m 2 0) (m 0 2)) mult)
 			   :y (* (+ (m 1 2) (m 2 1)) mult)
-			   :z biggest-val
-		  )
-	    )
+			   :z biggest-val))
 	   (t (error "'biggest-index' out of bounds"))))
 	result))))
 
@@ -445,17 +452,18 @@
 ;;2nd try, using information from:
 ;; www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToQuaternion/
 ;; Knock on wood!
-(defun quat-cast (mat4)
-  (flet ((m (r c)
-	   (aref mat4 (+ r (* 4 c)))))
-    (let* ((w  (/ (sqrt (+ 1.0 (m 0 0) ( m 1 1) (m 2 2))) 2.0))
-	   (w4 (* 4.0 w))
-	   (x (/ (- (m 2 1) (m 1 2)) w4))
-	   (y (/ (- (m 0 2) (m 2 0)) w4))
-	   (z (/ (- (m 1 0) (m 0 1)) w4)))
-
-      (let ((q (make-instance 'quat :w w :x x :y y :z z)))
-	q))))
+;; This only words in cases where the diagonal of the matrix is positive note the
+;; the sqrt computation
+;; (defun quat-cast-2nd (mat4)
+;;   (flet ((m (r c)
+;; 	   (aref mat4 (+ r (* 4 c)))))
+;;     (let* ((w  (/ (sqrt (+ 1.0 (m 0 0) ( m 1 1) (m 2 2))) 2.0))
+;; 	   (w4 (* 4.0 w))
+;; 	   (x (/ (- (m 2 1) (m 1 2)) w4))
+;; 	   (y (/ (- (m 0 2) (m 2 0)) w4))
+;; 	   (z (/ (- (m 1 0) (m 0 1)) w4)))
+;;       (let ((q (make-instance 'quat :w w :x x :y y :z z)))
+;; 	q))))
 
 (defmacro make-quat (angle-radians (axis-x axis-y axis-z))
   "Providing an angle in degree and an axis a quaternion is created and returned.
