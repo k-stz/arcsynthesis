@@ -258,84 +258,89 @@ geometry coordinates and returned as a position vector."
 
 
 (defun main ()
-  (sdl2:with-init (:everything)
-    (progn (setf *standard-output* out) (setf *debug-io* dbg) (setf *error-output* err))
-    (sdl2:with-window (win :w 500 :h 500 :flags '(:shown :opengl :resizable))
-      (sdl2:with-gl-context (gl-context win)
-	;; INIT code:
-	(init)
-	;; TODO: callback for reshape; for now used to setup cam-to-clip-space matrix
-	(reshape 500.0 500.0)
-	(sdl2:with-event-loop (:method :poll)
-	  (:keydown
-	   (:keysym keysym)
-	   ;; TODO: capture in macro
-	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-w)
-	     (offset-orientation (glm:vec3 1.0 0.0 0.0) +small-angle-increment+)
-	     )
-	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-s)
-	     (offset-orientation (glm:vec3 1.0 0.0 0.0) (- +small-angle-increment+))
-	     )
+  (arc::with-main
+    (sdl2:with-init (:everything)
+      (progn (setf *standard-output* out) (setf *debug-io* dbg) (setf *error-output* err))
+      (sdl2:with-window (win :w 500 :h 500 :flags '(:shown :opengl :resizable))
+	(sdl2:with-gl-context (gl-context win)
+	  ;; INIT code:
+	  (init)
+	  ;; TODO: callback for reshape; for now used to setup cam-to-clip-space matrix
+	  (reshape 500.0 500.0)
+	  (sdl2:with-event-loop (:method :poll)
+	    (:keydown
+	     (:keysym keysym)
+	     ;; TODO: capture in macro
+	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-w)
+	       (offset-orientation (glm:vec3 1.0 0.0 0.0) +small-angle-increment+)
+	       )
+	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-s)
+	       (offset-orientation (glm:vec3 1.0 0.0 0.0) (- +small-angle-increment+))
+	       )
 
-	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-a)
-	     (offset-orientation (glm:vec3 0.0 0.0 1.0) +small-angle-increment+)
-	     )
-	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-d)
-	     (offset-orientation (glm:vec3 0.0 0.0 1.0) (- +small-angle-increment+))
-	     )
+	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-a)
+	       (offset-orientation (glm:vec3 0.0 0.0 1.0) +small-angle-increment+)
+	       )
+	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-d)
+	       (offset-orientation (glm:vec3 0.0 0.0 1.0) (- +small-angle-increment+))
+	       )
 
-	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-q)
-	     (offset-orientation (glm:vec3 0.0 1.0 0.0) +small-angle-increment+)
-	     )
-   	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-e)
-	     (offset-orientation (glm:vec3 0.0 1.0 0.0) (- +small-angle-increment+))
-	     )
+	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-q)
+	       (offset-orientation (glm:vec3 0.0 1.0 0.0) +small-angle-increment+)
+	       )
+	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-e)
+	       (offset-orientation (glm:vec3 0.0 1.0 0.0) (- +small-angle-increment+))
+	       )
 
-	   ;; rotate camera horizontally around target
-	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-j)
-	     (decf (glm:vec. *sphere-cam-rel-pos* :x) 1.125))
-   	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-l)
-	     (incf (glm:vec. *sphere-cam-rel-pos* :x) 1.125))
-	   ;; rotate cam vertically around target
-   	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-i)
-	     (decf (glm:vec. *sphere-cam-rel-pos* :y) 1.125))
-   	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-k)
-	     (incf (glm:vec. *sphere-cam-rel-pos* :y) 1.125))
-	   ;; zoom camera in/out of target
-      	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-u)
-	     (decf (glm:vec. *sphere-cam-rel-pos* :z) 1.5))
-   	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-o)
-	     (incf (glm:vec. *sphere-cam-rel-pos* :z) 1.5))
+	     ;; rotate camera horizontally around target
+	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-j)
+	       (decf (glm:vec. *sphere-cam-rel-pos* :x) 1.125))
+	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-l)
+	       (incf (glm:vec. *sphere-cam-rel-pos* :x) 1.125))
+	     ;; rotate cam vertically around target
+	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-i)
+	       (decf (glm:vec. *sphere-cam-rel-pos* :y) 1.125))
+	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-k)
+	       (incf (glm:vec. *sphere-cam-rel-pos* :y) 1.125))
+	     ;; zoom camera in/out of target
+	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-u)
+	       (decf (glm:vec. *sphere-cam-rel-pos* :z) 1.5))
+	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-o)
+	       (incf (glm:vec. *sphere-cam-rel-pos* :z) 1.5))
 
 
-	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-space)
-	     ;; (model-, world- and camerarelative)
-	     ;; make it iterate on each invocation from 0 to 3 and all over again
-	     ;; on reaching 4
-	     (incf *i-offset*)
-	     (setf *i-offset* (mod *i-offset* 3))
-	     (format t "~a~%" (aref *offset-relative* *i-offset*))
-	     )
+	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-space)
+	       ;; (model-, world- and camerarelative)
+	       ;; make it iterate on each invocation from 0 to 3 and all over again
+	       ;; on reaching 4
+	       (incf *i-offset*)
+	       (setf *i-offset* (mod *i-offset* 3))
+	       (format t "~a~%" (aref *offset-relative* *i-offset*))
+	       )
 
-	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-escape)
-	     (sdl2:push-event :quit)))
-	  (:quit () t)
-	  (:idle ()
-		 ;; preventing special cases (camera transformation):
-		 (setf (glm:vec. *sphere-cam-rel-pos* :y)
-		       (glm:clamp (glm:vec. *sphere-cam-rel-pos* :y) -78.75 1.0))
-		 (setf (glm:vec. *cam-target* :y)
-		       (if (> (glm:vec. *cam-target* :y) 0.0)
-			   (glm:vec. *cam-target* :y)
-			   0.0))
-		 ;; can't zoom in "through" the floor with camera
-		 (setf (glm:vec. *sphere-cam-rel-pos* :z)
-		       (if (> (glm:vec. *sphere-cam-rel-pos* :z) 5.0)
-		 	   (glm:vec. *sphere-cam-rel-pos* :z)
-		 	   5.0))		 
+	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-escape)
+	       (sdl2:push-event :quit)))
+	    (:quit () t)
+	    (:idle ()
+		   ;; preventing special cases (camera transformation):
+		   (setf (glm:vec. *sphere-cam-rel-pos* :y)
+			 (glm:clamp (glm:vec. *sphere-cam-rel-pos* :y) -78.75 1.0))
+		   (setf (glm:vec. *cam-target* :y)
+			 (if (> (glm:vec. *cam-target* :y) 0.0)
+			     (glm:vec. *cam-target* :y)
+			     0.0))
+		   ;; can't zoom in "through" the floor with camera
+		   (setf (glm:vec. *sphere-cam-rel-pos* :z)
+			 (if (> (glm:vec. *sphere-cam-rel-pos* :z) 5.0)
+			     (glm:vec. *sphere-cam-rel-pos* :z)
+			     5.0))		 
 
-		 ;;main-loop:
-		 (display)
-		 
-                 (sdl2:gl-swap-window win) ; wow, this can be forgotten easily -.-
-		 ))))))
+		   ;;main-loop:
+		   (display)
+
+		   ;;live editing test
+		   (arc::update-swank)
+		   
+		   (sdl2:gl-swap-window win) ; wow, this can be forgotten easily -.-
+		   )))))))
+

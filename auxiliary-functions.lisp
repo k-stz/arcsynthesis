@@ -1,5 +1,23 @@
 (in-package #:arc)
 
+;; from nikki93's github.com/nikki93/lgame/blob/master/game.lisp
+;; this supposedly solves live editing problems for all the three main OS's
+;; but on windows "single threaded mode" must be forced:
+;; (setf *swank:*communication-style* nil) in ~/.swank.lisp
+(defmacro with-main (&body body)
+  "Enables REPL access via UPDATE-SWANK in the main loop using SDL2. Wrap this around
+the sdl2:with-init code."
+  ;;TODO: understand this. Without this wrapping the sdl:with-init the sdl thread
+  ;; is an "Anonymous thread" (tested using sb-thread:*current-thread*), while applying
+  ;; this makes *current-thread* the same as the one one when queried directly from the
+  ;; REPL thread: #<SB-THREAD:THREAD "repl-thread" RUNNING {adress...}>
+  `(sdl2:make-this-thread-main
+    (lambda ()
+      ;; does work on linux+sbcl without the following line:
+      #+sbcl (sb-int:with-float-traps-masked (:invalid) ,@body)
+      #-sbcl ,@body)))
+
+
 (defmacro continuable (&body body)
   "Helper macro that we can use to allow us to continue from an
   error. Remember to hit C in slime or pick the restart so errors don't kill the
