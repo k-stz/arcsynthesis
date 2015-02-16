@@ -127,17 +127,17 @@
 
 
 
-(defparameter *orientation* (make-instance 'glm:quat :w 1.0 :x 0.0 :y 0.0 :z 0.0))
+(defparameter *orientation* (glm:quaternion 1.0 0.0 0.0 0.0))
 
 (defparameter *right-multiply-p* t) ; switch inside the OFFSET-ORIENTATION function
 
 (defun offset-orientation (vec3-axis ang-deg)
   (let* ((vec3-axis (sb-cga:normalize vec3-axis))
-	(f-quat-offset
-  	 (glm:make-quat
-	  (framework:deg-to-rad ang-deg) ((glm:vec. vec3-axis :x)
-					  (glm:vec. vec3-axis :y)
-					  (glm:vec. vec3-axis :z)))))
+	 (f-quat-offset
+	  (glm:make-quat
+	   ang-deg ((glm:vec. vec3-axis :x)
+		    (glm:vec. vec3-axis :y)
+		    (glm:vec. vec3-axis :z)))))
 
     ;; Check out this sweet treat right here:
     ;; 1. (quat* *orientation* f-quat-offset) => represent the f-quat-offset inside *orientation*

@@ -269,29 +269,6 @@
     ))
 
 
-
-;;;TODO: more macro experiments needed, what do with nested macros?
-;; (defun col-vec4-from-mat4 (col mat4)
-;;   `(let ((key (ecase ,col
-;; 	       (0 :x) (1 :y) (2 :z) (3 :w))))
-;;     (vec4 (mat4-place mat4 0 key)
-;; 	   (mat4-place mat4 1 key)
-;; 	   (mat4-place mat4 2 key)
-;; 	   (mat4-place mat4 3 key)
-;; 	  )))
-
- ;; (defun switch-mat4-col (col-1 col-2 mat4)
- ;;   (let ((c1 (col-vec4-from-mat4 col-1 mat4)))
- ;;     (print c1))
-
- ;;   )
-
-;; (defmacro foo (col mat4)
-;;   `(let ((key (ecase ,col
-;; 	       (0 :x) (1 :y) (2 :z) (3 :w))))
-;;     `(mat4-place ,,mat4 0 ,,key)))
-
-
 (defun clamp (x min max)
   (if (< x min)
       min
@@ -299,7 +276,8 @@
 	  max
 	  x)))
 
-
+;; beware used by rotation.lisp and scale.lisp
+;; -> use defmethod for vec4 alternative
 (defun mix (x y a)
   ;; from OpenGL description, probably this is only for a being [0,1]. Yep:
   ;; 'a' is the distance between x and y as if mapped to 0 to 1.0. The rest abides
@@ -330,7 +308,72 @@
   ;; back from their printed form, and the reader will in fact singnal an error
   ;; trying to do this
   (format stream "#<QT:[~a ~a ~a ~a]>"
+	  ;; TODO: really keep the order w x y z ?
+	  ;; now VECTORIZE shows different order then our print representation :I
 	  (q.w q) (q.x q) (q.y q) (q.z q)))
+
+(defun quaternion (w x y z)
+  "Return a quaternion using the exact same input, no sin/cos deg->rad conversions,
+see MAKE-QUAT for an intuitive constructor."
+  (make-instance 'quat :w w :x x :y y :z z ))
+
+(defgeneric vectorize (obj)
+  (:documentation "Return a vector from object"))
+(defmethod vectorize ((q quat))
+  ;; TODO: is the order right? Note that GLM's quaternion is: w, x, y, z while in
+  ;; the arc-book it is consistently: x, y, z, w hence that's what I'm using for now
+  (glm:vec4 (q.x q) (q.y q) (q.z q) (q.w q)))
+
+
+(defmacro make-quat (angle-deg (axis-x axis-y axis-z))
+  "Providing an angle in degree and an axis: a quaternion is created and returned.
+If the axis provided is of unit length the resulting quaternion will also be of
+unit length (this is an intrinsic mathematical property of quaternions)."
+  `(vec4->quat (glm:vec4 (float (framework:deg-to-rad ,angle-deg) 1.0)
+			 (float ,axis-x 1.0)
+			 (float ,axis-y 1.0)
+			 (float ,axis-z 1.0)
+                         )))
+
+
+(defun vec4->quat (vec4)
+  "Transform a 4D vector to get a quaternion. Input is treated as: 
+ (theta axis-x axis-y axis-z). Where theta is treated as RADIAN. If 
+the axis provided is already of unit length, the result is a _unit quaternion_."
+  (let* ((theta (vec. vec4 :x))
+	 (w (cos (/ theta 2)))
+	 (x (* (vec. vec4 :y) (sin (/ theta 2))))
+	 (y (* (vec. vec4 :z) (sin (/ theta 2))))
+	 (z (* (vec. vec4 :w) (sin (/ theta 2)))))
+    (quaternion w x y z)))
+
+;; naming this just '*' as in providing operator overloading, is not possible
+;; error will be singnaled: "'*' already names an ordinary function or a macro."
+(defgeneric quat* (quat quat))
+(defmethod quat* ((q1 quat) (q2 quat))
+  "Quaternion multiplication"
+  (let* ((a.w (q.w q1)) (a.x (q.x q1)) (a.y (q.y q1)) (a.z (q.z q1))
+	 (b.w (q.w q2)) (b.x (q.x q2)) (b.y (q.y q2)) (b.z (q.z q2)))
+    ;; Quaternion multiplication being a composition orientation the result is already
+    ;; a quaternion. Hence we directly make an instance without MAKE-QUATERNION
+    (make-instance
+     'quat
+     :x (- (+ (* a.w b.x) (* a.x b.w) (* a.y b.z)) (* a.z b.y))
+     :y (- (+ (* a.w b.y) (* a.y b.w) (* a.z b.x)) (* a.x b.z))
+     :z (- (+ (* a.w b.z) (* a.z b.w) (* a.x b.y)) (* a.y b.x))
+     :w (-    (* a.w b.w) (* a.x b.x) (* a.y b.y)  (* a.z b.z)) )))
+
+
+
+;; argh, lock on symbol "CONJUGATE". In quaternion lingo the inverse of a quaternion
+;; called the "conjugate quaternion"
+(defun conjugate-quat (quat)
+  "Return the conjugate quaternion of the input quaternion."
+  (quaternion (q.w quat)
+	    (- (q.x quat))
+	    (- (q.y quat))
+	    (- (q.z quat))))
+
 
 
 ;;alas using a class to represent quaternions (useful as '*' can't be casted so we need
@@ -351,10 +394,8 @@
   ;; Note the normalization process doesn't seem to retain the
   ;; precise angle of rotation, therefore before each application the rotation angle
   ;; should be cached and after the normalization overwritten.
-
-
-  (let ((q-v4 (vec4 (q.w q) (q.x q) (q.y q) (q.z q))))
-    (multiple-value-bind (w x y z)
+  (let ((q-v4 (vectorize q)))
+    (multiple-value-bind (x y z w)
 	(values-list
 	 (loop for i across (normalize q-v4) collecting i))
       (make-instance 'quat :w w :x x :y y :z z))))
@@ -422,29 +463,25 @@
 	 result
 	 (case biggest-index
 	   (0
-	    (make-instance 'quat
-			   :w biggest-val
-			   :x (* (- (m 1 2) (m 2 1)) mult)
-			   :y (* (- (m 2 0) (m 0 2)) mult)
-			   :z (* (- (m 0 1) (m 1 0)) mult)))
+	    (quaternion biggest-val
+			(* (- (m 1 2) (m 2 1)) mult)
+			(* (- (m 2 0) (m 0 2)) mult)
+			(* (- (m 0 1) (m 1 0)) mult)))
 	   (1
-	    (make-instance 'quat
-			   :w (* (- (m 1 2) (m 2 1)) mult)
-			   :x biggest-val
-			   :y (* (+ (m 0 1) (m 1 0)) mult)
-			   :z (* (+ (m 2 0) (m 0 2)) mult)))
+	    (quaternion (* (- (m 1 2) (m 2 1)) mult)
+			biggest-val
+			(* (+ (m 0 1) (m 1 0)) mult)
+			(* (+ (m 2 0) (m 0 2)) mult)))
 	   (2
-	    (make-instance 'quat
-			   :w (* (- (m 2 0) (m 0 2)) mult)
-			   :x (* (+ (m 0 1) (m 1 0)) mult)
-			   :y biggest-val
-			   :z (* (+ (m 1 2) (m 2 1)) mult)))
+	    (quaternion (* (- (m 2 0) (m 0 2)) mult)
+			(* (+ (m 0 1) (m 1 0)) mult)
+			biggest-val
+			(* (+ (m 1 2) (m 2 1)) mult)))
 	   (3 
-	    (make-instance 'quat
-			   :w (* (- (m 0 1) (m 1 0)) mult)
-			   :x (* (+ (m 2 0) (m 0 2)) mult)
-			   :y (* (+ (m 1 2) (m 2 1)) mult)
-			   :z biggest-val))
+	    (quaternion (* (- (m 0 1) (m 1 0)) mult)
+			(* (+ (m 2 0) (m 0 2)) mult)
+			(* (+ (m 1 2) (m 2 1)) mult)
+			biggest-val))
 	   (t (error "'biggest-index' out of bounds"))))
 	result))))
 
@@ -464,61 +501,6 @@
 ;; 	   (z (/ (- (m 1 0) (m 0 1)) w4)))
 ;;       (let ((q (make-instance 'quat :w w :x x :y y :z z)))
 ;; 	q))))
-
-(defmacro make-quat (angle-radians (axis-x axis-y axis-z))
-  "Providing an angle in degree and an axis a quaternion is created and returned.
-If the axis provided is of unit length the resulting quaternion will also be of
-unit length"
-  `(vec4->quat (glm:vec4 (float ,angle-radians 1.0)
-			 (float ,axis-x 1.0)
-			 (float ,axis-y 1.0)
-			 (float ,axis-z 1.0)
-                         )))
-
-
-(defun vec4->quat (vec4)
-  "Transform a 4D vector to get a quaternion. Input is treated as: 
- (theta axis-x axis-y axis-z). Where theta is treated as RADIAN. If 
-the axis provided is already of unit length, the result is a _unit quaternion_."
-  (let* ((theta (vec. vec4 :x))
-	 (x (* (vec. vec4 :y) (sin (/ theta 2))))
-	 (y (* (vec. vec4 :z) (sin (/ theta 2))))
-	 (z (* (vec. vec4 :w) (sin (/ theta 2)))))
-    (make-instance 'quat
-		   :w (cos (/ theta 2))
-		   :x x
-		   :y y
-		   :z z
-		   )))
-
-;; naming this just '*' as in providing operator overloading, is not possible
-;; error will be singnaled: "'*' already names an ordinary function or a macro."
-(defgeneric quat* (quat quat))
-(defmethod quat* ((q1 quat) (q2 quat))
-  "Quaternion multiplication"
-  (let* ((a.w (q.w q1)) (a.x (q.x q1)) (a.y (q.y q1)) (a.z (q.z q1))
-	 (b.w (q.w q2)) (b.x (q.x q2)) (b.y (q.y q2)) (b.z (q.z q2)))
-    ;; Quaternion multiplication being a composition orientation the result is already
-    ;; a quaternion. Hence we directly make an instance without MAKE-QUATERNION
-    (make-instance
-     'quat
-     :x (- (+ (* a.w b.x) (* a.x b.w) (* a.y b.z)) (* a.z b.y))
-     :y (- (+ (* a.w b.y) (* a.y b.w) (* a.z b.x)) (* a.x b.z))
-     :z (- (+ (* a.w b.z) (* a.z b.w) (* a.x b.y)) (* a.y b.x))
-     :w (-    (* a.w b.w) (* a.x b.x) (* a.y b.y)  (* a.z b.z)) )))
-
-;; argh, lock on symbol "CONJUGATE". In quaternion lingo the inverse of a quaternion
-;; called the "conjugate quaternion"
-(defun conjugate-quat (quat)
-  "Return the conjugate quaternion of the input quaternion."
-  ;; we simply reverse the angle of rotation, thereby rotating the quat "back" into
-  ;; its purely axial form - a identity matrix representation. Thereby achieving
-  ;; the inverse quaternion in quaternion lingo, though, called /conjugate quaternion/.
-  (let* ((-scalar (- (q.w quat)))
-	 (new-quat
-	  (make-instance 'quat :w -scalar :x (q.x quat) :y (q.y quat) :z (q.z quat))))
-    new-quat))
-
 
 ;; supposed to cast from multiple structures or types to a matrix, for now only
 ;; from quaternion

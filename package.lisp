@@ -34,9 +34,9 @@
    #:vec4-from-vec3
    ;;quaternions:
    #:quat
-   #:qt-vec4
+   #:vectorize   
+   #:quaternion
    #:make-quat
-   #:vec4->quat
    #:quat*
    #:quat-cast
    #:mat4-cast

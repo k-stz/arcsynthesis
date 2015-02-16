@@ -151,6 +151,8 @@ geometry coordinates and returned as a position vector."
     (sb-cga:matrix* rot-mat trans-mat)))
 
 
+(defparameter *orientation* (glm:quaternion 1.0 0.0 0.0 0.0))
+
 (defun draw ()
   (let ((cam-pos (resolve-cam-position))
 	(curr-matrix (make-instance 'glutil:matrix-stack)))
@@ -208,19 +210,15 @@ geometry coordinates and returned as a position vector."
 
 
 
-(defparameter *orientation* (make-instance 'glm:quat :w 1.0 :x 0.0 :y 0.0 :z 0.0))
-
-
 (defparameter *i-offset* 0)
 (defparameter *offset-relative* #(:model-relative :world-relative :camera-relative))
 
 (defun offset-orientation (vec3-axis ang-deg)
   (let* ((vec3-axis (sb-cga:normalize vec3-axis))
 	 (f-quat-offset
-	  (glm:make-quat
-	   (framework:deg-to-rad ang-deg) ((glm:vec. vec3-axis :x)
-					   (glm:vec. vec3-axis :y)
-					   (glm:vec. vec3-axis :z)))))
+	  (glm:make-quat ang-deg ((glm:vec. vec3-axis :x)
+				  (glm:vec. vec3-axis :y)
+				  (glm:vec. vec3-axis :z)))))
 
     (case (aref *offset-relative* *i-offset*)
       (:model-relative
