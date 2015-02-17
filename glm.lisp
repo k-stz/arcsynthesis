@@ -87,24 +87,46 @@
 	  (setf (mat4-place ,mat4 2 :z) (aref ,vec4 2)) 
 	  (setf (mat4-place ,mat4 3 :w) (aref ,vec4 3))))
 ;; interesting having the progn of the above return mat4, would just expand into an
-;; expression returning a "copy" of mat4 as if premutations haven't occured
-
+;; expression returning a "copy" of mat4 as if permutations haven't occured
 
 ;; to facilitate pure vector negation 
 (defun vec- (a &optional b)
   (if (null b)
-      ;; TODO: this doesn't look right, but compiler probably smart enough?
-      (sb-cga:vec- a (sb-cga:vec* a 2.0))
+      (sb-cga:vec* a -1.0)
       (sb-cga:vec- a b)))
 
- (defmacro vec. (vector xyzw)
-   ;; TODO: isn't it "SETFable?"
+(defun vec4+ (v4-1 v4-2)
+  (let ((v4 (vec4 0.0)))
+    (macrolet ((dim (n)
+		 `(setf (aref v4 ,n)
+			(+ (aref v4-1 ,n)
+			   (aref v4-2 ,n)))))
+      (dim 0)
+      (dim 1)
+      (dim 2)
+      (dim 3)
+      v4)))
+
+;;sb-cga lacks vec4 arithmetic:
+(defun vec4* (vec4 float)
+  ;; macro from sb-cga's %vec*
+  (let ((v4 (vec4 0.0)))
+    (macrolet ((dim (n)
+		 `(setf (aref v4 ,n) (* (aref vec4 ,n) float))))
+      (dim 0)
+      (dim 1)
+      (dim 2)
+      (dim 3)
+      v4)))
+
+(defmacro vec. (vector xyzw)
+  ;; TODO: isn't it "SETFable?"
   "AREFable vector component returned. In the vein of C++ notation: vec.x vec.y etc."
   `(aref ,vector
 	 (case ,xyzw
-		(:x 0) (:y 1) (:z 2) (:w 3)
-		(t (format *error-output* "VEC. bad input:~a ;defaulting to 0!!" ,xyzw)
-		   0))))
+	   (:x 0) (:y 1) (:z 2) (:w 3)
+	   (t (format *error-output* "VEC. bad input:~a ;defaulting to 0!!" ,xyzw)
+	      0))))
 
 (defun vec3 (x &optional (y x) (z x))
   (let ((x (float x))
@@ -276,16 +298,32 @@
 	  max
 	  x)))
 
-;; beware used by rotation.lisp and scale.lisp
-;; -> use defmethod for vec4 alternative
-(defun mix (x y a)
-  ;; from OpenGL description, probably this is only for a being [0,1]. Yep:
-  ;; 'a' is the distance between x and y as if mapped to 0 to 1.0. The rest abides
-  ;; to linear interpolation
-  "linearly interpolate between two values x,y using 'a' to weight between them"
-  (+ (* x (1- a))
-     (* y a))
-  )
+
+;; alpha must be between [0,1] for linear interpolation to work
+(defgeneric mix (obj obj alpha)
+  (:documentation "linearly interpolate between two values"))
+
+
+(defmethod mix ((q1 quat) (q2 quat) (alpha single-float))
+  (let* ((alpha (float alpha 1.0))
+	 (v1 (vectorize q1))
+	 (v2 (vectorize q2))
+	 (lerp-vec
+	  (vec4+ (vec4* v1  alpha)
+		       (vec4* v2 (- 1.0 alpha)))))
+    ;; actually needs to be normalized! test with q0 = identity, q1 = 90.0 deg
+    (quat-normalize
+     (vec4->quat lerp-vec))))
+
+(defmethod mix ((v1 simple-array) (v2 simple-array) (alpha single-float))
+  (let ((alpha (float alpha 1.0)))
+    (sb-cga:vec+ (sb-cga:vec* v1  alpha)
+		 (sb-cga:vec* v2 (- 1.0 alpha)))))
+
+(defmethod mix ((x single-float) (y single-float) (alpha single-float))
+  "linearly interpolate between two values x,y using weight to weight between them"
+  (+ (* x (- 1.0 alpha))		;yeah.. (1- alpha) != (- 1 alpha)  
+     (* y alpha)))
 
 
 ;;Quaternions-------------------------------------------------------------------
@@ -299,8 +337,7 @@
   ((w :initform 0.0 :initarg :w :accessor q.w)
    (x :initform 1.0 :initarg :x :accessor q.x)
    (y :initform 0.0 :initarg :y :accessor q.y)
-   (z :initform 0.0 :initarg :z :accessor q.z)
-   ))
+   (z :initform 0.0 :initarg :z :accessor q.z)))
 
 ;; nice, works! 
 (defmethod print-object ((q quat) stream)
@@ -319,6 +356,7 @@ see MAKE-QUAT for an intuitive constructor."
 
 (defgeneric vectorize (obj)
   (:documentation "Return a vector from object"))
+
 (defmethod vectorize ((q quat))
   ;; TODO: is the order right? Note that GLM's quaternion is: w, x, y, z while in
   ;; the arc-book it is consistently: x, y, z, w hence that's what I'm using for now
@@ -328,23 +366,25 @@ see MAKE-QUAT for an intuitive constructor."
 (defmacro make-quat (angle-deg (axis-x axis-y axis-z))
   "Providing an angle in degree and an axis: a quaternion is created and returned.
 If the axis provided is of unit length the resulting quaternion will also be of
-unit length (this is an intrinsic mathematical property of quaternions)."
-  `(vec4->quat (glm:vec4 (float (framework:deg-to-rad ,angle-deg) 1.0)
-			 (float ,axis-x 1.0)
-			 (float ,axis-y 1.0)
-			 (float ,axis-z 1.0)
-                         )))
+unit length, this is an intrinsic mathematical property of quaternions."
+  `(let* ((theta (framework:deg-to-rad ,angle-deg))
+	  (sin-theta (sin (/ theta 2)))
+	  (cos-theta (cos (/ theta 2)))
+	  (x (* ,axis-x sin-theta))
+	  (y (* ,axis-y sin-theta))
+	  (z (* ,axis-z sin-theta))
+	  (w cos-theta))
+     (quaternion w x y z)))
 
 
-(defun vec4->quat (vec4)
+;;TODO rearrange if VECTORIZE: uses different order. Now: (x y z w)
+(defun vec4->quat (vec4-x-y-z-w)
   "Transform a 4D vector to get a quaternion. Input is treated as: 
- (theta axis-x axis-y axis-z). Where theta is treated as RADIAN. If 
-the axis provided is already of unit length, the result is a _unit quaternion_."
-  (let* ((theta (vec. vec4 :x))
-	 (w (cos (/ theta 2)))
-	 (x (* (vec. vec4 :y) (sin (/ theta 2))))
-	 (y (* (vec. vec4 :z) (sin (/ theta 2))))
-	 (z (* (vec. vec4 :w) (sin (/ theta 2)))))
+ (x y z w)."
+  (let* ((x (vec. vec4-x-y-z-w :x))
+	 (y (vec. vec4-x-y-z-w :y))
+	 (z (vec. vec4-x-y-z-w :z))
+	 (w (vec. vec4-x-y-z-w :w)))
     (quaternion w x y z)))
 
 ;; naming this just '*' as in providing operator overloading, is not possible
