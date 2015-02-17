@@ -290,42 +290,6 @@
     (glm:mat4-from-mat3 matrix)
     ))
 
-
-(defun clamp (x min max)
-  (if (< x min)
-      min
-      (if (> x max)
-	  max
-	  x)))
-
-
-;; alpha must be between [0,1] for linear interpolation to work
-(defgeneric mix (obj obj alpha)
-  (:documentation "linearly interpolate between two values"))
-
-
-(defmethod mix ((q1 quat) (q2 quat) (alpha single-float))
-  (let* ((alpha (float alpha 1.0))
-	 (v1 (vectorize q1))
-	 (v2 (vectorize q2))
-	 (lerp-vec
-	  (vec4+ (vec4* v1  alpha)
-		       (vec4* v2 (- 1.0 alpha)))))
-    ;; actually needs to be normalized! test with q0 = identity, q1 = 90.0 deg
-    (quat-normalize
-     (vec4->quat lerp-vec))))
-
-(defmethod mix ((v1 simple-array) (v2 simple-array) (alpha single-float))
-  (let ((alpha (float alpha 1.0)))
-    (sb-cga:vec+ (sb-cga:vec* v1  alpha)
-		 (sb-cga:vec* v2 (- 1.0 alpha)))))
-
-(defmethod mix ((x single-float) (y single-float) (alpha single-float))
-  "linearly interpolate between two values x,y using weight to weight between them"
-  (+ (* x (- 1.0 alpha))		;yeah.. (1- alpha) != (- 1 alpha)  
-     (* y alpha)))
-
-
 ;;Quaternions-------------------------------------------------------------------
 
 ;; note this quaternion representation is not accurate in mathematics quaternions
@@ -569,6 +533,52 @@ unit length, this is an intrinsic mathematical property of quaternions."
 		       (+ (* 2 y z) (* 2 w x))
 		       (- 1 (* 2 x x) (* 2 y y)) 0))
     mat4))
+
+
+;;------------------------------------------------------------------------------
+
+
+(defun clamp (x min max)
+  (if (< x min)
+      min
+      (if (> x max)
+	  max
+	  x)))
+
+
+;; alpha must be between [0,1] for linear interpolation to work
+(defgeneric mix (obj obj alpha)
+  (:documentation "linearly interpolate between two values"))
+
+
+(defmethod mix ((q1 quat) (q2 quat) (alpha single-float))
+  (let* ((alpha (float alpha 1.0))
+	 (v1 (vectorize q1))
+	 (v2 (vectorize q2))
+	 (lerp-vec
+	  (vec4+ (vec4* v1  alpha)
+		       (vec4* v2 (- 1.0 alpha)))))
+    ;; actually needs to be normalized! test with q0 = identity, q1 = 90.0 deg
+    ;; wait a minute.. isn't this normalization, what keeps it on the surface
+    ;; of the "3-sphere" while linear interpolation interpolates points
+    ;; on, well, a "line"!?
+    (quat-normalize
+     (vec4->quat lerp-vec))))
+
+
+(defmethod mix ((v1 simple-array) (v2 simple-array) alpha)
+  (let ((alpha (float alpha 1.0)))
+    (sb-cga:vec+ (sb-cga:vec* v1 (- 1.0 alpha))
+		 (sb-cga:vec* v2 alpha))))
+
+(defmethod mix ((x single-float) (y single-float) alpha)
+  "linearly interpolate between two values x,y using weight to weight between them"
+  (let ((alpha (float alpha 1.0)))
+    (+ (* x (- 1.0 alpha))		;yeah.. (1- alpha) != (- 1 alpha)  
+       (* y alpha))))
+
+
+
 
 ;;Experimental------------------------------------------------------------------
 ;; TODO: experiment later using a class :I, maybe just use it to have a neat

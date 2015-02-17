@@ -80,7 +80,7 @@
   (gl:depth-range 0.0 1.0)
   )
 
-
+(defparameter *orientation* (glm:quaternion 1.0 0.0 0.0 0.0))
 
 (defun draw ()
   (let ((curr-matrix (make-instance 'glutil:matrix-stack)))
@@ -127,7 +127,6 @@
 
 
 
-(defparameter *orientation* (glm:quaternion 1.0 0.0 0.0 0.0))
 
 (defparameter *right-multiply-p* t) ; switch inside the OFFSET-ORIENTATION function
 

@@ -28,6 +28,8 @@
 (defvar *object-color*)
 (defvar *uniform-color-tint*)
 
+(defparameter *global-matrices-binding-index* 0)
+
 (defun load-program (str-vertex-shader str-fragment-shader)
   "Create program-data object from shader strings. Hardcoded uniform reference."
   (let ((shader-list (list))
@@ -63,9 +65,7 @@
 			       *global-matrices-binding-index*)
     data))
 
-
 (defvar *global-matrices-ubo*)
-(defparameter *global-matrices-binding-index* 0)
 
 (defun initialize-program ()
   (setf *uniform-color*

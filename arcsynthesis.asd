@@ -49,7 +49,6 @@ written in Common Lisp using cl-sdl2 and cl-opengl"
 	    :components ((:file "translation")
 			 (:file "scale")
 			 (:file "rotation")
-			 (:file "test")
 			 (:file "hierarchy")))
    (:module "7-chapter"
 	    :components ((:file "world-scene")
@@ -57,7 +56,8 @@ written in Common Lisp using cl-sdl2 and cl-opengl"
    (:module "8-chapter"
 	    :components ((:file "gimbal-lock")
 			 (:file "quaternion-YPR")
-			 (:file "camera-relative")))
+			 (:file "camera-relative")
+			 (:file "interpolation")))
    ))
 
 

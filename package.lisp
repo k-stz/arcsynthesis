@@ -179,11 +179,6 @@
   (:use :cl)
   (:export #:main))
 
-(defpackage #:arc-6.test
-  (:documentation "Test ch6")
-  (:use :cl)
-  (:export #:main))
-
 (defpackage #:arc-6.3
   (:documentation "Hierarchy model")
   (:use :cl)
@@ -211,5 +206,10 @@
 
 (defpackage #:arc-8.2
   (:documentation "Getting Oriented - Camera Relative Orientation")
+  (:use :cl)
+  (:export #:main))
+
+(defpackage #:arc-8.3
+  (:documentation "Getting Oriented - Interpolation")
   (:use :cl)
   (:export #:main))
