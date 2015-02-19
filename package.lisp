@@ -47,8 +47,10 @@
    #:make-mat3
    #:set-mat3
    #:mat4-from-mat3
-   #:mix
    #:clamp
+   #:mix
+   #:slerp
+   #:dot4-product
    ;;transformations:
    #:rotate-x
    #:rotate-y

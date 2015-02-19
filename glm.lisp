@@ -95,12 +95,12 @@
       (sb-cga:vec* a -1.0)
       (sb-cga:vec- a b)))
 
-(defun vec4+ (v4-1 v4-2)
+(defun vec4+ (a b)
   (let ((v4 (vec4 0.0)))
     (macrolet ((dim (n)
 		 `(setf (aref v4 ,n)
-			(+ (aref v4-1 ,n)
-			   (aref v4-2 ,n)))))
+			(+ (aref a ,n)
+			   (aref b ,n)))))
       (dim 0)
       (dim 1)
       (dim 2)
@@ -579,25 +579,39 @@ unit length, this is an intrinsic mathematical property of quaternions."
 
 
 
+(defun dot4-product (vec4-a vec4-b)
+  ;; adaptation of sb-cga code.. why, it's just component multiplication!
+  ;; TODO: look into dot-product meaning
+  (macrolet ((dim (n)
+               `(* (aref vec4-a ,n) (aref vec4-b ,n))))
+    (+ (dim 0) (dim 1) (dim 2) (dim 3))))
+
+(defgeneric slerp (a b alpha)
+  (:documentation "Spherical interpolation"))
+
+
+;; TODO: interpolates in the "wrong" direction?
+(defmethod slerp ((q1 quat) (q2 quat) alpha)
+  (let* ((alpha (float alpha 1.0))
+	 (v0 (vectorize q1)) (v1 (vectorize q2))
+	 (dot (dot4-product v0 v1))
+	 (dot-threshold 0.9995))
+    (if (not (> dot dot-threshold))
+	(progn (clamp dot -1.0 1.0)
+	       (let* ((theta-0 (acos dot))
+		      (theta (* theta-0 alpha))
+
+		      ;; TODO: implement vec4- and repalce with IDENTITY here:
+		      (v2 (vec4+ v1 (vec4* (vec4* v0 dot) -1.0))))
+		 (setf v2 (normalize v2))
+		 ;;then return:
+		   ;;<not reached>
+		 (vec4->quat
+		  (vec4+ (vec4* v0 (cos theta)) (vec4* v2 (sin theta))))))
+
+	;;else
+	(mix q1 q2 (float alpha 1.0)))))
+
+
 
 ;;Experimental------------------------------------------------------------------
-;; TODO: experiment later using a class :I, maybe just use it to have a neat
-;; print representation of the array (new-line every 4 values)?
-(defclass mat4 ()
-  ((mat4 :initarg :mat4-contents
-	 :accessor get-matrix)))
-
-(defun create-mat4 (init-diagonal-values)
-  (let ((idv init-diagonal-values))	;bad style?
-    (make-instance 'mat4 :mat4-contents
-		   (make-array 16 :element-type 'single-float
-			       :initial-contents
-			       (list idv 0.0 0.0 0.0              
-				     0.0 idv 0.0 0.0    
-				     0.0 0.0 idv 0.0
-				     0.0 0.0 0.0 idv)))))
-
-
-(defmethod print-object ((matrix mat4) stream)
-  (print-unreadable-object (matrix stream :type 'single-float :identity t)
-    (format stream "~A" (get-matrix matrix))))

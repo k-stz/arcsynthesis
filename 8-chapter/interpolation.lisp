@@ -153,6 +153,52 @@ geometry coordinates and returned as a position vector."
 
 (defparameter *orientation* (glm:quaternion 1.0 0.0 0.0 0.0))
 
+
+(defclass animation ()
+  ((final-orient :initform (glm:quaternion 1.0 0.0 0.0 0.0))
+   ))
+
+(defclass orientation ()
+  ;; "m_var" the m_ is notation for "member variable" or in cl lingo: class slots
+  ((animating-p :initform NIL :accessor animating-p)
+   (slerp-p :initform NIL)
+   (curr-orient :initform 0)
+   (anim :initform (make-instance 'animation))))
+
+
+
+(defgeneric toggle-slerp (orientation))
+(defmethod toggle-slerp ((o orientation))
+  (setf (slot-value o 'slerp-p) (not (slot-value o 'slerp-p))))
+
+
+(defgeneric get-orient (orientation))
+(defmethod get-orient ((o orientation))
+  (if (slot-value o 'animating-p)
+      ;; m_anim.GetOrient...
+      (print 'then)
+      (print 'else)))
+
+;;"public"
+(defgeneric update-time (orientation))
+;;; NEXT-TODO implement framework:timer
+;; (defmethod update-time ((o orientation))
+;;   )
+
+
+
+(defparameter *orient* (make-instance 'orientation))
+(defvar *orientations-plist*
+  (list :q (glm:quaternion 0.7071 0.7071 0.0 0.0)
+	:w (glm:quaternion 0.5 0.5 -0.5 0.5)
+	:e (glm:quaternion -0.4895 -0.7892 -0.3700 -0.02514)
+	:r (glm:quaternion 0.4895 0.7892 0.3700 0.02514)
+
+	:t (glm:quaternion 0.3840 -0.1591 -0.7991 -0.4344)
+	:y (glm:quaternion 0.5537 0.5208 0.6483 0.0410)	:z (glm:quaternion 0.5537 0.5208 0.6483 0.0410)
+	:u (glm:quaternion 0.0 0.0 1.0 0.0)))
+
+
 (defun draw ()
   (let ((cam-pos (resolve-cam-position))
 	(curr-matrix (make-instance 'glutil:matrix-stack)))
@@ -176,6 +222,8 @@ geometry coordinates and returned as a position vector."
 	:translate (glm:vec. *cam-target* :x)
 	           (glm:vec. *cam-target* :y)
 		   (glm:vec. *cam-target* :z)
+
+	;; NEXT-TODO: just set the interpolated orientation here:
 	:apply-matrix (glm:mat4-cast *orientation*)
 	:rotate-x -90.0
 
@@ -210,56 +258,16 @@ geometry coordinates and returned as a position vector."
 
 
 
-(defparameter *i-offset* 0)
-(defparameter *offset-relative* #(:model-relative :world-relative :camera-relative))
-
-(defun offset-orientation (vec3-axis ang-deg)
-  (let* ((vec3-axis (sb-cga:normalize vec3-axis))
-	 (f-quat-offset
-	  (glm:make-quat ang-deg ((glm:vec. vec3-axis :x)
-				  (glm:vec. vec3-axis :y)
-				  (glm:vec. vec3-axis :z)))))
-
-    (case (aref *offset-relative* *i-offset*)
-      (:model-relative
-       ;; we add to the *orientation* the base-vector transform, changing the
-       ;; the ship orientation relative to its current orientation
-       (setf *orientation* (glm:quat* *orientation* f-quat-offset)))
-      (:world-relative
-       ;; because f-quat-offset is along the base-vectors 1 0 0, 0 1 0, 0 0 1 the
-       ;; same as our world space, we do a "world relative" transform
-       (setf *orientation* (glm:quat* f-quat-offset *orientation*)))
-      (:camera-relative
-       ;; it helps to understand the the camera look direction is the -z axis towards
-       ;; negative infinity
-       (let* ((cam-pos (resolve-cam-position))
-	      (cam-mat (calc-look-at-matrix cam-pos *cam-target* (glm:vec3 0.0 1.0 0.0)))
-
-	      (view-quat (glm:quat-cast cam-mat))
-	      (inv-view-quat (glm:conjugate-quat view-quat))
-
-	      ;; for the sake of abstraction matrix=quaternion and conjugate-quaternion=
-	      ;; inverse-matrix because we have all the casting functions available:
-	      ;; QUAT-CAST and MAT4-CAST.
-	      ;; C^-1 = inv-view-quat, R = f-quat-offset, view-quat = C:
-	      ;; C^-1 *(R*C):
-	      (world-quat (glm:quat* (glm:quat* inv-view-quat f-quat-offset) view-quat)))
-
-	 
-	 (setf *orientation* (glm:quat* world-quat *orientation*)))))
-    (setf *orientation* (glm:quat-normalize *orientation*))
-    )
-  )
-
 (defconstant +standard-angle-increment+ 11.25)
 (defconstant +small-angle-increment+ 9.0)
 
+(defparameter *slerp-toggle* NIL)
 
 (defun main ()
   (arc::with-main
     (sdl2:with-init (:everything)
       (progn (setf *standard-output* out) (setf *debug-io* dbg) (setf *error-output* err))
-      (sdl2:with-window (win :w 500 :h 500 :flags '(:shown :opengl :resizable))
+      (sdl2:with-window (win :w 500 :h 500 :flags '(:shown :opengl))
 	(sdl2:with-gl-context (gl-context win)
 	  ;; INIT code:
 	  (init)
@@ -270,24 +278,24 @@ geometry coordinates and returned as a position vector."
 	     (:keysym keysym)
 	     ;; TODO: capture in macro
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-w)
-	       (offset-orientation (glm:vec3 1.0 0.0 0.0) +small-angle-increment+)
+	      (setf *orientation* (getf *orientations-plist* :w))
 	       )
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-s)
-	       (offset-orientation (glm:vec3 1.0 0.0 0.0) (- +small-angle-increment+))
+	      
 	       )
 
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-a)
-	       (offset-orientation (glm:vec3 0.0 0.0 1.0) +small-angle-increment+)
+	      
 	       )
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-d)
-	       (offset-orientation (glm:vec3 0.0 0.0 1.0) (- +small-angle-increment+))
+	      
 	       )
 
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-q)
-	       (offset-orientation (glm:vec3 0.0 1.0 0.0) +small-angle-increment+)
+	      
 	       )
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-e)
-	       (offset-orientation (glm:vec3 0.0 1.0 0.0) (- +small-angle-increment+))
+	      
 	       )
 
 	     ;; rotate camera horizontally around target
@@ -308,18 +316,18 @@ geometry coordinates and returned as a position vector."
 
 
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-space)
-	       ;; (model-, world- and camerarelative)
-	       ;; make it iterate on each invocation from 0 to 3 and all over again
-	       ;; on reaching 4
-	       (incf *i-offset*)
-	       (setf *i-offset* (mod *i-offset* 3))
-	       (format t "~a~%" (aref *offset-relative* *i-offset*))
+	       (if *slerp-toggle*
+		   (setf *slerp-toggle* NIL)
+		   (setf *slerp-toggle* t))
+	       
 	       )
 
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-escape)
 	       (sdl2:push-event :quit)))
 	    (:quit () t)
 	    (:idle ()
+		   ;; MAIN LOOP:
+
 		   ;; preventing special cases (camera transformation):
 		   (setf (glm:vec. *sphere-cam-rel-pos* :y)
 			 (glm:clamp (glm:vec. *sphere-cam-rel-pos* :y) -78.75 1.0))
@@ -333,12 +341,30 @@ geometry coordinates and returned as a position vector."
 			     (glm:vec. *sphere-cam-rel-pos* :z)
 			     5.0))		 
 
-		   ;;main-loop:
-		   ;;NEXT-TODO: implement 
-		   ;(display)
+		   ;;rendering code:
+		   (display)
+		   (if *slerp-toggle*
+		       (test-slerp)
+		       (test-lerp))
 
 		   ;;live editing test
 		   (arc::update-swank)
 		   
 		   (sdl2:gl-swap-window win) ; wow, this can be forgotten easily -.-
 		   )))))))
+
+;; NEXT-TODO: dot-product on 4d vectors and negating quaternion so as to get the same
+;; orientation but more suitable for interpolation
+;; *orientations-plist* :e is the negating of :r => same orientation (mat4-cast them)
+(defun test-lerp ()
+  (setf *orientation* 
+	(glm:mix (getf *orientations-plist* :q)
+		 (getf *orientations-plist* :e) (mod (/ (sdl2:get-ticks) 10000.0) 1.0))))
+
+(defun test-slerp ()
+  (setf *orientation* 
+	(glm:slerp (getf *orientations-plist* :q)
+		   (getf *orientations-plist* :e) (mod (/ (sdl2:get-ticks) 10000.0) 1.0))))
+
+
+;; TODO: definetly try matrix interpolation just to see what it looks like!
