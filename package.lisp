@@ -30,6 +30,8 @@
    #:vec.
    #:vec3
    #:vec4
+   #:vec4*
+   #:vec4+
    #:normalize
    #:vec4-from-vec3
    ;;quaternions:

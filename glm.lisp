@@ -353,7 +353,7 @@ unit length, this is an intrinsic mathematical property of quaternions."
 
 ;; naming this just '*' as in providing operator overloading, is not possible
 ;; error will be singnaled: "'*' already names an ordinary function or a macro."
-(defgeneric quat* (quat quat))
+(defgeneric quat* (quat obj))
 (defmethod quat* ((q1 quat) (q2 quat))
   "Quaternion multiplication"
   (let* ((a.w (q.w q1)) (a.x (q.x q1)) (a.y (q.y q1)) (a.z (q.z q1))
@@ -367,7 +367,26 @@ unit length, this is an intrinsic mathematical property of quaternions."
      :z (- (+ (* a.w b.z) (* a.z b.w) (* a.x b.y)) (* a.y b.x))
      :w (-    (* a.w b.w) (* a.x b.x) (* a.y b.y)  (* a.z b.z)) )))
 
+(defmethod quat* ((q1 quat) (s single-float))
+  ;; simple component multiplication
+  (quaternion (* (q.w q1) s)
+	      (* (q.x q1) s)
+	      (* (q.y q1) s)
+	      (* (q.z q1) s)))
 
+;; simple component-wise operation
+(defgeneric quat+ (quat obj))
+(defmethod quat+ ((q1 quat) (q2 quat))
+  (quaternion (+ (q.w q1) (q.w q2))
+	      (+ (q.x q1) (q.x q2))
+	      (+ (q.y q1) (q.y q2))
+	      (+ (q.z q1) (q.z q2))))
+
+(defmethod quat+ ((q1 quat) (s single-float))
+  (quaternion (+ (q.w q1) s)
+	      (+ (q.x q1) s)
+	      (+ (q.y q1) s)
+	      (+ (q.z q1) s)))
 
 ;; argh, lock on symbol "CONJUGATE". In quaternion lingo the inverse of a quaternion
 ;; called the "conjugate quaternion"
@@ -398,11 +417,23 @@ unit length, this is an intrinsic mathematical property of quaternions."
   ;; Note the normalization process doesn't seem to retain the
   ;; precise angle of rotation, therefore before each application the rotation angle
   ;; should be cached and after the normalization overwritten.
-  (let ((q-v4 (vectorize q)))
-    (multiple-value-bind (x y z w)
-	(values-list
-	 (loop for i across (normalize q-v4) collecting i))
-      (make-instance 'quat :w w :x x :y y :z z))))
+  (let* ((w (q.w q)) (x (q.x q)) (y (q.y q)) (z (q.z q))
+  	(magnitude
+  	 (sqrt (apply #'+
+		      (mapcar (lambda (x) (expt x 2.0))
+			      (list w x y z))))))
+    (when (= magnitude 0.0)
+      ;; problem arising from normalising quaternion (0 0 0 0) can happen, for example,
+      ;; when in slerp the dot-product is -1.0 the code flow will normalize the
+      ;; result of the quaternion addition of (+ q1 -q1) => (q 0 0 0 0)
+      ;; ==> (quat-normalize (q 0 0 0 0)) PROBLEM, hence the normalization, just like
+      ;; in the c++ GLM shall be the "identity" quaternion (1 0 0 0)
+      (return-from quat-normalize (quaternion 1.0 0.0 0.0 0.0)))
+    (let ((rec-mag (/ magnitude)))
+      (quaternion (* rec-mag w)
+  		  (* rec-mag x)
+  		  (* rec-mag y)
+  		  (* rec-mag z)))))
 
 
 
@@ -556,8 +587,8 @@ unit length, this is an intrinsic mathematical property of quaternions."
 	 (v1 (vectorize q1))
 	 (v2 (vectorize q2))
 	 (lerp-vec
-	  (vec4+ (vec4* v1  alpha)
-		       (vec4* v2 (- 1.0 alpha)))))
+	  (vec4+ (vec4* v1  (- 1.0 alpha))
+		 (vec4* v2 alpha))))
     ;; actually needs to be normalized! test with q0 = identity, q1 = 90.0 deg
     ;; wait a minute.. isn't this normalization, what keeps it on the surface
     ;; of the "3-sphere" while linear interpolation interpolates points
@@ -580,8 +611,8 @@ unit length, this is an intrinsic mathematical property of quaternions."
 
 
 (defun dot4-product (vec4-a vec4-b)
-  ;; adaptation of sb-cga code.. why, it's just component multiplication!
-  ;; TODO: look into dot-product meaning
+  ;; returns the cosine of the angle between the two vectors!
+  ;; 90-degree (dot-product (vec3 0.0 1.0 0.0) (vec3 1.0 0.0 0.0)) => (cos (/ pi 2.0))
   (macrolet ((dim (n)
                `(* (aref vec4-a ,n) (aref vec4-b ,n))))
     (+ (dim 0) (dim 1) (dim 2) (dim 3))))
@@ -590,27 +621,31 @@ unit length, this is an intrinsic mathematical property of quaternions."
   (:documentation "Spherical interpolation"))
 
 
-;; TODO: interpolates in the "wrong" direction?
-(defmethod slerp ((q1 quat) (q2 quat) alpha)
+;; NOTE: minor rounding errors occur due to floating point imprecision which
+;; hasn't been smoothed out
+(defmethod slerp ((q0 quat) (q1 quat) alpha)
   (let* ((alpha (float alpha 1.0))
-	 (v0 (vectorize q1)) (v1 (vectorize q2))
-	 (dot (dot4-product v0 v1))
-	 (dot-threshold 0.9995))
-    (if (not (> dot dot-threshold))
-	(progn (clamp dot -1.0 1.0)
-	       (let* ((theta-0 (acos dot))
-		      (theta (* theta-0 alpha))
-
-		      ;; TODO: implement vec4- and repalce with IDENTITY here:
-		      (v2 (vec4+ v1 (vec4* (vec4* v0 dot) -1.0))))
-		 (setf v2 (normalize v2))
-		 ;;then return:
-		   ;;<not reached>
-		 (vec4->quat
-		  (vec4+ (vec4* v0 (cos theta)) (vec4* v2 (sin theta))))))
-
+  	 (v0 (vectorize q0)) (v1 (vectorize q1))
+  	 (dot (dot4-product v0 v1))
+  	 (dot-threshold 0.9995)
+;	 (dot -1.0) ;; test normalization of quaternion: (0 0 0 0) ==> (1 0 0 0)
+	 )
+    (if (> dot dot-threshold)
+	;;then
+	(mix q0 q1 (float alpha 1.0))
 	;;else
-	(mix q1 q2 (float alpha 1.0)))))
+  	(progn (let* ((dot (clamp dot -1.0 1.0))
+		      (theta-0 (acos dot))
+  		      (theta (* theta-0 alpha))
+  		      (v2 (vec4+ v1 (vec4* (vec4* v0 dot) -1.0))))
+  		 (setf q2 (quat-normalize (vec4->quat v2)))
+
+		 ;; normalization had to be added due to rounding errors
+		 ;; creating distorted matrix when mat4-cast the result quaternion
+		 (quat-normalize
+		  (quat+ (quat* q0 (cos theta)) (quat* q2 (sin theta))))))
+	))
+  )
 
 
 

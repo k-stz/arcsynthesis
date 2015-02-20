@@ -154,51 +154,6 @@ geometry coordinates and returned as a position vector."
 (defparameter *orientation* (glm:quaternion 1.0 0.0 0.0 0.0))
 
 
-(defclass animation ()
-  ((final-orient :initform (glm:quaternion 1.0 0.0 0.0 0.0))
-   ))
-
-(defclass orientation ()
-  ;; "m_var" the m_ is notation for "member variable" or in cl lingo: class slots
-  ((animating-p :initform NIL :accessor animating-p)
-   (slerp-p :initform NIL)
-   (curr-orient :initform 0)
-   (anim :initform (make-instance 'animation))))
-
-
-
-(defgeneric toggle-slerp (orientation))
-(defmethod toggle-slerp ((o orientation))
-  (setf (slot-value o 'slerp-p) (not (slot-value o 'slerp-p))))
-
-
-(defgeneric get-orient (orientation))
-(defmethod get-orient ((o orientation))
-  (if (slot-value o 'animating-p)
-      ;; m_anim.GetOrient...
-      (print 'then)
-      (print 'else)))
-
-;;"public"
-(defgeneric update-time (orientation))
-;;; NEXT-TODO implement framework:timer
-;; (defmethod update-time ((o orientation))
-;;   )
-
-
-
-(defparameter *orient* (make-instance 'orientation))
-(defvar *orientations-plist*
-  (list :q (glm:quaternion 0.7071 0.7071 0.0 0.0)
-	:w (glm:quaternion 0.5 0.5 -0.5 0.5)
-	:e (glm:quaternion -0.4895 -0.7892 -0.3700 -0.02514)
-	:r (glm:quaternion 0.4895 0.7892 0.3700 0.02514)
-
-	:t (glm:quaternion 0.3840 -0.1591 -0.7991 -0.4344)
-	:y (glm:quaternion 0.5537 0.5208 0.6483 0.0410)	:z (glm:quaternion 0.5537 0.5208 0.6483 0.0410)
-	:u (glm:quaternion 0.0 0.0 1.0 0.0)))
-
-
 (defun draw ()
   (let ((cam-pos (resolve-cam-position))
 	(curr-matrix (make-instance 'glutil:matrix-stack)))
@@ -261,7 +216,66 @@ geometry coordinates and returned as a position vector."
 (defconstant +standard-angle-increment+ 11.25)
 (defconstant +small-angle-increment+ 9.0)
 
+;; essential code for this chapter:
 (defparameter *slerp-toggle* NIL)
+
+(defparameter *alpha-timer* 0.0)
+
+(defun alpha-update ()
+  (setf *alpha-timer* (mod (/ (sdl2:get-ticks) 10000.0) 1.0)))
+
+(defvar *orientations-plist*
+  (list :q (glm:quaternion 0.7071 0.7071 0.0 0.0)
+	:w (glm:quaternion 0.5 0.5 -0.5 0.5)
+	:e (glm:quaternion -0.4895 -0.7892 -0.3700 -0.02514)
+	:r (glm:quaternion 0.4895 0.7892 0.3700 0.02514)
+
+	:t (glm:quaternion 0.3840 -0.1591 -0.7991 -0.4344)
+	:y (glm:quaternion 0.5537 0.5208 0.6483 0.0410)
+	:z (glm:quaternion 0.5537 0.5208 0.6483 0.0410)
+	:u (glm:quaternion 0.0 0.0 1.0 0.0)))
+
+(defun get-orient (indicator-qwertzy)
+  (getf *orientations-plist* indicator-qwertzy))
+
+(defparameter *source-orientation* (glm:quaternion 1.0 0.0 0.0 0.0))
+(defparameter *destination-orientation* (glm:quaternion 1.0 0.0 0.0 0.0))
+
+(defparameter *source-p* t)
+(defun set-source-or-destination-orientation (key)
+  "Reads values from *orientations-plist* using key. Sets *source-orientation* if
+*source-p* is true, destination otherwise. Toggles *source-p* after setting to facilitate
+sequential input."
+  (let ((orient (get-orient key)))
+    (if *source-p*
+	(progn (setf *source-orientation* orient)
+	       (setf *source-p* NIL))
+	(progn (setf *destination-orientation* orient)
+	       (setf *source-p* t)))))
+
+
+
+(defun test-lerp ()
+  (setf *orientation* 
+	(glm:mix *source-orientation*
+		 *destination-orientation* *alpha-timer*)))
+
+(defun test-slerp ()
+  (setf *orientation* 
+	(glm:slerp *source-orientation*
+		   *destination-orientation* *alpha-timer*)))
+
+(defparameter *source-key* 'identity)
+(defparameter *destination-key* 'identity)
+(defun print-info (&optional key)
+  (when key
+    (if *source-p*
+	(setf *source-key* key)
+	(setf *destination-key* key)))
+  (format t "~a: ~a -> ~a~%"
+	  (if *slerp-toggle* "SLERP" "LERP ")
+	  *source-key*
+	  *destination-key*))
 
 (defun main ()
   (arc::with-main
@@ -277,53 +291,58 @@ geometry coordinates and returned as a position vector."
 	    (:keydown
 	     (:keysym keysym)
 	     ;; TODO: capture in macro
-	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-w)
-	      (setf *orientation* (getf *orientations-plist* :w))
-	       )
-	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-s)
-	      
-	       )
-
-	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-a)
-	      
-	       )
-	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-d)
-	      
-	       )
-
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-q)
-	      
-	       )
-	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-e)
-	      
-	       )
+	       (print-info :q)
+	       (set-source-or-destination-orientation :q))
+	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-w)
+	       (print-info :w)
+	       (set-source-or-destination-orientation :w))
+	     
+	    (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-e)
+	       (print-info :e)
+	       (set-source-or-destination-orientation :e))
+	    (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-r)
+	       (print-info :r)
+	       (set-source-or-destination-orientation :r))
 
-	     ;; rotate camera horizontally around target
-	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-j)
-	       (decf (glm:vec. *sphere-cam-rel-pos* :x) 1.125))
-	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-l)
-	       (incf (glm:vec. *sphere-cam-rel-pos* :x) 1.125))
-	     ;; rotate cam vertically around target
-	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-i)
-	       (decf (glm:vec. *sphere-cam-rel-pos* :y) 1.125))
-	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-k)
-	       (incf (glm:vec. *sphere-cam-rel-pos* :y) 1.125))
-	     ;; zoom camera in/out of target
-	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-u)
-	       (decf (glm:vec. *sphere-cam-rel-pos* :z) 1.5))
-	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-o)
-	       (incf (glm:vec. *sphere-cam-rel-pos* :z) 1.5))
+	    (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-t)
+	       (print-info :t)
+	       (set-source-or-destination-orientation :t))
+	    (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-z)
+	       (print-info :y)
+	       (set-source-or-destination-orientation :y))
+	    (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-y)
+	       (print-info :y)
+	       (set-source-or-destination-orientation :y))	     
+
+	    ;; rotate camera horizontally around target
+	    (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-j)
+	      (decf (glm:vec. *sphere-cam-rel-pos* :x) 1.125))
+	    (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-l)
+	      (incf (glm:vec. *sphere-cam-rel-pos* :x) 1.125))
+	    ;; rotate cam vertically around target
+	    (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-i)
+	      (decf (glm:vec. *sphere-cam-rel-pos* :y) 1.125))
+	    (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-k)
+	      (incf (glm:vec. *sphere-cam-rel-pos* :y) 1.125))
+	    ;; zoom camera in/out of target
+	    (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-u)
+	      (decf (glm:vec. *sphere-cam-rel-pos* :z) 1.5))
+	    (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-o)
+	      (incf (glm:vec. *sphere-cam-rel-pos* :z) 1.5))
 
 
-	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-space)
-	       (if *slerp-toggle*
-		   (setf *slerp-toggle* NIL)
-		   (setf *slerp-toggle* t))
+	    (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-space)
+	      (if *slerp-toggle*
+		  (progn (setf *slerp-toggle* NIL)
+			 (print-info))
+		  (progn (setf *slerp-toggle* t)
+			 (print-info)))
 	       
-	       )
+	      )
 
-	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-escape)
-	       (sdl2:push-event :quit)))
+	    (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-escape)
+	      (sdl2:push-event :quit)))
 	    (:quit () t)
 	    (:idle ()
 		   ;; MAIN LOOP:
@@ -343,6 +362,10 @@ geometry coordinates and returned as a position vector."
 
 		   ;;rendering code:
 		   (display)
+		   ;;deviation from arc code for the sake of simple code; still
+		   ;; showcasing the concept introduced: quaternion interpolation,
+		   ;; linear and spherical
+		   (alpha-update)
 		   (if *slerp-toggle*
 		       (test-slerp)
 		       (test-lerp))
@@ -353,18 +376,6 @@ geometry coordinates and returned as a position vector."
 		   (sdl2:gl-swap-window win) ; wow, this can be forgotten easily -.-
 		   )))))))
 
-;; NEXT-TODO: dot-product on 4d vectors and negating quaternion so as to get the same
-;; orientation but more suitable for interpolation
-;; *orientations-plist* :e is the negating of :r => same orientation (mat4-cast them)
-(defun test-lerp ()
-  (setf *orientation* 
-	(glm:mix (getf *orientations-plist* :q)
-		 (getf *orientations-plist* :e) (mod (/ (sdl2:get-ticks) 10000.0) 1.0))))
-
-(defun test-slerp ()
-  (setf *orientation* 
-	(glm:slerp (getf *orientations-plist* :q)
-		   (getf *orientations-plist* :e) (mod (/ (sdl2:get-ticks) 10000.0) 1.0))))
 
 
-;; TODO: definetly try matrix interpolation just to see what it looks like!
+;; TODO: definitely try matrix interpolation just to see what it looks like!
