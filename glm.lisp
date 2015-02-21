@@ -388,6 +388,10 @@ unit length, this is an intrinsic mathematical property of quaternions."
 	      (+ (q.y q1) s)
 	      (+ (q.z q1) s)))
 
+(defgeneric quat- (quat))
+(defmethod quat- ((q1 quat))
+  (quat* q1 -1.0))
+
 ;; argh, lock on symbol "CONJUGATE". In quaternion lingo the inverse of a quaternion
 ;; called the "conjugate quaternion"
 (defun conjugate-quat (quat)
@@ -422,7 +426,7 @@ unit length, this is an intrinsic mathematical property of quaternions."
   	 (sqrt (apply #'+
 		      (mapcar (lambda (x) (expt x 2.0))
 			      (list w x y z))))))
-    (when (= magnitude 0.0)
+    (when (<= magnitude 0.0)
       ;; problem arising from normalising quaternion (0 0 0 0) can happen, for example,
       ;; when in slerp the dot-product is -1.0 the code flow will normalize the
       ;; result of the quaternion addition of (+ q1 -q1) => (q 0 0 0 0)
@@ -623,29 +627,67 @@ unit length, this is an intrinsic mathematical property of quaternions."
 
 ;; NOTE: minor rounding errors occur due to floating point imprecision which
 ;; hasn't been smoothed out
-(defmethod slerp ((q0 quat) (q1 quat) alpha)
-  (let* ((alpha (float alpha 1.0))
-  	 (v0 (vectorize q0)) (v1 (vectorize q1))
-  	 (dot (dot4-product v0 v1))
-  	 (dot-threshold 0.9995)
-;	 (dot -1.0) ;; test normalization of quaternion: (0 0 0 0) ==> (1 0 0 0)
-	 )
-    (if (> dot dot-threshold)
-	;;then
-	(mix q0 q1 (float alpha 1.0))
-	;;else
-  	(progn (let* ((dot (clamp dot -1.0 1.0))
-		      (theta-0 (acos dot))
-  		      (theta (* theta-0 alpha))
-  		      (v2 (vec4+ v1 (vec4* (vec4* v0 dot) -1.0))))
-  		 (setf q2 (quat-normalize (vec4->quat v2)))
+;; (defmethod slerp ((q0 quat) (q1 quat) alpha)
+;;   (let* ((alpha (float alpha 1.0))
+;;   	 (v0 (vectorize q0)) (v1 (vectorize q1))
+;;   	 (dot (dot4-product v0 v1))
+;;   	 (dot-threshold 0.9995)
+;; 	 ;; NEXT-TODO: 180-degree angle is also dot= 1.0 and dot=-1.0 look up
+;; 	 ;; glm's dot product implementation, specifically for quaternions?
+;; 	 ;; even though should be component-wise, all the same hence minus and plus
+;; 	 ;; components always yielding minus result (-1.0)
+;; 	 ;; test normalization of quaternion: (0 0 0 0) ==> (1 0 0 0)
+;; 	 )
+;;     (if (> dot dot-threshold) ;; or just try to apply the (abs dot) here?
+;; 	;;then
+;; 	(mix q0 q1 (float alpha 1.0))
+;; 	;;else
+;;   	(progn (let* ((dot (clamp dot -1.0 1.0))
+;; 		      (theta-0 (acos dot)) ;;
+;;   		      (theta (* theta-0 alpha))
+;;   		      (v2 (vec4+ v1 (vec4* (vec4* v0 dot) -1.0)))
+;; 		      (q2))
+;;   		 (setf q2 (quat-normalize (vec4->quat v2)))
 
-		 ;; normalization had to be added due to rounding errors
-		 ;; creating distorted matrix when mat4-cast the result quaternion
-		 (quat-normalize
-		  (quat+ (quat* q0 (cos theta)) (quat* q2 (sin theta))))))
-	))
-  )
+;; 		 ;; if we normalize a slightly imprecise q1+-q1 get one of
+;; 		 ;; directions of the two in unit length... which is really bad
+;; 		 ;; NEXT TODO: look up different SLERP implementation, ARC bugged?
+		 		 
+;; 		 ;; note: not normalization here in arc code 
+;; 		 (quat-normalize
+;; 		  (quat+ (quat* q0 (cos theta)) (quat* q2 (sin theta)))))))))
+
+;; GLM's quaternion SLERP:
+;; NOTE: this seems to always interpolate the "shortest" path between two orientations
+;; (never more than "180-degree" turns)
+(defmethod slerp ((x quat) (y quat) a)
+  "Quaternion SLERP - spherical interpolation - operation."
+  (let ((a (float a 1.0)))
+    (when (<= a 0.0) (return-from slerp x))
+    (when (>= a 1.0) (return-from slerp y))
+
+    (let ((f-cos (dot4-product (vectorize x) (vectorize y)))
+	  (y2 (quaternion (q.w y) (q.x y) (q.y y) (q.z y))))
+      (when (< f-cos 0.0)
+	(setf y2 (quat- y))
+	(setf f-cos (- f-cos)))
+
+      ;;"if(fCos > 1.0f) // problem"
+      (let (k0 k1)
+	(if (> f-cos 0.9999)
+	    (progn (setf k0 (- 1.0 a))
+		   (setf k1 (+ 0.0 a))))
+	;;else
+	(let* ((f-sin (sqrt (- 1.0 (* f-cos f-cos))))
+	      (f-angle (atan f-sin f-cos))
+	      (f-one-over-sin (/ f-sin)))
+	  (setf k0 (* (sin (* (- 1.0 a) f-angle)) f-one-over-sin))
+	  (setf k1 (* (sin (* (+ 0.0 a) f-angle)) f-one-over-sin)))
+
+	(quaternion (+ (* k0 (q.w x)) (* k1 (q.w y2)))
+		    (+ (* k0 (q.x x)) (* k1 (q.x y2)))
+		    (+ (* k0 (q.y x)) (* k1 (q.y y2)))
+		    (+ (* k0 (q.z x)) (* k1 (q.z y2))))))))
 
 
 

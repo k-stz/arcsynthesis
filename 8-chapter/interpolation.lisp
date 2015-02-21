@@ -222,7 +222,7 @@ geometry coordinates and returned as a position vector."
 (defparameter *alpha-timer* 0.0)
 
 (defun alpha-update ()
-  (setf *alpha-timer* (mod (/ (sdl2:get-ticks) 10000.0) 1.0)))
+  (setf *alpha-timer* (mod (/ (sdl2:get-ticks) 5000.0) 1.0)))
 
 (defvar *orientations-plist*
   (list :q (glm:quaternion 0.7071 0.7071 0.0 0.0)
@@ -261,9 +261,12 @@ sequential input."
 		 *destination-orientation* *alpha-timer*)))
 
 (defun test-slerp ()
-  (setf *orientation* 
-	(glm:slerp *source-orientation*
-		   *destination-orientation* *alpha-timer*)))
+  (setf *orientation*
+	;; this slerp is straight from the original GLM, alas it is smart enough
+	;; to always take the shorter path.
+	;; TODO: W -> W is not displayed for some reason :I
+	(glm::slerp *destination-orientation*
+		    *source-orientation* *alpha-timer*)))
 
 (defparameter *source-key* 'identity)
 (defparameter *destination-key* 'identity)
