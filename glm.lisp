@@ -388,9 +388,24 @@ unit length, this is an intrinsic mathematical property of quaternions."
 	      (+ (q.y q1) s)
 	      (+ (q.z q1) s)))
 
-(defgeneric quat- (quat))
-(defmethod quat- ((q1 quat))
-  (quat* q1 -1.0))
+(defun quat- (quat)
+  (quat* quat -1.0))
+
+;; argh, had to rename it to q- because (defun foo ()) (defgeneric foo ()) can't
+;; coexist, also (defgeneric (no &optional possible)) !
+(defgeneric q- (quaternion obj))
+(defmethod q- ((q1 quat) (q2 quat))
+  (quaternion (- (q.w q1) (q.w q2))
+	      (- (q.x q1) (q.x q2))
+	      (- (q.y q1) (q.y q2))
+	      (- (q.z q1) (q.z q2))))
+
+(defgeneric quat/ (quaternion obj))
+(defmethod quat/ ((q quat) (s single-float))
+  (quaternion (/ (q.w q) s)
+	      (/ (q.x q) s)
+	      (/ (q.y q) s)
+	      (/ (q.z q) s)))
 
 ;; argh, lock on symbol "CONJUGATE". In quaternion lingo the inverse of a quaternion
 ;; called the "conjugate quaternion"
@@ -622,73 +637,62 @@ unit length, this is an intrinsic mathematical property of quaternions."
     (+ (dim 0) (dim 1) (dim 2) (dim 3))))
 
 (defgeneric slerp (a b alpha)
-  (:documentation "Spherical interpolation"))
+  (:documentation "Spherical linear interpolation"))
 
+(defmethod slerp ((x quat) (y quat) (a single-float))
+  "Spherical linear interpolation from orientation quaternion x to y, always using the
+shortest path."
+  (let ((z (quaternion (q.w y) (q.x y) (q.y y) (q.z y)))
+	(cos-theta (dot4-product (vectorize x) (vectorize y))))
+    ;; this is the part responsible for the interpolating to "take the
+    ;; long way around the sphere", which is what we want in "interpolation.lisp"!
+    (when (< cos-theta 0.0)
+      (setf z (quat- y))
+      (setf cos-theta (- cos-theta)))
 
-;; NOTE: minor rounding errors occur due to floating point imprecision which
-;; hasn't been smoothed out
-;; (defmethod slerp ((q0 quat) (q1 quat) alpha)
-;;   (let* ((alpha (float alpha 1.0))
-;;   	 (v0 (vectorize q0)) (v1 (vectorize q1))
-;;   	 (dot (dot4-product v0 v1))
-;;   	 (dot-threshold 0.9995)
-;; 	 ;; NEXT-TODO: 180-degree angle is also dot= 1.0 and dot=-1.0 look up
-;; 	 ;; glm's dot product implementation, specifically for quaternions?
-;; 	 ;; even though should be component-wise, all the same hence minus and plus
-;; 	 ;; components always yielding minus result (-1.0)
-;; 	 ;; test normalization of quaternion: (0 0 0 0) ==> (1 0 0 0)
-;; 	 )
-;;     (if (> dot dot-threshold) ;; or just try to apply the (abs dot) here?
-;; 	;;then
-;; 	(mix q0 q1 (float alpha 1.0))
-;; 	;;else
-;;   	(progn (let* ((dot (clamp dot -1.0 1.0))
-;; 		      (theta-0 (acos dot)) ;;
-;;   		      (theta (* theta-0 alpha))
-;;   		      (v2 (vec4+ v1 (vec4* (vec4* v0 dot) -1.0)))
-;; 		      (q2))
-;;   		 (setf q2 (quat-normalize (vec4->quat v2)))
-
-;; 		 ;; if we normalize a slightly imprecise q1+-q1 get one of
-;; 		 ;; directions of the two in unit length... which is really bad
-;; 		 ;; NEXT TODO: look up different SLERP implementation, ARC bugged?
-		 		 
-;; 		 ;; note: not normalization here in arc code 
-;; 		 (quat-normalize
-;; 		  (quat+ (quat* q0 (cos theta)) (quat* q2 (sin theta)))))))))
-
-;; GLM's quaternion SLERP:
-;; NOTE: this seems to always interpolate the "shortest" path between two orientations
-;; (never more than "180-degree" turns)
-(defmethod slerp ((x quat) (y quat) a)
-  "Quaternion SLERP - spherical interpolation - operation."
-  (let ((a (float a 1.0)))
-    (when (<= a 0.0) (return-from slerp x))
-    (when (>= a 1.0) (return-from slerp y))
-
-    (let ((f-cos (dot4-product (vectorize x) (vectorize y)))
-	  (y2 (quaternion (q.w y) (q.x y) (q.y y) (q.z y))))
-      (when (< f-cos 0.0)
-	(setf y2 (quat- y))
-	(setf f-cos (- f-cos)))
-
-      ;;"if(fCos > 1.0f) // problem"
-      (let (k0 k1)
-	(if (> f-cos 0.9999)
-	    (progn (setf k0 (- 1.0 a))
-		   (setf k1 (+ 0.0 a))))
+    ;; GLM comentation: "perform lerp if cos-theta is close to 1 avoiding sin(angle) to
+    ;; become a zero denominator." Note (acos 1) = 0.0
+    (if (> cos-theta 0.9995)
+	(return-from slerp (mix x y a))
 	;;else
-	(let* ((f-sin (sqrt (- 1.0 (* f-cos f-cos))))
-	      (f-angle (atan f-sin f-cos))
-	      (f-one-over-sin (/ f-sin)))
-	  (setf k0 (* (sin (* (- 1.0 a) f-angle)) f-one-over-sin))
-	  (setf k1 (* (sin (* (+ 0.0 a) f-angle)) f-one-over-sin)))
-
-	(quaternion (+ (* k0 (q.w x)) (* k1 (q.w y2)))
-		    (+ (* k0 (q.x x)) (* k1 (q.x y2)))
-		    (+ (* k0 (q.y x)) (* k1 (q.y y2)))
-		    (+ (* k0 (q.z x)) (* k1 (q.z y2))))))))
+	(let ((angle (acos cos-theta)))
+	  (quat/ (quat+ (quat* x (sin (* (- 1.0 a) angle)))
+		  (quat* z (sin (* a angle))))
+	   (sin angle))))))
 
 
+;; NOTE: this slerp, as opposed to the one in glm:slerp, interpolates using the
+;; straightforward path. This means is doesn't check if there is a shorter path
+;; along the 3-sphere to the destination orientation, and will perform the
+;; interpolation as seen with q -> e
+(defgeneric slerp-simple (x y a))
+(defmethod slerp-simple ((x quat) (y quat) (a single-float))
+  "Spherical linear interpolation from quaternion orientation x to y, in the order
+provided - ignoring a possible shorter path across the sphere."
+  (let ((z (quaternion (q.w y) (q.x y) (q.y y) (q.z y)))
+	(cos-theta (dot4-product (vectorize x) (vectorize y))))
+    ;; this is the part responsible for the interpolating to "take the
+    ;; long way around the sphere", which is what we want in "interpolation.lisp"!
+    ;; (when (< cos-theta 0.0)
+    ;;   (setf z (quat- y))
+    ;;   (setf cos-theta (- cos-theta)))
+    ;; for some strangle reason if we interpolate between quat -> -quat the object
+    ;; moves :I so I just go the easy path and test for this special case.
+    (let* ((-y (quat- y)))
+      (when (and (= (q.w x) (q.w -y))
+		 (= (q.x x) (q.x -y))
+		 (= (q.y x) (q.y -y))
+		 (= (q.z x) (q.z -y)))
+	(return-from slerp-simple x)))
+
+    ;; GLM comentation: "perform lerp if cos-theta is close to one avoiding sin(angle) to
+    ;; become a zero denominator." Note (acos 1) = 0.0
+    (if (> cos-theta 0.9995)
+	(return-from slerp-simple (mix x y a))
+	;;else
+	(let ((angle (acos cos-theta)))
+	  (quat/ (quat+ (quat* x (sin (* (- 1.0 a) angle)))
+		  (quat* z (sin (* a angle))))
+	   (sin angle))))))
 
 ;;Experimental------------------------------------------------------------------

@@ -1047,3 +1047,37 @@ because we had access to the current camera-matrix through functions that could
 readily compute it (resolve-cam-position) and (calc-look-at-matrix ...).
 
 --------------------------------------------------------------------------------
+Quaternion interpolation,
+another advantage of using quaternions. We can perform linear interpolation on the
+components of a unit vector, as long as we normalize the result and we get a
+meaningful interpolation as showcased by 8-chapter/interpolation.lisp.
+
+However we notice that the interpolation sometimes significantly speeds up and slows down,
+this is due to the nature of component-wise interpolation as it is geometrically
+unconscious of the other components. Not so with:
+
+Spherical linear interpolation or SLERP,
+here we interpolate a vector along the same plane to another vector. This is accomplished
+by using the dot product, which yields the angle of two vectors.
+Now we use the interpolation alpha [0, 1] to interpolate over this angle:
+alpha=1 -> full angle   alpha=0.5 -> half angle.
+
+The transition is performed by shrinking the source vector (v0) with a COS of
+the angle between the two while growing the other vector slowly:
+
+v0*cos(alpha*angle)  and v1*sin(alpha*angle)
+
+now all we need to do, to get a meaningful interpolation vector, is to add them together!
+
+v0*cos(alpha*angle) + v1*sin(alpha*angle)
+
+It is now possible to imagine how one vector shrinks and the other one grows at its tip
+(remember the meaning of vector addition) the resulting vector is the one on the
+"angle plane" between the two, and we get a meaningful steady interpolation of
+orientations!
+
+Note how we don't need to normalize the result if the inputs are unit-quaternions, in the
+case of SLERP, because if the two trigonometric brothers Cos and Sin work together they
+take and give in equal amounts, so the result is always in equilibrium - no normalization
+needed. :)
+--------------------------------------------------------------------------------

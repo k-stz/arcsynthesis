@@ -262,11 +262,8 @@ sequential input."
 
 (defun test-slerp ()
   (setf *orientation*
-	;; this slerp is straight from the original GLM, alas it is smart enough
-	;; to always take the shorter path.
-	;; TODO: W -> W is not displayed for some reason :I
-	(glm::slerp *destination-orientation*
-		    *source-orientation* *alpha-timer*)))
+	(glm::slerp-simple *source-orientation*
+			   *destination-orientation* *alpha-timer*)))
 
 (defparameter *source-key* 'identity)
 (defparameter *destination-key* 'identity)
@@ -373,7 +370,7 @@ sequential input."
 		       (test-slerp)
 		       (test-lerp))
 
-		   ;;live editing test
+		   ;;live editing enabled:
 		   (arc::update-swank)
 		   
 		   (sdl2:gl-swap-window win) ; wow, this can be forgotten easily -.-
