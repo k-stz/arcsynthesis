@@ -178,7 +178,6 @@ geometry coordinates and returned as a position vector."
 	           (glm:vec. *cam-target* :y)
 		   (glm:vec. *cam-target* :z)
 
-	;; NEXT-TODO: just set the interpolated orientation here:
 	:apply-matrix (glm:mat4-cast *orientation*)
 	:rotate-x -90.0
 
@@ -298,51 +297,55 @@ sequential input."
 	       (print-info :w)
 	       (set-source-or-destination-orientation :w))
 	     
-	    (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-e)
+	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-e)
 	       (print-info :e)
 	       (set-source-or-destination-orientation :e))
-	    (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-r)
+	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-r)
 	       (print-info :r)
 	       (set-source-or-destination-orientation :r))
 
-	    (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-t)
+	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-t)
 	       (print-info :t)
 	       (set-source-or-destination-orientation :t))
-	    (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-z)
+	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-z)
 	       (print-info :y)
 	       (set-source-or-destination-orientation :y))
-	    (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-y)
+	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-y)
 	       (print-info :y)
-	       (set-source-or-destination-orientation :y))	     
-
-	    ;; rotate camera horizontally around target
-	    (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-j)
-	      (decf (glm:vec. *sphere-cam-rel-pos* :x) 1.125))
-	    (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-l)
-	      (incf (glm:vec. *sphere-cam-rel-pos* :x) 1.125))
-	    ;; rotate cam vertically around target
-	    (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-i)
-	      (decf (glm:vec. *sphere-cam-rel-pos* :y) 1.125))
-	    (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-k)
-	      (incf (glm:vec. *sphere-cam-rel-pos* :y) 1.125))
-	    ;; zoom camera in/out of target
-	    (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-u)
-	      (decf (glm:vec. *sphere-cam-rel-pos* :z) 1.5))
-	    (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-o)
-	      (incf (glm:vec. *sphere-cam-rel-pos* :z) 1.5))
+	       (set-source-or-destination-orientation :y))
+	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-u)
+	       (print-info :u)
+	       (set-source-or-destination-orientation :u))	     
 
 
-	    (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-space)
-	      (if *slerp-toggle*
-		  (progn (setf *slerp-toggle* NIL)
-			 (print-info))
-		  (progn (setf *slerp-toggle* t)
-			 (print-info)))
+	     ;; rotate camera horizontally around target
+	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-j)
+	       (decf (glm:vec. *sphere-cam-rel-pos* :x) 1.125))
+	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-l)
+	       (incf (glm:vec. *sphere-cam-rel-pos* :x) 1.125))
+	     ;; rotate cam vertically around target
+	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-i)
+	       (decf (glm:vec. *sphere-cam-rel-pos* :y) 1.125))
+	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-k)
+	       (incf (glm:vec. *sphere-cam-rel-pos* :y) 1.125))
+	     ;; zoom camera in/out of target
+	     ;; (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-u)
+	     ;;   (decf (glm:vec. *sphere-cam-rel-pos* :z) 1.5))
+	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-o)
+	       (incf (glm:vec. *sphere-cam-rel-pos* :z) 1.5))
+
+
+	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-space)
+	       (if *slerp-toggle*
+		   (progn (setf *slerp-toggle* NIL)
+			  (print-info))
+		   (progn (setf *slerp-toggle* t)
+			  (print-info)))
 	       
-	      )
+	       )
 
-	    (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-escape)
-	      (sdl2:push-event :quit)))
+	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-escape)
+	       (sdl2:push-event :quit)))
 	    (:quit () t)
 	    (:idle ()
 		   ;; MAIN LOOP:

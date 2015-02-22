@@ -1063,7 +1063,7 @@ Now we use the interpolation alpha [0, 1] to interpolate over this angle:
 alpha=1 -> full angle   alpha=0.5 -> half angle.
 
 The transition is performed by shrinking the source vector (v0) with a COS of
-the angle between the two while growing the other vector slowly:
+the angle between the two while growing the destination vector slowly:
 
 v0*cos(alpha*angle)  and v1*sin(alpha*angle)
 
@@ -1081,3 +1081,10 @@ case of SLERP, because if the two trigonometric brothers Cos and Sin work togeth
 take and give in equal amounts, so the result is always in equilibrium - no normalization
 needed. :)
 --------------------------------------------------------------------------------
+Lighting,
+in arc we will only focus on _photorealism_ as opposed to non-photorealism (NPR).
+A prominent example of NPR is the cartoon style of "cell shading" others include
+paintbrush effects, pencil-sketch and other things.
+
+lighting model,
+is the algorithm used that determines how a surface interacts with light.
