@@ -1088,3 +1088,77 @@ paintbrush effects, pencil-sketch and other things.
 
 lighting model,
 is the algorithm used that determines how a surface interacts with light.
+
+;;TODO: rewrite for brevity and punch abstractions ?
+
+light sources,
+light emitting objects: the sun, a lamp, fireflies      [direct]
+OR
+A surface that REFLECTS light.                          [indirect]
+
+Simplification:
+Surface,
+can only do two things with light: reflect or absorb. That's where some real-life
+principles apply: a surface appears of a certain color if it absorbs every other color,
+and reflects only that certain color.
+
+Note for a surface to be, say, of red color, the color red must be present in the _light
+source_ shining upon it. On the other hand a surface that is blue but is shone upon by
+red light will have no color to reflect but only color to absorb. The fiat "color" for no
+reflection is black. Just like in real life wearing a black shirt, that absorbs "all" the
+colors of the visible spectrum will also get hot faster, on the atomic level the atoms
+actually "capture" the light and the whole system gets hot - energy input takes place.
+
+RGB,
+we only care about three "wavelengths" the colors red, green and blue.
+
+intensitiy of light and angle of incident,
+a light source emits with a certain light intensity. That light can reach a surface at a
+certain angle, the angle of incident. The intensity depends then on the area that is
+covered by that light the steeper the angle the bigger the area covered the more "light is
+distributed" and hence each point receives LESS light.
+Following this logic: a small room can be more brightly lit,_AT EACH POINT_, than a big
+one.
+Now don't you forget the surface's absorbing characteristic, which then reflects the
+incoming light.
+
+our new words in a causation chain:
+"->" = light intensity weakens or stays the same at point
+light source -> angle of incident -> absorbing characteristic of surface -> reflection
+
+The source light, surface absorption and reflected light can be described as RGB colors
+on the range [0,1] !!
+
+A lighting model is a function of all these parameters! There are a lot of parameters to
+come in the future like these:
+
+/Diffuse lighting/,
+particualr surface/light interaction where the light is reflected in all directions
+("many angles") instead like as if of a perfect mirror. This is another surface property
+
+Lambertian reflectance,
+a model of diffusion lighting in which a surface will reflect the light equally in all
+directions.
+It's equation, where R=reflected color, D=diffusion surface absorption, I=light intensity
+and theta=angle of incidence
+   R = D*I*cos(theta);  // note cos(0-degree) = 1.0 aka brightest also negative values
+                        // will be clamped
+
+--------------------------------------------------------------------------------
+How to compute: angle of incidence, and where to perform the lighting computations
+
+surface normal,
+traingles have this nice property that it all its vertices occupy the same plane and
+hence its side has a definite direction it can face: the _surface normal_ or just
+_NORMAL_! Every point along of the surface of single triangle has the same geometric
+normal.
+But the problem is, we don't want those, as our object's are not to show this property of
+being fundamentally triangles and hence have very faceted lighting. This can be solved by
+assigning to each vertex the normal it /would/ have to be an approximation of object it
+tries to approximate as a part of a polygon. Yes, each vertex will get this additional
+"normal" data.
+
+The vertex will now contain the data: position, color and normal!
+
+Now to draw what is within the vertices we will need the normals for all those points too,
+right? Yep, we and get those by interpolation from the vertices surrounding them!
