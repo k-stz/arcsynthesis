@@ -217,3 +217,8 @@
   (:documentation "Getting Oriented - Interpolation")
   (:use :cl)
   (:export #:main))
+
+(defpackage #:arc-9
+  (:documentation "Illumination - Lights on")
+  (:use :cl)
+  (:export #:main))
