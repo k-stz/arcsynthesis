@@ -58,7 +58,8 @@ written in Common Lisp using cl-sdl2 and cl-opengl"
 			 (:file "quaternion-YPR")
 			 (:file "camera-relative")
 			 (:file "interpolation")))
-   ))
+   (:module "9-chapter"
+	    :components ((:file "basic-lighting")))))
 
 
 ;; (:file "1-chapter/auxiliary-functions")
