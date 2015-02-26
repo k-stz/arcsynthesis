@@ -1162,3 +1162,34 @@ The vertex will now contain the data: position, color and normal!
 
 Now to draw what is within the vertices we will need the normals for all those points too,
 right? Yep, we and get those by interpolation from the vertices surrounding them!
+This simple and efficient computation has a name: 
+
+Gouroud Shading,
+interpolating the result of Lambertian reflectance at the vectors (which contain the
+normals as meta data) of a vector over the surface of triangle. This approach to lighting
+over the surface of a triangle is very efficient - its just color interpolation over the
+triangle - and was in fact the preferred method as it is also a fairly decent
+approximation. Its Achilles heel is that it is used for diffusion lighting and that, for
+example, modern games just don't use diffusion lighting anymore and it becomes noticeably
+inaccurate in other lighting models.
+
+The lambertian reflactance formula can now be filled:
+R = D*I*cos(theta)   ; theta = dot(normal, light-source-direction);
+
+D given by the vertex data, as for the theta, the angle of incidence, we take the normal
+from the vertex data and calculate the dot product of the light-source direction.  The
+light intensity is a property of light, and while the light direction can be a RELATION
+between the surface point position and the surface point, we can allow another
+simplification:
+
+The light source direction can be simply a SINGLE direction for every point on the scene
+this simplification makes sense when we consider the sun in relation to the earth: the
+sun is so far away that on earth it appears that its "sun ray direction vectors" are all
+the same at each point. This approach is called: DIRECTIONAL LIGHT SOURCE
+
+This makes sense in a scene where the relations are quite different: a small lamp on the
+desk illuminating some fruits. Here the direction of the light relative to each surface
+points of the fruit is much different. Analogy: the farther two adjacent lines meet at
+their ends the smaller the angle between them, with great distance they can even be
+considered to be parallel (same angle relative to the surface they shine on, the same
+direction relative to each point on the scene's surfaces).

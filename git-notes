@@ -1,3 +1,26 @@
 to "synchronize" git repositories with Magit:
 
 F C-u F -> origin -> master
+
+Overview -----------------------------------------------------------------------
+
+
+> git init ==> initiallize current directory to be a git repository or reinitialize
+
+> git branch  ==> current branch + all branches
+> git branch <name> ==> create branch <name>
+> git checkout <name> ==> make branch <name> current
+> git merge <branch-name> ==> merge <branch-name> with current branch
+
+
+# create github repo then make current .git system conscious of it:
+git remote add origin https://github.com/k-stz/arcsythesis.git #TODO: really called "*.git" ?
+
+# the above created a remote "origin" which is like a bookmark pointing to a webadress
+# TODO: only for web usgae, right?
+
+git remote ==> list available remotes
+
+git push -u origin master ==> push your current branch to the remote origin, ON the BRANCH master
+
+git clone https.//github.com/k-stz/arcsynthesis ==> get a copy of the repository 
