@@ -1,0 +1,17 @@
+Solution to the xml parsing:
+
+The object data in the .xml files can be simple put in a lisp LIST
+and all the hassle of parsing the file for special case tags such as:
+<attribute ..> then  <vao ..> (Ship.xml)
+
+There isn't much to it:
+- position data
+- index
+- type
+- size
+
+then this vertex data must be assiciated with the needed drawing command:
+tri-fan, tri-strip or simply triangle
+
+This would make for a readable data-structure; also would be easier to
+debug. The current problem involves the use of new tags especially <vao>.
