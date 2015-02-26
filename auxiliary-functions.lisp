@@ -157,7 +157,7 @@ will be COERCEd to SINGLE-FLOAT"
     ))
 
 ;; TODO: remove from all code, find solution to do such clean-ups more organized in the
-;;       future
+;;       future. UPDATE: use SLIME'S C-c C-w C-c aka slime-who-calls (basically inverse of M-.)
 (defun create-program-and-return-it (shader-list)
   (create-program shader-list))
 
