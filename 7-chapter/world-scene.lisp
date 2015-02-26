@@ -12,8 +12,7 @@
 (defvar out *standard-output*)  (defvar dbg *debug-io*) (defvar err *error-output*)
 
 
-;;TODO: note from pjb stating to try ":conc-name" regarding a former rejection
-;;       to implement program-data using defstruct, as it creates verbose symbols
+;; TODO: alternative: (defstruct (program-data (:nconc-name NIL)) the-program ..)
 (defclass program-data ()
   ((the-program :accessor the-program)
    (model-to-world-matrix-unif :accessor model-to-world-matrix-unif)

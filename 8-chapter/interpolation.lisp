@@ -315,7 +315,7 @@ sequential input."
 	       (set-source-or-destination-orientation :y))
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-u)
 	       (print-info :u)
-	       (set-source-or-destination-orientation :u))
+	       (set-source-or-destination-orientation :u))	     
 
 
 	     ;; rotate camera horizontally around target
