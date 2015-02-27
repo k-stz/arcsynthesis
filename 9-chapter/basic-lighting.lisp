@@ -12,9 +12,10 @@
 
 ;; TODO: this might solve the problem:
 ;; (print (uiop/lisp-build:current-lisp-file-pathname)) ?
+;; TODO: they're identical in all following tutorials? Then remove *glsl-directory*
 (defvar *glsl-directory*
   (merge-pathnames #p "9-chapter/data/" (asdf/system:system-source-directory :arcsynthesis)))
- (defvar *data-dir* *glsl-directory*)
+(defvar *data-dir* *glsl-directory*) 
 
 ;;todo: fix this output to slime-repl solution
 (defvar out *standard-output*)  (defvar dbg *debug-io*) (defvar err *error-output*)
@@ -66,39 +67,55 @@
 	  (gl:get-uniform-location (the-program data) "dirToLight"))
     (setf (light-intensity-unif data)
 	  (gl:get-uniform-location (the-program data) "lightIntensity"))
-
-    ;; NEXT-TODO:
-    (setf projection-block 'gibberish)
+    (cffi:with-foreign-string (s "Projection")
+      ;; TODO: still "gl:" update needed, checkout at newest cl-opengl
+      (setf projection-block (%gl:get-uniform-block-index (the-program data) s)))
+    (%gl:uniform-block-binding (the-program data) projection-block +projection-block-index+)
     data))
 
 
 
 (defun initialize-program ()
-  (setf  *white-diffuse-color* (load-program "DirVertexLighting_PN.vert" "ColorPassthrough.frag"))
+  (setf *white-diffuse-color* (load-program "DirVertexLighting_PN.vert" "ColorPassthrough.frag"))
+  (setf *vertex-diffuse-color* (load-program "DirVertexLighting_PCN.vert" "ColorPassthrough.frag")))
 
-)
 
+(defvar *plane-mesh*)
+
+(defparameter *projection-uniform-buffer* 0)
 
 (defun init ()
   (initialize-program)
 
+  (setf *plane-mesh* (framework:xml->mesh-obj (merge-pathnames *data-dir* "simple-unit-plane.xml")))
 
   
   (gl:enable :cull-face)
   (%gl:cull-face :back)
   (%gl:front-face :cw) 
-
-  (gl:viewport 0 0 500 500)
+;;  (gl:viewport 0 0 500 500)
 
   (gl:enable :depth-test)
   (gl:depth-mask :true)
   (%gl:depth-func :lequal)
-  (gl:depth-range 0.0 1.0))
+  (gl:depth-range 0.0 1.0)
+  (gl:enable :depth-clamp)
+
+  (setf *projection-uniform-buffer* (first (gl:gen-buffers 1)))
+  (gl:bind-buffer :uniform-buffer *projection-uniform-buffer*)
+  ;; TODO: revisit
+  (%gl:buffer-data :uniform-buffer #|sizeof(mat4):|# 64 (cffi:null-pointer) :dynamic-draw)
+
+  ;;TODO: "bind the static buffer"
+  (%gl:bind-buffer-range :uniform-buffer +projection-block-index+ *projection-uniform-buffer* 0
+			 #|sizeof(mat4):|# 64)
+
+  (gl:bind-buffer :uniform-buffer 0))
 
 
 
 (defparameter *sphere-cam-rel-pos* (glm:vec3 90.0 0.0 66.0) "Order: phi theta r")
-(defparameter *cam-target* (glm:vec3 0.0 10.0 0.0))
+(defparameter *cam-target* (glm:vec3 0.0 0.4 0.0))
 
 (defun resolve-cam-position ()
   "Spherical coordinates stored in *sphere-cam-rel-pos* are transformed to Euclidean
@@ -168,9 +185,28 @@ geometry coordinates and returned as a position vector."
 
 
 (defun draw ()
+  (let ((model-matrix (make-instance 'glutil:matrix-stack))
 
-  ;;...
-  
+	;;NEXT-TODO: get something on the screen look up ViewPole.CalcMatrix();
+	(cam-pos (resolve-cam-position))
+	(cam-matrix (make-instance 'glutil:matrix-stack)))
+
+    (glutil:set-matrix cam-matrix (calc-look-at-matrix cam-pos *cam-target* (glm:vec3 0.0 1.0 0.0)))
+    ;;TODO: lightdircamera = model-matrix.top() * light-direction;
+
+    (gl:use-program (the-program *white-diffuse-color*))
+
+
+    
+    (glutil:with-transform (model-matrix)
+	(gl:uniform-matrix (model-to-camera-matrix-unif *white-diffuse-color*) 4
+			   (vector (glutil:top-ms model-matrix)) NIL)
+      :translate -1.0 -1.0 -1.0
+      :scale 1000.0 1.0 1000.0
+      (framework:render *plane-mesh*))
+    )
+
+    
   )
 
 (defun display ()
@@ -184,10 +220,13 @@ geometry coordinates and returned as a position vector."
 (defparameter *fz-far* 1000.0)
 
 (defun reshape (w h)
+  (let ((pers-matrix (make-instance 'glutil:matrix-stack)))
+    (glutil:perspective pers-matrix 45.0 (/ w h) *fz-near* *fz-far*)
 
-   ;;...
-
-  
+    (gl:bind-buffer :uniform-buffer *projection-uniform-buffer*)
+    (gl:buffer-sub-data :uniform-buffer
+		      (arc:create-gl-array-from-vector (glutil:top-ms pers-matrix)))
+    (gl:bind-buffer :uniform-buffer 0))
   (%gl:viewport 0 0 w h))
 
 
