@@ -26,6 +26,7 @@
    #:set-mat4
    #:set-mat4-row
    #:set-mat4-col
+   #:mat*vec
    #:vec-
    #:vec.
    #:vec3
@@ -34,6 +35,7 @@
    #:vec4+
    #:normalize
    #:vec4-from-vec3
+   #:vec4->vec3
    ;;quaternions:
    #:quat
    #:vectorize   

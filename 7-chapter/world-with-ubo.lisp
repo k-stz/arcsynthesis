@@ -50,10 +50,12 @@
     ;; stores a _uniform block index_ that is used to refer to a uniform block,
     ;; in this case a block that is supposed to store w-to-cam-mat4 and cam-to-clip-mat4
     (setf (global-uniform-block-index data)
-	  ;; TODO: pull request to cl-opengl of (gl:get-uniform-block-index ...) !! :>
-	  (cffi:with-foreign-string (s "global_matrices")
-	    (%gl:get-uniform-block-index (the-program data) s)))
-
+	  ;; alternatively the following can be used:
+	  ;; (cffi:with-foreign-string (s "global_matrices")
+	  ;;   (%gl:get-uniform-block-index (the-program data) s))
+	  (gl:get-uniform-block-index (the-program data) "global_matrices")
+	  )
+    
     ;; TODO: if uniform doesn't really exist in shader, wasn't opengl lenient about it?
     (setf (base-color-unif data)
 	  (gl:get-uniform-location (the-program data) "base_color"))
@@ -620,9 +622,9 @@ geometry coordinates and returned as a position vector."
   ;; for now where we set the camera-to-clip perspective-matrix for the shaders
   (let ((pers-matrix (make-instance 'glutil:matrix-stack)))
     (glutil:perspective pers-matrix 45.0 (/ w h) *fz-near* *fz-far*)
-    ;; set camera-matrix, note this starts writing at the default offset=0, and it writes one perspective
-    ;; matrix into the uniform-buffer. The uniform buffer-block in the shader program starts hence
-    ;; with the mat4 camaera_to_clip_matrix;
+    ;; set camera-matrix, note this starts writing at the default offset=0, and it writes
+    ;; one perspective matrix into the uniform-buffer. The uniform buffer-block in the
+    ;; shader program starts hence with the mat4 camaera_to_clip_matrix;
     (gl:bind-buffer :uniform-buffer *global-matrices-ubo*)
     (gl:buffer-sub-data :uniform-buffer
 			(arc:create-gl-array-from-vector (glutil:top-ms pers-matrix)))

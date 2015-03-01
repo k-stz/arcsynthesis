@@ -19,11 +19,8 @@
 		      0.0 0.0 idv 0.0
 		      0.0 0.0 0.0 idv))))
 
-;; TODO: 
-;; is +notation+ acceptable? Can't be constant for DEFCONSTANT gets its value at
-;; compile-time while DEFUN work at toplevel
-;; TODO: compile-time, top-level :execute intuitive understanding: start at EVAL-WHEN clhs
-(defparameter +identity-mat4+ (make-mat4 1.0)) ;;TODO: make me a constant
+;; provided by sb-cga:+identity-matrix+
+;;(defparameter +identity-mat4+ (make-mat4 1.0))
 
 
 ;; so as to be used in conjunction with SETF
@@ -59,17 +56,13 @@
 ;;        do
 ;; 	 `(setf (mat4-place ,mat4 j ,key) vector-element)
 ;; 	 )))
-
-;; noooooo, this is alllll wrooooooong. gl:uniform-matrix transposes its input matrix by default,
-;; hence I've tested this function based on the visual representation being right -.-
 (defmacro set-mat4-col (mat4 col vec4)
   (let ((key (ecase col
 	       (0 :x) (1 :y) (2 :z) (3 :w))))
     `(progn (setf (mat4-place ,mat4 0 ,key) (aref ,vec4 0))
 	    (setf (mat4-place ,mat4 1 ,key) (aref ,vec4 1))
 	    (setf (mat4-place ,mat4 2 ,key) (aref ,vec4 2))
-	    (setf (mat4-place ,mat4 3 ,key) (aref ,vec4 3))))
-  )
+	    (setf (mat4-place ,mat4 3 ,key) (aref ,vec4 3)))))
 
 ;; TODO: (set-mat4-row *m* 3 #(1.0 2.0 3.0)) doesn't work: #(..) has to be (vector ..)
 ;; why?
@@ -77,8 +70,7 @@
   `(progn (setf (mat4-place ,mat4 ,row :x) (aref ,vec4 0))
 	  (setf (mat4-place ,mat4 ,row :y) (aref ,vec4 1))
 	  (setf (mat4-place ,mat4 ,row :z) (aref ,vec4 2))
-	  (setf (mat4-place ,mat4 ,row :w) (aref ,vec4 3)))
-  )
+	  (setf (mat4-place ,mat4 ,row :w) (aref ,vec4 3))))
 
 
 (defmacro set-mat4-diagonal (mat4 vec4)
@@ -88,6 +80,27 @@
 	  (setf (mat4-place ,mat4 3 :w) (aref ,vec4 3))))
 ;; interesting having the progn of the above return mat4, would just expand into an
 ;; expression returning a "copy" of mat4 as if permutations haven't occured
+
+
+;; TODO: test row/col-major
+(defun mat*vec (mat4 vec4)
+  "Matrix vector multiplication."
+  (multiple-value-bind (x y z w)
+      (values (aref vec4 0)
+	      (aref vec4 1)
+	      (aref vec4 2)
+	      (aref vec4 3))
+    (macrolet ((m (col row)
+		 `(aref mat4 ,(+ col (* 4 row)))))
+      (glm:vec4 
+       (apply #'+ (mapcar (lambda (n) (* n x))
+			  (list (m 0 0) (m 0 1) (m 0 2) (m 0 3))))
+       (apply #'+ (mapcar (lambda (n) (* n y))
+			  (list (m 1 0) (m 1 1) (m 1 2) (m 1 3))))
+       (apply #'+ (mapcar (lambda (n) (* n z))
+			  (list (m 2 0) (m 2 1) (m 2 2) (m 2 3))))
+       (apply #'+ (mapcar (lambda (n) (* n w))
+			  (list (m 3 0) (m 3 1) (m 3 2) (m 3 3))))))))
 
 ;; to facilitate pure vector negation 
 (defun vec- (a &optional b)
@@ -168,6 +181,11 @@
 	(w (if w w 1.0)))
     (make-array 4 :element-type 'single-float
 		:initial-contents (list x y z w))))
+
+(defun vec4->vec3 (vec4)
+  "Discard the w component and return vec3"
+  (macrolet ((dim (n) `(aref vec4 ,n)))
+	   (vec3 (dim 0) (dim 1) (dim 2))))
 
 ;;simple implementation
 
@@ -287,8 +305,7 @@
     (glm:set-mat3 matrix 1 :z (+ (* a-y a-z f-inv-cos) (* a-x f-sin)))
     (glm:set-mat3 matrix 2 :z (+ (* a-z a-z) (* (- 1 (* a-z a-z)) f-cos)))
 
-    (glm:mat4-from-mat3 matrix)
-    ))
+    (glm:mat4-from-mat3 matrix)))
 
 ;;Quaternions-------------------------------------------------------------------
 
@@ -540,27 +557,6 @@ unit length, this is an intrinsic mathematical property of quaternions."
 	result))))
 
 
-;;2nd try, using information from:
-;; www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToQuaternion/
-;; Knock on wood!
-;; This only words in cases where the diagonal of the matrix is positive note the
-;; the sqrt computation
-;; (defun quat-cast-2nd (mat4)
-;;   (flet ((m (r c)
-;; 	   (aref mat4 (+ r (* 4 c)))))
-;;     (let* ((w  (/ (sqrt (+ 1.0 (m 0 0) ( m 1 1) (m 2 2))) 2.0))
-;; 	   (w4 (* 4.0 w))
-;; 	   (x (/ (- (m 2 1) (m 1 2)) w4))
-;; 	   (y (/ (- (m 0 2) (m 2 0)) w4))
-;; 	   (z (/ (- (m 1 0) (m 0 1)) w4)))
-;;       (let ((q (make-instance 'quat :w w :x x :y y :z z)))
-;; 	q))))
-
-;; supposed to cast from multiple structures or types to a matrix, for now only
-;; from quaternion
-;; TODO: revisit this 'initiation' I think it was clock-wise in the former implementation
-;; For intuitition: inspecting the (mat4-cast (make-quat 45.0 (0.0 1.0 0.0))), for example, shows
-;; that quaternion perform a clock-wise rotation around the axis they represent (in direction of the axis)
 (defgeneric mat4-cast (t))
 (defmethod mat4-cast ((q1 quat))
   "Retruns the transformation matrix the input quaternion is representing"

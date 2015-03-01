@@ -18,13 +18,14 @@ layout(std140) uniform Projection
 
 void main()
 {
-	gl_Position = cameraToClipMatrix * (modelToCameraMatrix * vec4(position, 1.0));
+ gl_Position = cameraToClipMatrix * (modelToCameraMatrix * vec4(position, 1.0));
 
 	vec3 normCamSpace = normalize(normalModelToCameraMatrix * normal);
 	
 	float cosAngIncidence = dot(normCamSpace, dirToLight);
 	cosAngIncidence = clamp(cosAngIncidence, 0, 1);
-	
-//	interpColor = lightIntensity * cosAngIncidence;
-        interpColor = vec4(1, 1, 1, 1);
+
+	// very interesting: if we try to set uniform that aren't going to be used
+	// to calculate any "out" shader variables we get an error using gl:uniformfv
+	interpColor = lightIntensity * cosAngIncidence;
 }

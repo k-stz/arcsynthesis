@@ -14,7 +14,8 @@
 ;; (print (uiop/lisp-build:current-lisp-file-pathname)) ?
 ;; TODO: they're identical in all following tutorials? Then remove *glsl-directory*
 (defvar *glsl-directory*
-  (merge-pathnames #p "9-chapter/data/" (asdf/system:system-source-directory :arcsynthesis)))
+  (merge-pathnames
+   #p "9-chapter/data/" (asdf/system:system-source-directory :arcsynthesis)))
 (defvar *data-dir* *glsl-directory*) 
 
 ;;todo: fix this output to slime-repl solution
@@ -67,33 +68,40 @@
 	  (gl:get-uniform-location (the-program data) "dirToLight"))
     (setf (light-intensity-unif data)
 	  (gl:get-uniform-location (the-program data) "lightIntensity"))
-    (cffi:with-foreign-string (s "Projection")
-      ;; TODO: still "gl:" update needed, checkout at newest cl-opengl
-      (setf projection-block (%gl:get-uniform-block-index (the-program data) s)))
-    (%gl:uniform-block-binding (the-program data) projection-block +projection-block-index+)
+
+    (setf projection-block (gl:get-uniform-block-index (the-program data) "Projection"))
+    (%gl:uniform-block-binding
+     (the-program data) projection-block +projection-block-index+)
     data))
 
 
 
 (defun initialize-program ()
-  (setf *white-diffuse-color* (load-program "DirVertexLighting_PN.vert" "ColorPassthrough.frag"))
-  (setf *vertex-diffuse-color* (load-program "DirVertexLighting_PCN.vert" "ColorPassthrough.frag")))
+  (setf *white-diffuse-color*
+	(load-program "DirVertexLighting_PN.vert" "ColorPassthrough.frag"))
+  (setf *vertex-diffuse-color*
+	(load-program "DirVertexLighting_PCN.vert" "ColorPassthrough.frag")))
 
 
 (defvar *plane-mesh*)
+(defvar *cylinder-mesh*)
 
 (defparameter *projection-uniform-buffer* 0)
 
 (defun init ()
   (initialize-program)
 
-  (setf *plane-mesh* (framework:xml->mesh-obj (merge-pathnames *data-dir* "simple-unit-plane.xml")))
+  (setf *plane-mesh*
+	(framework:xml->mesh-obj (merge-pathnames *data-dir* "UnitPlane.xml")))
+
+  (setf *cylinder-mesh*
+	(framework:xml->mesh-obj (merge-pathnames *data-dir* "UnitCylinder.xml")))
 
   
   (gl:enable :cull-face)
   (%gl:cull-face :back)
   (%gl:front-face :cw) 
-;;  (gl:viewport 0 0 500 500)
+  (gl:viewport 0 0 500 500)
 
   (gl:enable :depth-test)
   (gl:depth-mask :true)
@@ -107,14 +115,14 @@
   (%gl:buffer-data :uniform-buffer #|sizeof(mat4):|# 64 (cffi:null-pointer) :dynamic-draw)
 
   ;;TODO: "bind the static buffer"
-  (%gl:bind-buffer-range :uniform-buffer +projection-block-index+ *projection-uniform-buffer* 0
-			 #|sizeof(mat4):|# 64)
+  (%gl:bind-buffer-range :uniform-buffer +projection-block-index+
+			 *projection-uniform-buffer* 0 #|sizeof(mat4):|# 64)
 
   (gl:bind-buffer :uniform-buffer 0))
 
 
 
-(defparameter *sphere-cam-rel-pos* (glm:vec3 90.0 0.0 66.0) "Order: phi theta r")
+(defparameter *sphere-cam-rel-pos* (glm:vec3 90.0 -33.0 1.0) "Order: phi theta r")
 (defparameter *cam-target* (glm:vec3 0.0 0.4 0.0))
 
 (defun resolve-cam-position ()
@@ -131,27 +139,15 @@ geometry coordinates and returned as a position vector."
 	 (dir-to-camera (glm:vec3 (* sin-theta cos-phi)
 	 			  cos-theta
 	 			  (* sin-theta sin-phi))))
-    ;; Once the direction is set, we need to blow it up by multiplying the
-    ;; "euclidean" vector by 'r' which is the :z value of *sphere-cam-rel-pos*
-    ;; and add it to the target the camera is supposed to look at, thereby creating
-    ;; a geometrical dependent positions of the camera to the *cam-target*
     (sb-cga:vec+ (sb-cga:vec* dir-to-camera (glm:vec. *sphere-cam-rel-pos* :z))
 		 *cam-target*)))
 
 (defun calc-look-at-matrix (camera-pt look-pt up-pt)
-  ;; resolve-cam-position. negating the two yields the direction of the camera "through"
-  ;; look-pt. Unit vector, through normalize, is needed as we will use look-dir
-  ;; directly as the axis of the look-at-matrix, so as to prevent scaling!
-  ;; With this we already have our Z axis
+  "Returns a transformation matrix that represents an orientation of a camera orientation
+described by the arguments given."
+  ;;explanation in "world-with-ubo.lisp" in the chapter 7 directory
   (let* ((look-dir (sb-cga:normalize (sb-cga:vec- look-pt camera-pt)))
-	 ;; since we only want a direction, we normalize the vector
-	 ;; using up-dir we have a plane from which we can yield the perpendicular x-axis
-	 ;; and from that the perpendicular y-axis (cross-product z-axis x-axis)
 	 (up-dir (sb-cga:normalize up-pt))
-	 ;; cross-product returns the vector perpendicular to the plane formed
-	 ;; by two vectors:
-	 ;; (sb-cga:cross-product (glm:vec3 1.0 0.0 0.0) (glm:vec3 0.0 1.0 0.0))
-	 ;; ==> #(0.0 0.0 1.0)	 
 	 (right-dir (sb-cga:normalize (sb-cga:cross-product look-dir up-dir)))
 	 (perp-up-dir (sb-cga:cross-product right-dir look-dir))
 
@@ -160,50 +156,49 @@ geometry coordinates and returned as a position vector."
 
     (glm:set-mat4-col rot-mat 0 (glm:vec4-from-vec3 right-dir 0.0))
     (glm:set-mat4-col rot-mat 1 (glm:vec4-from-vec3 perp-up-dir 0.0))
-    ;; the look-dir must be negated, or it wouldn't be a rotation of the original
-    ;; identity matrix. As it currently would be a transform that couldn't arise
-    ;; from rotating the original coordinate system (one axis is moved without
-    ;; moving another by _the same_ angle). This must be a problem that arises from
-    ;; using the cross-product, which doesn't seem to return the perpendicular axis
-    ;; needed (there are always two perpendicular direction vectors for a plane)
     (glm:set-mat4-col rot-mat 2 (glm:vec4-from-vec3 (glm:vec- look-dir) 0.0))
-
     ;; TODO: why transpose it eventually? Maybe because it is col-major and setting
     ;; column-wise and transpose is more efficient than just setting the rows
     ;; with discontiguous indices
     (setf rot-mat (sb-cga:transpose-matrix rot-mat))
-
-    ;; oh, its just a translation matrix putting the camera-pt into origin! (and thereby
-    ;; offsetting every position sent through this matrix by the camera pos
     (glm:set-mat4-col trans-mat 3 (glm:vec4-from-vec3 (glm:vec- camera-pt) 1.0))
-
-    ;;return rotmat * transmat;
     (sb-cga:matrix* rot-mat trans-mat)))
 
 
-(defparameter *orientation* (glm:quaternion 1.0 0.0 0.0 0.0))
 
+(defparameter *light-direction* (glm:vec4 0.866 0.5 0.0 0.0))
 
 (defun draw ()
   (let ((model-matrix (make-instance 'glutil:matrix-stack))
-
-	;;NEXT-TODO: get something on the screen look up ViewPole.CalcMatrix();
+	(light-dir-camera-space)
 	(cam-pos (resolve-cam-position))
 	(cam-matrix (make-instance 'glutil:matrix-stack)))
 
-    (glutil:set-matrix cam-matrix (calc-look-at-matrix cam-pos *cam-target* (glm:vec3 0.0 1.0 0.0)))
-    ;;TODO: lightdircamera = model-matrix.top() * light-direction;
+    ;;NEXT-TODO: modelMatrix.setmatrix(g_viewPole.CalcMatrix());
+    (glutil:set-matrix cam-matrix
+		       (calc-look-at-matrix cam-pos *cam-target* (glm:vec3 0.0 1.0 0.0)))
 
+    (glutil:set-matrix model-matrix (glutil:top-ms cam-matrix))
+    (setf light-dir-camera-space
+	  (glm:vec4->vec3 (glm:mat*vec (glutil:top-ms model-matrix)
+				       *light-direction*)))
+    
     (gl:use-program (the-program *white-diffuse-color*))
+
+    ;; very convenient function, not only does it test the length of the input
+    ;; (uniform-..1-4..-f) but it also accepts a vector input!
+    (gl:uniformfv (dir-to-light-unif *white-diffuse-color*) light-dir-camera-space)
+
+
+    (gl:uniformfv (light-intensity-unif *white-diffuse-color*) (glm:vec4 1.0 1.0 1.0 1.0))
 
 
     
     (glutil:with-transform (model-matrix)
-	(gl:uniform-matrix (model-to-camera-matrix-unif *white-diffuse-color*) 4
-			   (vector (glutil:top-ms model-matrix)) NIL)
-      :translate -1.0 -1.0 -1.0
-      :scale 1000.0 1.0 1000.0
-      (framework:render *plane-mesh*))
+      (gl:uniform-matrix (model-to-camera-matrix-unif *white-diffuse-color*) 4
+			 (vector (glutil:top-ms model-matrix)) NIL)
+
+      (framework:render *cylinder-mesh*))
     )
 
     
@@ -246,15 +241,16 @@ geometry coordinates and returned as a position vector."
 	  ;; TODO: callback for reshape; for now used to setup cam-to-clip-space matrix
 	  (reshape 500.0 500.0)
 	  (sdl2:with-event-loop (:method :poll)
+	    (:mousebuttondown () ())
+	    (:mousemotion
+	     (:x x :y y :xrel xrel :yrel yrel :state state)
+	     ;; and that's all we need to build the arc viewpole: xrel, yrel
+	     ;; are store the motion relative to the last event!
+	     (format t "x:~a y:~a xrel:~a yrel:~a STATE:~a~%" x y xrel yrel state))
+	    
 	    (:keydown
 	     (:keysym keysym)
 	     ;; TODO: capture in macro
-	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-q)
-	       )
-	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-w)
-	       )
-	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-e)
-	       )
 
 	     ;; rotate camera horizontally around target
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-j)
@@ -272,10 +268,8 @@ geometry coordinates and returned as a position vector."
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-o)
 	       (incf (glm:vec. *sphere-cam-rel-pos* :z) 1.5))
 
-
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-space)
 	       )
-
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-escape)
 	       (sdl2:push-event :quit)))
 	    (:quit () t)
