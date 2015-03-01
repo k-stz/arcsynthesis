@@ -1,3 +1,8 @@
+;; tell the compiler to not care about speed, use maximum type saftey and
+;; give us maximum debug information
+;; TODO: sbcl specifics?
+(declaim (optimize (speed 0) (safety 3) (debug 3)))
+
 ;; TODO: about
 
 
@@ -200,8 +205,6 @@ described by the arguments given."
 
       (framework:render *cylinder-mesh*))
     )
-
-    
   )
 
 (defun display ()
@@ -230,6 +233,7 @@ described by the arguments given."
 (defconstant +small-angle-increment+ 9.0)
 
 
+
 (defun main ()
   (arc::with-main
     (sdl2:with-init (:everything)
@@ -238,15 +242,18 @@ described by the arguments given."
 	(sdl2:with-gl-context (gl-context win)
 	  ;; INIT code:
 	  (init)
+	  
 	  ;; TODO: callback for reshape; for now used to setup cam-to-clip-space matrix
 	  (reshape 500.0 500.0)
 	  (sdl2:with-event-loop (:method :poll)
-	    (:mousebuttondown () ())
+	    ;(:mousebuttondown () ())
 	    (:mousemotion
 	     (:x x :y y :xrel xrel :yrel yrel :state state)
 	     ;; and that's all we need to build the arc viewpole: xrel, yrel
 	     ;; are store the motion relative to the last event!
-	     (format t "x:~a y:~a xrel:~a yrel:~a STATE:~a~%" x y xrel yrel state))
+
+	     (format t "x:~a y:~a xrel:~a yrel:~a STATE:~a~%" x y xrel yrel state)
+	     )
 	    
 	    (:keydown
 	     (:keysym keysym)
@@ -269,6 +276,7 @@ described by the arguments given."
 	       (incf (glm:vec. *sphere-cam-rel-pos* :z) 1.5))
 
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-space)
+	       (print test-event)
 	       )
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-escape)
 	       (sdl2:push-event :quit)))
@@ -294,7 +302,7 @@ described by the arguments given."
 
 		   ;;live editing enabled:
 		   (arc::update-swank)
-		   
+
 		   (sdl2:gl-swap-window win))))))))
 
 

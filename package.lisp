@@ -59,9 +59,7 @@
    #:rotate-x
    #:rotate-y
    #:rotate-z
-   #:rotate-axis
-   )
-  )
+   #:rotate-axis))
 
 (defpackage #:glutil
   (:use :cl)
@@ -71,9 +69,7 @@
    #:with-transform
    #:perspective
    #:top-ms
-   #:set-matrix
-   )
-  )
+   #:set-matrix))
 
 (defpackage #:framework
   (:use :cl)
@@ -83,9 +79,7 @@
    #:render
    #:xml->mesh-obj
    #:render-ship
-   #:ship-xml->vao
-   )
-  )
+   #:ship-xml->vao))
 
 
 (defpackage #:arc-1
@@ -220,7 +214,8 @@
   (:use :cl)
   (:export #:main))
 
+;; Part 3 - Illumination
 (defpackage #:arc-9
-  (:documentation "Illumination - Lights on")
+  (:documentation "Lights On - Modelling Lights")
   (:use :cl)
   (:export #:main))
