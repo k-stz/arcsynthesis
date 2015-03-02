@@ -51,9 +51,10 @@
     ;; in this case a block that is supposed to store w-to-cam-mat4 and cam-to-clip-mat4
     (setf (global-uniform-block-index data)
 	  ;; alternatively the following can be used:
-	  ;; (cffi:with-foreign-string (s "global_matrices")
-	  ;;   (%gl:get-uniform-block-index (the-program data) s))
-	  (gl:get-uniform-block-index (the-program data) "global_matrices")
+	  ;; TODO: make modified cl-opengl available
+	  (cffi:with-foreign-string (s "global_matrices")
+	    (%gl:get-uniform-block-index (the-program data) s))
+	  ;;(gl:get-uniform-block-index (the-program data) "global_matrices")
 	  )
     
     ;; TODO: if uniform doesn't really exist in shader, wasn't opengl lenient about it?

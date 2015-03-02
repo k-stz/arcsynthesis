@@ -74,7 +74,12 @@
     (setf (light-intensity-unif data)
 	  (gl:get-uniform-location (the-program data) "lightIntensity"))
 
-    (setf projection-block (gl:get-uniform-block-index (the-program data) "Projection"))
+    (setf projection-block
+	  ;; TODO: get cl-opengl version containing this version
+	  ;;(gl:get-uniform-block-index (the-program data) "Projection")
+	  (cffi:with-foreign-string (s "Projection")
+	    (%gl:get-uniform-block-index (the-program data) s))
+	  )
     (%gl:uniform-block-binding
      (the-program data) projection-block +projection-block-index+)
     data))
@@ -189,21 +194,29 @@ described by the arguments given."
 				       *light-direction*)))
     
     (gl:use-program (the-program *white-diffuse-color*))
-
     ;; very convenient function, not only does it test the length of the input
-    ;; (uniform-..1-4..-f) but it also accepts a vector input!
+    ;; (uniform-..1-4..-f) but it also accepts a vector as input!
     (gl:uniformfv (dir-to-light-unif *white-diffuse-color*) light-dir-camera-space)
-
-
-    (gl:uniformfv (light-intensity-unif *white-diffuse-color*) (glm:vec4 1.0 1.0 1.0 1.0))
-
+    (gl:use-program (the-program *vertex-diffuse-color*))
+    (gl:uniformfv (dir-to-light-unif *vertex-diffuse-color*) light-dir-camera-space)
+    (gl:use-program 0)
 
     
-    (glutil:with-transform (model-matrix)
+    ;; Render the ground plane
+    (glutil:with-transform (model-matrix)      
+	(gl:use-program (the-program *white-diffuse-color*))
+      ;;note how model-to-camera-matrix is mat4 and normal-model-to-camera-matrix is mat3!
+      ;; TODO: explanation needed, wasn't it due to direction vectors discarding their 'w'
+      ;; component?
       (gl:uniform-matrix (model-to-camera-matrix-unif *white-diffuse-color*) 4
 			 (vector (glutil:top-ms model-matrix)) NIL)
 
-      (framework:render *cylinder-mesh*))
+      (gl:uniform-matrix (normal-model-to-camera-matrix-unif *white-diffuse-color*) 3
+			 (vector (glm:mat4->mat3 (glutil:top-ms model-matrix))) NIL)
+      (gl:uniformfv (light-intensity-unif *white-diffuse-color*) (glm:vec4 1.0 1.0 1.0 1.0))
+
+
+      (framework:render *plane-mesh*))
     )
   )
 
@@ -276,7 +289,6 @@ described by the arguments given."
 	       (incf (glm:vec. *sphere-cam-rel-pos* :z) 1.5))
 
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-space)
-	       (print test-event)
 	       )
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-escape)
 	       (sdl2:push-event :quit)))

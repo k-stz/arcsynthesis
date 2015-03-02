@@ -51,6 +51,7 @@
    #:make-mat3
    #:set-mat3
    #:mat4-from-mat3
+   #:mat4->mat3
    #:clamp
    #:mix
    #:slerp

@@ -226,6 +226,15 @@
 		  else collect i)
 	       '(0.0 0.0 0.0 1.0))))
 
+(defun mat4->mat3 (mat4)
+  (let ((mat4s-inner-mat3
+	 (loop for i below (- (length mat4) 4)
+	    unless (= 0 (mod (1+ i) 4))
+	    collecting (aref mat4 i))))
+    (make-array 9 :element-type 'single-float
+		:initial-contents mat4s-inner-mat3)))
+
+
 (defmacro mat3-place (mat3 row coordinate)
   (let ((c (ecase coordinate
 	    (:x 0) (:y 1) (:z 2))))
