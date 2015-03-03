@@ -169,8 +169,8 @@ it will be returned to its former state"
 			(:rotate-y (make-rot 'rotate-y (cdr l) exp))
 			(:rotate-z (make-rot 'rotate-z (cdr l) exp))
 			(:apply-matrix (make-apply-matrix 'apply-matrix (cdr l) exp))
-			(t (format *error-output* "~a is not a known transform" car))
-			))))
+			(t (format *error-output* "~a is not a known transform" car))))))
+	   ;; special treatment code
 	   (make-trans (key l exp)
 	     (push
 	      `(,key ,matrix-stack (glm:vec3 ,(first l) ,(second l) ,(third l)))
@@ -181,8 +181,8 @@ it will be returned to its former state"
 	      `(,key ,matrix-stack ,(first l))
 	      exp)
 	     (try-key (cadr l) (cdr l) exp))
-	   ;; like make-rot we only read one sexp after the keyword - it wants a mat4 instead of an
-	   ;; angle
+	   ;; like make-rot we only read one sexp after the keyword - it wants a mat4
+	   ;; instead of an angle
 	   (make-apply-matrix (key l exp)
 	     (push
 	      `(,key ,matrix-stack ,(first l))
@@ -192,5 +192,4 @@ it will be returned to its former state"
     `(progn
        (push-ms ,matrix-stack)
        ,@(try-key (car body) body '())
-       (pop-ms ,matrix-stack))
-    ))
+       (pop-ms ,matrix-stack))))

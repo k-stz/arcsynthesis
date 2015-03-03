@@ -201,24 +201,44 @@ described by the arguments given."
     (gl:uniformfv (dir-to-light-unif *vertex-diffuse-color*) light-dir-camera-space)
     (gl:use-program 0)
 
-    
+
+    ;; TODO: this doesn't look right, lighting-wise, are the normals wrong? What's up with all the
+    ;;       sharp edges in the shades?
     ;; Render the ground plane
-    (glutil:with-transform (model-matrix)      
+    (glutil:with-transform (model-matrix)
 	(gl:use-program (the-program *white-diffuse-color*))
       ;;note how model-to-camera-matrix is mat4 and normal-model-to-camera-matrix is mat3!
       ;; TODO: explanation needed, wasn't it due to direction vectors discarding their 'w'
       ;; component?
+
+      :scale 5.0 1.0 5.0
       (gl:uniform-matrix (model-to-camera-matrix-unif *white-diffuse-color*) 4
 			 (vector (glutil:top-ms model-matrix)) NIL)
 
       (gl:uniform-matrix (normal-model-to-camera-matrix-unif *white-diffuse-color*) 3
 			 (vector (glm:mat4->mat3 (glutil:top-ms model-matrix))) NIL)
+
       (gl:uniformfv (light-intensity-unif *white-diffuse-color*) (glm:vec4 1.0 1.0 1.0 1.0))
+      (framework:render *plane-mesh*)
+      (gl:use-program 0))
 
+    ;; Render thy Cylinder
+    (glutil:with-transform (model-matrix)
+	;; TODO: g_objtPole.CalcMatrix()
+	(gl:use-program (the-program *vertex-diffuse-color*))
 
-      (framework:render *plane-mesh*))
-    )
-  )
+      :translate 0.0 .5 0.0
+      (gl:uniform-matrix (model-to-camera-matrix-unif *vertex-diffuse-color*) 4
+			 (vector (glutil:top-ms model-matrix)) NIL)
+
+      (gl:uniform-matrix (normal-model-to-camera-matrix-unif *vertex-diffuse-color*) 3
+			 (vector (glm:mat4->mat3 (glutil:top-ms model-matrix))) NIL)
+
+      (gl:uniformfv (light-intensity-unif *white-diffuse-color*) (glm:vec4 1.0 1.0 1.0 1.0))
+      (framework:render *cylinder-mesh*)
+      (gl:use-program 0))
+
+    ))
 
 (defun display ()
   (gl:clear-color 0.0 0.0 0.2 1)
