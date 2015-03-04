@@ -66,8 +66,10 @@
 (defun init ()
   (initialize-program)
 
+;  (setf *ship-vao* (framework:ship-xml->vao (merge-pathnames *data-dir* "Ship.xml")))
   (setf *ship-vao* (framework:ship-xml->vao (merge-pathnames *data-dir* "Ship.xml")))
- 
+
+  
   (gl:enable :cull-face)
   (%gl:cull-face :back)
   (%gl:front-face :cw) 
@@ -162,7 +164,7 @@
 (defun main ()
   (sdl2:with-init (:everything)
     (progn (setf *standard-output* out) (setf *debug-io* dbg) (setf *error-output* err))
-    (sdl2:with-window (win :w 500 :h 500 :flags '(:shown :opengl :resizable))
+    (sdl2:with-window (win :w 500 :h 500 :flags '(:shown :opengl))
       (sdl2:with-gl-context (gl-context win)
 	;; INIT code:
 	(init)

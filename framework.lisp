@@ -343,6 +343,7 @@ mesh))
     ))
 
 
+;; UPDATE: the <vao > tags implicate which attributes to use (by index)! 
 (defun render-ship (ship-vao)
   (%gl:bind-vertex-array ship-vao)
   (%gl:draw-arrays :triangles 0 336)
@@ -376,3 +377,8 @@ mesh))
 ;;		       :unsigned-short 0)
 ;; :triangle-fan , :triangle-strip
 
+;;------------------------------------------------------------------------------
+;; New lisp-data geometry files approach:
+(defun lisp-data->vao (path-to-lisp-data)
+  ;;TODO
+  )

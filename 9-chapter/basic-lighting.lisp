@@ -96,6 +96,8 @@
 (defvar *plane-mesh*)
 (defvar *cylinder-mesh*)
 
+(defvar *test-cylinder*)
+
 (defparameter *projection-uniform-buffer* 0)
 
 (defun init ()
@@ -107,6 +109,8 @@
   (setf *cylinder-mesh*
 	(framework:xml->mesh-obj (merge-pathnames *data-dir* "UnitCylinder.xml")))
 
+  (setf *test-cylinder*
+	(framework::lisp-data->vao (merge-pathnames *data-dir* "unit-cylinder-lisp-data")))
   
   (gl:enable :cull-face)
   (%gl:cull-face :back)
@@ -121,7 +125,6 @@
 
   (setf *projection-uniform-buffer* (first (gl:gen-buffers 1)))
   (gl:bind-buffer :uniform-buffer *projection-uniform-buffer*)
-  ;; TODO: revisit
   (%gl:buffer-data :uniform-buffer #|sizeof(mat4):|# 64 (cffi:null-pointer) :dynamic-draw)
 
   ;;TODO: "bind the static buffer"
@@ -184,14 +187,16 @@ described by the arguments given."
 	(cam-pos (resolve-cam-position))
 	(cam-matrix (make-instance 'glutil:matrix-stack)))
 
-    ;;NEXT-TODO: modelMatrix.setmatrix(g_viewPole.CalcMatrix());
+
     (glutil:set-matrix cam-matrix
 		       (calc-look-at-matrix cam-pos *cam-target* (glm:vec3 0.0 1.0 0.0)))
-
+    
+    ;;NEXT-TODO: modelMatrix.setmatrix(g_viewPole.CalcMatrix());
     (glutil:set-matrix model-matrix (glutil:top-ms cam-matrix))
     (setf light-dir-camera-space
-	  (glm:vec4->vec3 (glm:mat*vec (glutil:top-ms model-matrix)
-				       *light-direction*)))
+    	  (glm:vec4->vec3 (glm:mat*vec (glutil:top-ms model-matrix)
+    				       *light-direction*)))
+
     
     (gl:use-program (the-program *white-diffuse-color*))
     ;; very convenient function, not only does it test the length of the input
@@ -223,21 +228,37 @@ described by the arguments given."
       (gl:use-program 0))
 
     ;; Render thy Cylinder
-    (glutil:with-transform (model-matrix)
-	;; TODO: g_objtPole.CalcMatrix()
-	(gl:use-program (the-program *vertex-diffuse-color*))
+    	;; TODO: g_objtPole.CalcMatrix()
+    (if *draw-colored-cyl*
+	(glutil:with-transform (model-matrix)
 
-      :translate 0.0 .5 0.0
-      (gl:uniform-matrix (model-to-camera-matrix-unif *vertex-diffuse-color*) 4
-			 (vector (glutil:top-ms model-matrix)) NIL)
+	    (gl:use-program (the-program *vertex-diffuse-color*))
 
-      (gl:uniform-matrix (normal-model-to-camera-matrix-unif *vertex-diffuse-color*) 3
-			 (vector (glm:mat4->mat3 (glutil:top-ms model-matrix))) NIL)
+	  :translate 0.0 .5 0.0
+	  (gl:uniform-matrix (model-to-camera-matrix-unif *vertex-diffuse-color*) 4
+			     (vector (glutil:top-ms model-matrix)) NIL)
 
-      (gl:uniformfv (light-intensity-unif *white-diffuse-color*) (glm:vec4 1.0 1.0 1.0 1.0))
-      (framework:render *cylinder-mesh*)
-      (gl:use-program 0))
+	  (gl:uniform-matrix (normal-model-to-camera-matrix-unif *vertex-diffuse-color*) 3
+			     (vector (glm:mat4->mat3 (glutil:top-ms model-matrix))) NIL)
 
+	  (gl:uniformfv (light-intensity-unif *white-diffuse-color*) (glm:vec4 1.0 1.0 1.0 1.0))
+	  (framework:render *cylinder-mesh*)
+	  (gl:use-program 0))
+	;;else:
+	(glutil:with-transform (model-matrix)
+
+	    (gl:use-program (the-program *white-diffuse-color*))
+
+	  :translate 0.0 .5 0.0
+	  (gl:uniform-matrix (model-to-camera-matrix-unif *white-diffuse-color*) 4
+			     (vector (glutil:top-ms model-matrix)) NIL)
+
+	  (gl:uniform-matrix (normal-model-to-camera-matrix-unif *white-diffuse-color*) 3
+			     (vector (glm:mat4->mat3 (glutil:top-ms model-matrix))) NIL)
+
+	  (gl:uniformfv (light-intensity-unif *white-diffuse-color*) (glm:vec4 1.0 1.0 1.0 1.0))
+	  (framework:render *cylinder-mesh*)
+	  (gl:use-program 0)))
     ))
 
 (defun display ()
@@ -266,6 +287,7 @@ described by the arguments given."
 (defconstant +small-angle-increment+ 9.0)
 
 
+(defparameter *draw-colored-cyl* t)
 
 (defun main ()
   (arc::with-main
@@ -309,7 +331,9 @@ described by the arguments given."
 	       (incf (glm:vec. *sphere-cam-rel-pos* :z) 1.5))
 
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-space)
-	       )
+	       (if *draw-colored-cyl*
+		   (setf *draw-colored-cyl* NIL)
+		   (setf *draw-colored-cyl* t)))
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-escape)
 	       (sdl2:push-event :quit)))
 	    (:quit () t)
