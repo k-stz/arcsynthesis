@@ -96,8 +96,6 @@
 (defvar *plane-mesh*)
 (defvar *cylinder-mesh*)
 
-(defvar *test-cylinder*)
-
 (defparameter *projection-uniform-buffer* 0)
 
 (defun init ()
@@ -108,9 +106,6 @@
 
   (setf *cylinder-mesh*
 	(framework:xml->mesh-obj (merge-pathnames *data-dir* "UnitCylinder.xml")))
-
-  (setf *test-cylinder*
-	(framework::lisp-data->vao (merge-pathnames *data-dir* "unit-cylinder-lisp-data")))
   
   (gl:enable :cull-face)
   (%gl:cull-face :back)

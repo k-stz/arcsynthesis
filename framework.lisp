@@ -26,7 +26,12 @@
   ((attributes :accessor attrs) ;; usually two attrs objects: positions + colors
    (indices :accessor inds)
    (stp-obj :accessor so)
+   (vao-tags :accessor vao-tags)
    (vaos :accessor vaos))) ;; number of indices objects decide number of vbos
+
+(defclass vao-tag ()
+  ((mode-name :accessor mode-name)
+   (source-attrib :accessor src-attrib)))
 
 (defclass attribute ()
   ((index :accessor index) (type :accessor attr-type) (size :accessor size)
@@ -98,8 +103,48 @@
 	    collecting node)))
      	(mapcar #'node->attribute stp-attributes)))
 
+
 (defun stp-obj->attributes (stp-obj)
   (node-attributes-list (list-element-nodes stp-obj)))
+
+
+;;VAO-TAGS
+
+(defvar vao-tag-lst ())
+
+;;TODO: once this works, put inside node->vao-tag body as FLET
+(defun node-source-list (vao-tag-node)
+  (let* ((src-nodes (list-element-nodes vao-tag-node))
+	 (source-list
+	  (loop for node in src-nodes when
+	       ;; theye 
+	       (string-equal "source" (stp:local-name node))
+	     collecting node)))
+    source-list))
+
+
+(defun node->vao-tag (vao-tag-node)
+  (push vao-tag-node vao-tag-lst)
+  ;; TODO: get at the nested nodes "source attrib"
+  ;; (let ((vto (make-instance 'vao-tag)))
+  ;;   (stp:with-attributes))
+)
+
+
+(defun node-vao-tag-list (element-nodes)
+  "Take list of element nodes and return a list of vao-tag objects from it"
+  (let ((stp-vao-tags
+	 (loop for node in element-nodes when
+	      (string-equal "vao" (stp:local-name node))
+	    collecting node)))
+     	;(mapcar #'node->attribute stp-vao-tags)
+    stp-vao-tags
+    ))
+
+
+
+(defun stp-obj->vao-tags (stp-obj)
+  (node-vao-tag-list (list-element-nodes stp-obj)))
 
 ;;;INDICES
 (defun node->index (indx-node)
@@ -230,8 +275,7 @@ attributes"
        collecting VAO)))
 
 (defun build-vaos-in-mesh (mesh)
-  (let* ((vbo (first (gl:gen-buffers 1)))
-	 )
+  (let* ((vbo (first (gl:gen-buffers 1))))
     ;; build vbo first
     (gl:bind-buffer :array-buffer vbo)
     (gl:buffer-data :array-buffer :static-draw (vertex-data mesh))
@@ -269,7 +313,7 @@ attributes"
 
 
 
-;; TODO: implement class, with RENDER generic function
+
 
 (defun make-mesh (stp-obj)
   (let ((mesh (make-instance 'mesh)))
@@ -277,9 +321,10 @@ attributes"
     ;; and the vaos building code likes to iterate through it the other way around..
     (setf (attrs mesh) (nreverse (stp-obj->attributes stp-obj)))
     (setf (inds mesh) (stp-obj->indices stp-obj))
+    (setf (vao-tags mesh) (stp-obj->vao-tags stp-obj))
     (setf (so mesh) stp-obj)
     (build-vaos-in-mesh mesh)
-mesh))
+    mesh))
 
 (defun xml->mesh-obj (path-to-xml)
   (let* ((stp-obj  (cxml:parse path-to-xml (stp:make-builder)))
@@ -288,7 +333,7 @@ mesh))
 
 
 
-;; brute-force, non reusable solution
+;; brute-force, non-reusable solution
 (defun ship-xml->vao (path-to-ship-xml)
   (let ((mesh (xml->mesh-obj path-to-ship-xml)))
 
@@ -379,6 +424,24 @@ mesh))
 
 ;;------------------------------------------------------------------------------
 ;; New lisp-data geometry files approach:
-(defun lisp-data->vao (path-to-lisp-data)
-  ;;TODO
-  )
+
+;;; POSTPONED: working on xml solution integrating the <vao> tag
+;; (defvar *lst* 0)
+
+;; (defun lisp-data->vao (path-to-lisp-data)
+  
+;;   (let ((the-end (gensym "-nil"))
+;; 	(lst-data))
+;;     (setf lst-data
+;; 	  (with-open-file (str path-to-lisp-data)
+;; 	    (loop for sexp = (read str nil the-end)
+;; 	       with lst = ()
+;; 	       if (not (eql the-end sexp))
+;; 	       :do (push sexp lst)
+;; 	       else
+;; 	       :return (nreverse lst))))
+;;     (setf *lst* lst-data)))
+
+;; (arc-9:main)
+
+;; VAO organization:
