@@ -31,7 +31,7 @@
 
 (defclass vao-tag ()
   ((mode-name :accessor mode-name)
-   (source-attrib :accessor src-attrib)))
+   (source-attributes :accessor src-attribs)))
 
 (defclass attribute ()
   ((index :accessor index) (type :accessor attr-type) (size :accessor size)
@@ -110,25 +110,30 @@
 
 ;;VAO-TAGS
 
-(defvar vao-tag-lst ())
-
-;;TODO: once this works, put inside node->vao-tag body as FLET
-(defun node-source-list (vao-tag-node)
-  (let* ((src-nodes (list-element-nodes vao-tag-node))
-	 (source-list
-	  (loop for node in src-nodes when
-	       ;; theye 
-	       (string-equal "source" (stp:local-name node))
-	     collecting node)))
-    source-list))
-
-
 (defun node->vao-tag (vao-tag-node)
-  (push vao-tag-node vao-tag-lst)
-  ;; TODO: get at the nested nodes "source attrib"
-  ;; (let ((vto (make-instance 'vao-tag)))
-  ;;   (stp:with-attributes))
-)
+  (flet ((node-source-list (vao-tag-node)
+	   (let* ((src-nodes (list-element-nodes vao-tag-node))
+		  (source-list
+		   (loop for node in src-nodes when
+		      ;; theye 
+			(string-equal "source" (stp:local-name node))
+		      collecting node)))
+	     ;; not sure if order matters or not, so we reverse to get the textuall
+	     ;; order of the .xml representation
+	     (nreverse source-list))))
+    (let ((src-list (node-source-list vao-tag-node))
+	  (vto (make-instance 'vao-tag)))
+      (stp:with-attributes ((name "name")) vao-tag-node
+	(setf (mode-name vto) name))
+      (setf (src-attribs vto) 
+	    (loop for node in src-list collecting
+		 (stp:with-attributes ((attrib "attrib")) node
+		   (handler-case (parse-integer attrib)
+		     (parse-error ()
+		       (format *error-output* 
+			       "~a is not a string representing an integer
+provided *.xml file's vao tags may not contain integer attrib tags" attrib))))))
+      vto)))
 
 
 (defun node-vao-tag-list (element-nodes)
@@ -137,9 +142,7 @@
 	 (loop for node in element-nodes when
 	      (string-equal "vao" (stp:local-name node))
 	    collecting node)))
-     	;(mapcar #'node->attribute stp-vao-tags)
-    stp-vao-tags
-    ))
+     	(mapcar #'node->vao-tag stp-vao-tags)))
 
 
 
@@ -275,6 +278,8 @@ attributes"
        collecting VAO)))
 
 (defun build-vaos-in-mesh (mesh)
+  ;;NEXT-TODO: utilizing vao-tag and its mode-name slot to build
+  ;;           different VAOs from it!
   (let* ((vbo (first (gl:gen-buffers 1))))
     ;; build vbo first
     (gl:bind-buffer :array-buffer vbo)

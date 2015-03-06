@@ -19,8 +19,8 @@
 		      0.0 0.0 idv 0.0
 		      0.0 0.0 0.0 idv))))
 
-;; provided by sb-cga:+identity-matrix+
-;;(defparameter +identity-mat4+ (make-mat4 1.0))
+;; provided by sb-cga:+identity-matrix+, due to existing code now depending on glm:+idenenty-mat4+
+(defconstant +identity-mat4+ sb-cga:+identity-matrix+)
 
 
 ;; so as to be used in conjunction with SETF
