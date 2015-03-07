@@ -31,7 +31,7 @@
 
 (defclass vao-tag ()
   ((mode-name :accessor mode-name)
-   (source-attributes :accessor src-attribs)))
+   (source-attributes :accessor source-attributes)))
 
 (defclass attribute ()
   ((index :accessor index) (type :accessor attr-type) (size :accessor size)
@@ -125,7 +125,7 @@
 	  (vto (make-instance 'vao-tag)))
       (stp:with-attributes ((name "name")) vao-tag-node
 	(setf (mode-name vto) name))
-      (setf (src-attribs vto) 
+      (setf (source-attributes vto) 
 	    (loop for node in src-list collecting
 		 (stp:with-attributes ((attrib "attrib")) node
 		   (handler-case (parse-integer attrib)
