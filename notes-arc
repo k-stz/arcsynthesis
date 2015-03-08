@@ -1126,7 +1126,7 @@ our new words in a causation chain:
 "->" = light intensity weakens or stays the same at point
 light source -> angle of incident -> absorbing characteristic of surface -> reflection
 
-The source light, surface absorption and reflected light can be described as RGB colors
+The light source, surface absorption and reflected light can be described as RGB colors
 on the range [0,1] !!
 
 A lighting model is a function of all these parameters! There are a lot of parameters to
@@ -1148,7 +1148,7 @@ and theta=angle of incidence
 How to compute: angle of incidence, and where to perform the lighting computations
 
 surface normal,
-traingles have this nice property that it all its vertices occupy the same plane and
+traingles have this nice property that all its vertices occupy the same plane and
 hence its side has a definite direction it can face: the _surface normal_ or just
 _NORMAL_! Every point along of the surface of single triangle has the same geometric
 normal.
@@ -1164,7 +1164,7 @@ Now to draw what is within the vertices we will need the normals for all those p
 right? Yep, we and get those by interpolation from the vertices surrounding them!
 This simple and efficient computation has a name: 
 
-Gouroud Shading,
+Gouraud Shading,
 interpolating the result of Lambertian reflectance at the vectors (which contain the
 normals as meta data) of a vector over the surface of triangle. This approach to lighting
 over the surface of a triangle is very efficient - its just color interpolation over the
@@ -1173,7 +1173,7 @@ approximation. Its Achilles heel is that it is used for diffusion lighting and t
 example, modern games just don't use diffusion lighting anymore and it becomes noticeably
 inaccurate in other lighting models.
 
-The lambertian reflactance formula can now be filled:
+The lambertian reflectance formula can now be filled:
 R = D*I*cos(theta)   ; theta = dot(normal, light-source-direction);
 
 D given by the vertex data, as for the theta, the angle of incidence, we take the normal

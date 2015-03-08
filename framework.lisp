@@ -33,9 +33,16 @@
   ((mode-name :accessor mode-name)
    (source-attributes :accessor source-attributes)))
 
+;;TODO: when to use set (set-pprint-dispatch.. ) ? DEFMETHOD less efficient?
+(defmethod print-object ((vt vao-tag) stream)
+  (format stream "#<VAO-TAG:[mode:~a]>" (mode-name vt)))
+
 (defclass attribute ()
   ((index :accessor index) (type :accessor attr-type) (size :accessor size)
    (data :accessor data)))
+
+(defmethod print-object ((ab attribute) stream)
+  (format stream "#<ATTR:[index=~a]>" (index ab)))
 
 (defclass indices ()
   ((command :accessor cmd) (type :accessor indices-type) (data :accessor data)
@@ -105,7 +112,14 @@
 
 
 (defun stp-obj->attributes (stp-obj)
-  (node-attributes-list (list-element-nodes stp-obj)))
+  (let ((attr-list
+	 (node-attributes-list (list-element-nodes stp-obj))))
+    ;; mmh look at this juicy code! solves the problem of
+    ;; having index gaps or being out of order, with this
+    ;; we can provide the data to a vbo and calculate offset
+    ;; and have them be ordered by INDEX in the .xml attributes
+    ;; beware, SORT is destructive
+    (sort attr-list (lambda (x y) (< (index x) (index y))))))
 
 
 ;;VAO-TAGS
@@ -192,12 +206,12 @@ provided *.xml file's vao tags may not contain integer attrib tags" attrib))))))
 
 
 (defun vertex-data (mesh)
-  "Takes all the attributes of a mesh, regardless of multiple occurences of different 
-attribute tags in an xml, and puts them in a single gl-array in order of appearance of
-attributes"
+  "Takes all the attributes of a mesh and puts them in a single gl-array, the attributes
+are sorted in order of their index"
   (arc:create-gl-array-from-vector
    (apply #'vector
 	  (apply #'append (mapcar #'data (attrs mesh))))))
+
 
 (defvar *index-buffer-object*)
 (defvar *index-data*)
@@ -206,7 +220,6 @@ attributes"
    (apply #'vector
 	  (data-from-element (get-element "indices" stp-obj)))))
 
-(defvar *vertex-buffer-object*)
 
   ;; TODO: read attributes in one vertex-buffer-object,
   ;; format with first attribute using type and number from first attribute,
@@ -317,18 +330,29 @@ attributes"
 ;;		       :unsigned-short 0)
 
 
+;;1. vbo = gen-buffer, bind-buffer, buffer-data = (all attrs data), unbind
+;;2. access hetegenous vbo data calculating *-offsets; build index-buffer-objects
 
-
+;;IMPORTANT: <indices> textual order coincides with <attributes> appearance order?
+;;           
+(defun mesh-with-vao-tags->vaos (mesh)
+  (loop for vao-tag in (vao-tags mesh) do
+       (print vao-tag))
+  )
 
 (defun make-mesh (stp-obj)
   (let ((mesh (make-instance 'mesh)))
     ;; TODO: ugly ad-hoc solution (n-reverse...) because data in reverse order
     ;; and the vaos building code likes to iterate through it the other way around..
-    (setf (attrs mesh) (nreverse (stp-obj->attributes stp-obj)))
+    (setf (attrs mesh) (stp-obj->attributes stp-obj))
     (setf (inds mesh) (stp-obj->indices stp-obj))
     (setf (vao-tags mesh) (stp-obj->vao-tags stp-obj))
     (setf (so mesh) stp-obj)
-    (build-vaos-in-mesh mesh)
+
+    ;;provisional solution
+    (if (vao-tags mesh)
+	(progn (print "vao-tags present in xml") (vao-tags->vaos mesh))
+	(build-vaos-in-mesh mesh))
     mesh))
 
 (defun xml->mesh-obj (path-to-xml)
@@ -351,8 +375,7 @@ attributes"
       (gl:buffer-data :array-buffer :static-draw
 		      ;; (arc::create-gl-array-from-vector
 		      ;;  (apply #'vector (data (first (attrs mesh)))))
-		      (vertex-data mesh)
-		      )
+		      (vertex-data mesh))
 
       (gl:bind-buffer :array-buffer 0)
 
