@@ -274,7 +274,6 @@ described by the arguments given."
 (defun reshape (w h)
   (let ((pers-matrix (make-instance 'glutil:matrix-stack)))
     (glutil:perspective pers-matrix 45.0 (/ w h) *fz-near* *fz-far*)
-    (print (glutil:top-ms pers-matrix))
 
     (gl:bind-buffer :uniform-buffer *projection-uniform-buffer*)
     (gl:buffer-sub-data :uniform-buffer

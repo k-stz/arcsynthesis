@@ -34,7 +34,13 @@
    (source-attributes :accessor source-attributes)))
 
 ;;TODO: when to use set (set-pprint-dispatch.. ) ? DEFMETHOD less efficient?
+;;PRINT-OBJECT: is for print representation of objects, while SET-PPRINT-DISPATCH
+;;is for pretty-printing, note how set-pprint-dispatch format is ignored once
+;; the *pretty-print* variable is set to NIL!
 (defmethod print-object ((vt vao-tag) stream)
+  ;; TODO: there is some macro code that allows to print-unreadably, also it may
+  ;; be that user defined PRINT-OBJECT must follow some strict rules that are
+  ;; covered by said macro (automatically puts #<...> around objects
   (format stream "#<VAO-TAG:[mode:~a]>" (mode-name vt)))
 
 (defclass attribute ()
@@ -97,6 +103,7 @@
       (setf (index attr) (read-from-string i))
       ;; TODO: if xml is "ufloat" -falsly- it also returns cl::ufloat!!! ... why?
       (setf (attr-type attr) (arc:string->gl-type ty))
+      ;; TODO: if a variable "s" is defined this macro expansion fails!
       (setf (size attr) (read-from-string s))
       ;; TODO: brute-force solution shows
       (setf (data attr) (list-from-string (stp:data (stp:first-child attr-node)))))
@@ -260,8 +267,7 @@ are sorted in order of their index"
        	 (gl:bind-buffer :element-array-buffer ibo)
        	 (gl:buffer-data :element-array-buffer :static-draw index-data)
        	 (gl:bind-buffer :element-array-buffer 0)
-       collecting ibo))
-  )
+       collecting ibo)))
 
 (defun build-vaos (mesh vertex-buffer-object)
   ;; TODO: create multiple vaos or call (gl:buffer-data ..) to supply index-data in
@@ -289,6 +295,39 @@ are sorted in order of their index"
 	 (%gl:bind-vertex-array 0)
 	 ;; finally collecting the vao we carefully pieced together :)
        collecting VAO)))
+
+
+
+(defun attr-offsets-hash (mesh)
+  "Return a hash-table containing the vbo memory offset for
+each attribute index data, using the index as key for retrival."
+  (let ((attr-byte-size-list
+	 (loop for attr in (attrs mesh)
+	    :for number-of-elements = (length (data attr))
+	    :for type = (attr-type attr)
+	    :for type-size = (gl-type-byte-size type)
+	    :collecting (* type-size number-of-elements)))
+	(offsets-list))
+    (setf offsets-list
+	  (loop for offset-size in attr-byte-size-list
+	     ;; sum the values values iterated over so far
+	     ;; into the variable "acc", just what we want here
+	     :sum offset-size into acc
+	     :collecting acc))
+    ;; finally to access the values in a meaningful way, we'll make them
+    ;; accessible via the attributes INDEX, as key in the hashtable
+    ;; TODO: penalties of using hash-tables?
+    (let ((hash (make-hash-table)))
+      (loop for attr in (attrs mesh)
+	 :for offset in offsets-list
+	 :do
+	   (setf (gethash (index attr) hash) offset))
+      hash)))
+  
+
+;; (defun vbo-meta-data (mesh)
+;;   (loop for attr in (attr mesh)
+;;        for current-offset = (length (data attr))))
 
 (defun build-vaos-in-mesh (mesh)
   ;;NEXT-TODO: utilizing vao-tag and its mode-name slot to build
@@ -329,16 +368,15 @@ are sorted in order of their index"
 ;;(%gl:draw-elements :triangles (gl::gl-array-size *index-data*)
 ;;		       :unsigned-short 0)
 
-
+;;NEXT-TODO:
 ;;1. vbo = gen-buffer, bind-buffer, buffer-data = (all attrs data), unbind
 ;;2. access hetegenous vbo data calculating *-offsets; build index-buffer-objects
 
-;;IMPORTANT: <indices> textual order coincides with <attributes> appearance order?
-;;           
-(defun mesh-with-vao-tags->vaos (mesh)
-  (loop for vao-tag in (vao-tags mesh) do
-       (print vao-tag))
-  )
+(defun make-vbo-accessor (mesh)
+  (let ((vbo (first (gl:gen-buffers 1))))
+    (gl:bind-buffer :array-buffer vbo)
+    (gl:buffer-data :array-buffer :static-draw (vertex-data mesh))
+    (gl:bind-buffer :array-buffer 0)))
 
 (defun make-mesh (stp-obj)
   (let ((mesh (make-instance 'mesh)))
@@ -349,10 +387,7 @@ are sorted in order of their index"
     (setf (vao-tags mesh) (stp-obj->vao-tags stp-obj))
     (setf (so mesh) stp-obj)
 
-    ;;provisional solution
-    (if (vao-tags mesh)
-	(progn (print "vao-tags present in xml") (vao-tags->vaos mesh))
-	(build-vaos-in-mesh mesh))
+    (build-vaos-in-mesh mesh)
     mesh))
 
 (defun xml->mesh-obj (path-to-xml)
