@@ -74,12 +74,8 @@
 			  ;;   (apply #'vector
 			  ;; 	   (data index-obj))))
 			  (indices-type index-obj) 0)
-       (%gl:bind-vertex-array 0)
-       ))
+       (%gl:bind-vertex-array 0)))
 
-;;; about cxml-stp:
-;; everything is a node, every node has PARENTS
-;; (stp:parent m-stp) , some CAN have children:
 
 ;; access attributes with: (stp:attribute-value <element> "attribute-name")
 (defun get-element (element-string stp-obj)
@@ -259,6 +255,7 @@ are sorted in order of their index"
 	 (gl-index-data-list ;; TODO: yeah, maybe rewrite this?
 	  (mapcar #'arc::create-gl-array-of-unsigned-short-from-vector
 		  (mapcar #'(lambda (x) (apply #'vector x)) data-list))))
+    (setf foo gl-index-data-list)
      
     (loop for ibo in (gl:gen-buffers (length indices)) and
 	  index-data in gl-index-data-list
@@ -279,7 +276,7 @@ are sorted in order of their index"
 	 ;; And that's what we need here: new vertex-array-object for each run through
        for vao = (gl:gen-vertex-array) do
 	 (gl:bind-vertex-array vao)
-	 (gl:bind-buffer :array-buffer vertex-buffer-object)
+    	 (gl:bind-buffer :array-buffer vertex-buffer-object)
        ;; this is opengl state setting code
 	 (loop for attribute in (attrs mesh)
 	    for data-offset = 0 then color-data-offset
@@ -296,7 +293,31 @@ are sorted in order of their index"
 	 ;; finally collecting the vao we carefully pieced together :)
        collecting VAO)))
 
-
+(defun build-vaos-2 (mesh vbo)
+  (let ((offsets-hash (attr-offsets-hash mesh))
+	(index-buffer-objects (indices->index-buffer-objects (inds mesh))))
+    (setf foo offsets-hash)
+    (loop for ibo in index-buffer-objects
+       ;; attention 'for <var> = <sexp>' will evaluate <sexp> on every iteration!
+       ;; And that's what we need here: new vertex-array-object for each run through
+       for vao = (gl:gen-vertex-array) do
+	 (gl:bind-vertex-array vao)
+    	 (gl:bind-buffer :array-buffer vbo)
+       ;; this is opengl state setting code
+	 (loop for attribute in (attrs mesh)
+	    for data-offset = (gethash (index attribute) offsets-hash)
+	    do ;; (format t "~%~a ~a ~a ~a"  (index attribute) (size attribute)
+	    ;; 	       (attr-type attribute) data-offset)
+	      (%gl:enable-vertex-attrib-array (index attribute))
+	      (%gl:vertex-attrib-pointer (index attribute)
+					 (size attribute)
+					 (attr-type attribute) :false 0
+					 data-offset))
+       ;; associate current vao with index-data in index-buffer-object: ibo
+	 (%gl:bind-buffer :element-array-buffer ibo)
+	 (%gl:bind-vertex-array 0)
+       ;; finally collecting the vao we carefully pieced together :)
+       collecting VAO)))
 
 (defun attr-offsets-hash (mesh)
   "Return a hash-table containing the vbo memory offset for
@@ -309,11 +330,16 @@ each attribute index data, using the index as key for retrival."
 	    :collecting (* type-size number-of-elements)))
 	(offsets-list))
     (setf offsets-list
-	  (loop for offset-size in attr-byte-size-list
-	     ;; sum the values values iterated over so far
-	     ;; into the variable "acc", just what we want here
-	     :sum offset-size into acc
-	     :collecting acc))
+	  ;; (loop for offset-size in attr-byte-size-list
+	  ;;    ;; sum the values values iterated over so far
+	  ;;    ;; into the variable "acc", just what we want here
+	  ;;    :sum offset-size into acc
+	  ;;    :collecting acc)
+	  (loop for i in attr-byte-size-list
+	     with result = (list 0)
+	     sum i into acc
+	     do (push acc result)
+	     finally (return (nreverse (rest result)))))
     ;; finally to access the values in a meaningful way, we'll make them
     ;; accessible via the attributes INDEX, as key in the hashtable
     ;; TODO: penalties of using hash-tables?
@@ -325,10 +351,6 @@ each attribute index data, using the index as key for retrival."
       hash)))
   
 
-;; (defun vbo-meta-data (mesh)
-;;   (loop for attr in (attr mesh)
-;;        for current-offset = (length (data attr))))
-
 (defun build-vaos-in-mesh (mesh)
   ;;NEXT-TODO: utilizing vao-tag and its mode-name slot to build
   ;;           different VAOs from it!
@@ -338,7 +360,7 @@ each attribute index data, using the index as key for retrival."
     (gl:buffer-data :array-buffer :static-draw (vertex-data mesh))
     (gl:bind-buffer :array-buffer 0)
     
-    (setf (vaos mesh) (build-vaos mesh vbo))))
+    (setf (vaos mesh) (build-vaos-2 mesh vbo))))
 
 
 ;; (defun initialize-vertex-buffer (stp-obj)

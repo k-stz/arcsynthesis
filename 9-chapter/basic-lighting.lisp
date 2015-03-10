@@ -102,15 +102,15 @@
 (defun init ()
   (initialize-program)
 
-  (setf *plane-mesh*
-	(framework:xml->mesh-obj (merge-pathnames *data-dir* "UnitPlane.xml")))
+  ;; (setf *plane-mesh*
+  ;; 	(framework:xml->mesh-obj (merge-pathnames *data-dir* "UnitPlane.xml")))
 
   (setf *cylinder-mesh*
 	(framework:xml->mesh-obj (merge-pathnames *data-dir* "UnitCylinder.xml")))
 
   ;; TODO: remove once it works
-  (setf *ship-mesh*
-	(framework:xml->mesh-obj (merge-pathnames *data-dir* "Ship.xml")))
+  ;; (setf *ship-mesh*
+  ;; 	(framework:xml->mesh-obj (merge-pathnames *data-dir* "Ship.xml")))
   
   (gl:enable :cull-face)
   (%gl:cull-face :back)
