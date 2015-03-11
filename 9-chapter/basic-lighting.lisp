@@ -102,11 +102,11 @@
 (defun init ()
   (initialize-program)
 
-  ;; (setf *plane-mesh*
-  ;; 	(framework:xml->mesh-obj (merge-pathnames *data-dir* "UnitPlane.xml")))
+  (setf *plane-mesh*
+  	(framework:xml->mesh-obj (merge-pathnames *data-dir* "UnitPlane.xml")))
 
   (setf *cylinder-mesh*
-	(framework:xml->mesh-obj (merge-pathnames *data-dir* "UnitCylinder.xml")))
+  	(framework:xml->mesh-obj (merge-pathnames *data-dir* "UnitCylinder.xml")))
 
   ;; TODO: remove once it works
   ;; (setf *ship-mesh*
@@ -242,7 +242,7 @@ described by the arguments given."
 			     (vector (glm:mat4->mat3 (glutil:top-ms model-matrix))) NIL)
 
 	  (gl:uniformfv (light-intensity-unif *white-diffuse-color*) (glm:vec4 1.0 1.0 1.0 1.0))
-	  (framework:render *cylinder-mesh*)
+	  (framework:render-mode *cylinder-mesh* "lit-color")
 	  (gl:use-program 0))
 	;;else:
 	(glutil:with-transform (model-matrix)
@@ -290,7 +290,7 @@ described by the arguments given."
 (defparameter *draw-colored-cyl* t)
 
 (defun main ()
-  (arc::with-main
+  (arc:with-main
     (sdl2:with-init (:everything)
       (progn (setf *standard-output* out) (setf *debug-io* dbg) (setf *error-output* err))
       (sdl2:with-window (win :w 500 :h 500 :flags '(:shown :opengl))
@@ -307,8 +307,7 @@ described by the arguments given."
 	     ;; and that's all we need to build the arc viewpole: xrel, yrel
 	     ;; are store the motion relative to the last event!
 
-	     (format t "x:~a y:~a xrel:~a yrel:~a STATE:~a~%" x y xrel yrel state)
-	     )
+	     (format t "x:~a y:~a xrel:~a yrel:~a STATE:~a~%" x y xrel yrel state))
 	    
 	    (:keydown
 	     (:keysym keysym)
@@ -357,7 +356,7 @@ described by the arguments given."
 		   (display)
 
 		   ;;live editing enabled:
-		   (arc::update-swank)
+		   (arc:update-swank)
 
 		   (sdl2:gl-swap-window win))))))))
 

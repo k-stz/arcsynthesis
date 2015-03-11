@@ -8,6 +8,8 @@
   (:nicknames :arc)
   (:export ;; helper functions from auxiliary-functions.lisp:
    #:continuable
+   #:update-swank
+   #:with-main
    #:fill-gl-array
    #:create-gl-array-from-vector
    #:create-shader
@@ -78,6 +80,7 @@
   (:export
    #:deg-to-rad
    #:render
+   #:render-mode
    #:xml->mesh-obj
    #:render-ship
    #:ship-xml->vao))
