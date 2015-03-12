@@ -95,7 +95,6 @@
 
 (defvar *plane-mesh*)
 (defvar *cylinder-mesh*)
-(defvar *ship-mesh*)
 
 (defparameter *projection-uniform-buffer* 0)
 
@@ -108,10 +107,6 @@
   (setf *cylinder-mesh*
   	(framework:xml->mesh-obj (merge-pathnames *data-dir* "UnitCylinder.xml")))
 
-  ;; TODO: remove once it works
-  ;; (setf *ship-mesh*
-  ;; 	(framework:xml->mesh-obj (merge-pathnames *data-dir* "Ship.xml")))
-  
   (gl:enable :cull-face)
   (%gl:cull-face :back)
   (%gl:front-face :cw) 
@@ -207,8 +202,6 @@ described by the arguments given."
     (gl:use-program 0)
 
 
-    ;; TODO: this doesn't look right, lighting-wise, are the normals wrong? What's up with all the
-    ;;       sharp edges in the shades?
     ;; Render the ground plane
     (glutil:with-transform (model-matrix)
 	(gl:use-program (the-program *white-diffuse-color*))
@@ -241,7 +234,7 @@ described by the arguments given."
 	  (gl:uniform-matrix (normal-model-to-camera-matrix-unif *vertex-diffuse-color*) 3
 			     (vector (glm:mat4->mat3 (glutil:top-ms model-matrix))) NIL)
 
-	  (gl:uniformfv (light-intensity-unif *white-diffuse-color*) (glm:vec4 1.0 1.0 1.0 1.0))
+	  (gl:uniformfv (light-intensity-unif *vertex-diffuse-color*) (glm:vec4 1.0 1.0 1.0 1.0))
 	  (framework:render-mode *cylinder-mesh* "lit-color")
 	  (gl:use-program 0))
 	;;else:
@@ -257,7 +250,7 @@ described by the arguments given."
 			     (vector (glm:mat4->mat3 (glutil:top-ms model-matrix))) NIL)
 
 	  (gl:uniformfv (light-intensity-unif *white-diffuse-color*) (glm:vec4 1.0 1.0 1.0 1.0))
-	  (framework:render *cylinder-mesh*)
+	  (framework:render-mode *cylinder-mesh* "lit")
 	  (gl:use-program 0)))
     ))
 
