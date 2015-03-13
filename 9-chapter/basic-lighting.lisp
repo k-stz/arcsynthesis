@@ -78,8 +78,7 @@
 	  ;; TODO: get cl-opengl version containing this version
 	  ;;(gl:get-uniform-block-index (the-program data) "Projection")
 	  (cffi:with-foreign-string (s "Projection")
-	    (%gl:get-uniform-block-index (the-program data) s))
-	  )
+	    (%gl:get-uniform-block-index (the-program data) s)))
     (%gl:uniform-block-binding
      (the-program data) projection-block +projection-block-index+)
     data))
