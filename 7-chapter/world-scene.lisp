@@ -101,9 +101,9 @@
 
 ;; makeshift solution
 (defparameter t-mat (let ((translate-mat4 (glm:make-mat4 1.0))
-			 (vec4 (glm:vec4-from-vec3 (glm:vec3 3.0 -5.0 -40.0))))
-		     (glm:set-mat4-col translate-mat4 3 vec4)
-		     translate-mat4))
+			  (vec4 (glm:vec4-from-vec3 (glm:vec3 3.0 -5.0 -40.0))))
+		      (glm:set-mat4-col translate-mat4 3 vec4)
+		      translate-mat4))
 
 ;;g_ in arcsynthesis code variable names, is a convention for global-variable naming
 ;;hence replaced by ear-muffs
@@ -632,7 +632,7 @@ geometry coordinates and returned as a position vector."
    	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-o)
 	     (incf (glm:vec. *sphere-cam-rel-pos* :z) 1.5))
 
-	   ;; TODO: toggle look at point rendering 
+	   ;; toggle look at point rendering 
 	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-space)
 	     (if *draw-look-at-point*
 		 (setf *draw-look-at-point* nil)

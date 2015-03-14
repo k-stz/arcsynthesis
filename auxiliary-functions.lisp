@@ -153,8 +153,7 @@ will be COERCEd to SINGLE-FLOAT"
     ;; our program object instead of its default rendering state:
     ;; arcsyntheses: "it, glUseProgram, is later called with 0 to indicate that no
     ;;                program will be used for rendering"
-    program
-    ))
+    program))
 
 ;; TODO: remove from all code, find solution to do such clean-ups more organized in the
 ;;       future. UPDATE: use SLIME'S C-c C-w C-c aka slime-who-calls (basically inverse of M-.)
