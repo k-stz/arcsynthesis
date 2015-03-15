@@ -1,16 +1,18 @@
-(in-package #:arc-1)
-
 ;;;; cl version of arcsynthesis' "Chapter 1.Hello, Triangle!"
 
-(defvar *sdl-init* nil) ;what was the use of that...?
+(in-package #:arc-1)
+
 (defvar out *standard-output*)  (defvar dbg *debug-io*) (defvar err *error-output*)
 ;(defparameter *connection* (or swank::*emacs-connection* (swank::default-connection)))
 
-;;gl:with-gl-array might remedy this!
-;; const float vertex-positions[] } { 0.75f, ... 1.0f, };
-;;if *vectex-positions* isn't of type gl:gl-array (which it gets from gl:alloc-gl-array)
-;;(gl:buffer-data .. *vector-positions*) will complain explicitly about this, and sdl2 will crash
-(defparameter *vertex-positions* (gl:alloc-gl-array :float 12)) ;TODO: lisp builtins possible?
+;; gl:with-gl-array might remedy this!
+;;  const float vertex-positions[] } { 0.75f, ... 1.0f, };
+;; if *vectex-positions* isn't of type gl:gl-array (which it gets from gl:alloc-gl-array)
+;; (gl:buffer-data .. *vector-positions*) will complain explicitly about this, and sdl2
+;; will crash
+
+;; TODO: lisp builtins possible?
+(defparameter *vertex-positions* (gl:alloc-gl-array :float 12))
 ;;the alpha value seems to cause some scaling to happen...?
 (defparameter *verts* #(0.75  0.75 0.0 1.0
 			0.75 -0.75 0.0 1.0
@@ -46,8 +48,7 @@ outputColor = vec4(0.0f, 1.0f, 1.0f, 1.0f);
     ;; maybe because they're residue as in the program object is already created from
     ;; their construction plan
      (loop for shader-object in shader-list
-	  do (%gl:delete-shader shader-object))
-  ))
+	  do (%gl:delete-shader shader-object))))
 
 
 (defun main ()

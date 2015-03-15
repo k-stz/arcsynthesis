@@ -22,6 +22,7 @@
 
 (setf *vertex-positions* (arc::create-gl-array-from-vector *verts*))
 
+(defvar *program*)
 
 (defun init-shader-program ()
   (let ((shader-list (list)))
@@ -34,8 +35,8 @@
      (arc:create-shader :fragment-shader
 			(arc:file-to-string "fragment-shader-with-input.glsl"))
      shader-list)
-    ;; TODO:fragment shader
-    (arc:create-program shader-list)
+    (setf *program* 
+	  (arc:create-program shader-list))
     (loop for shader-object in shader-list
        do (%gl:delete-shader shader-object))))
 
@@ -44,11 +45,11 @@
 (defun set-up-opengl-state ()
   (setf position-buffer-object (first (gl:gen-buffers 1)))
   (%gl:bind-buffer :array-buffer position-buffer-object)
-  ;; TODO: don't use arc-1::*vertex-positions*
+
   (gl:buffer-data :array-buffer :static-draw *vertex-positions*)
   (gl:bind-buffer :array-buffer 0)
   (gl:bind-buffer :array-buffer position-buffer-object)
-  (%gl:enable-vertex-attrib-array 0) ; vertix array
+  (%gl:enable-vertex-attrib-array 0) ; vertex array
   (%gl:enable-vertex-attrib-array 1) ; color array
   (%gl:vertex-attrib-pointer 0 4 :float :false 0 0)
   ;; TODO: very important, look up implementation of this function, as to how the
@@ -65,8 +66,8 @@
 
 
 (defun rendering-code ()
-  (%gl:draw-arrays :triangles 0 3)
-  )
+  (gl:use-program *program*)
+  (%gl:draw-arrays :triangles 0 3))
 
 (defun main ()
   (sdl2:with-init (:everything)
@@ -77,9 +78,9 @@
 	;;glClearColor(..)
 	(gl:clear-color 0 0 0.2 1)
 	(gl:clear :color-buffer-bit)
-	;;TODO: array-buffer code:
+
         (set-up-opengl-state)
-	(init-shader-program)		;implicitly gl:use-program :I
+	(init-shader-program)
 	(sdl2:with-event-loop (:method :poll)
 	  (:keyup
 	   (:keysym keysym)

@@ -3,14 +3,14 @@
 out vec4 outputColor;
 
 // arcsynthesis' "time", but we need to use the same uniform as in the
-// same uniform as in the vector shader: vs-calc-offset.glsl
+// same uniform as in the vector shader: calc-offset.vert
 // uniforms are "global" across all shaders, hence this uniform
-// is the same as the one used in the vector-shader "vs-calc-offset.glsl"
+// is the same as the one used in the vertex-shader "calc-offset.vert"
 uniform float time;
 
 // note because uniforms are "global" if we want to use a new loop_duration
 // variable we have to give it a different name since "loop_duration" stores
-// already (/ sdl2:get-ticks 1000.0
+// already (/ sdl2:get-ticks 1000.0)
 uniform float frag_loop_duration;
 
 const vec4 firstColor = vec4(0.0f, 1.0f, 1.0f, 1.0f);

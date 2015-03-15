@@ -30,7 +30,7 @@ written in Common Lisp using cl-sdl2 and cl-opengl"
 	    :components ((:file "fragment-color")
 			 (:file "vertex-color")))
    (:module "3-chapter/"
-   	    :components ((:file "moving-triangle")
+   	    :components ((:file "cpu-position-offset")
    			 (:file "vert-calc-offset")
    			 (:file "vert-position-offset")
 			 (:file "frag-change-color")))
