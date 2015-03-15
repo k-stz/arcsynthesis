@@ -1,7 +1,8 @@
 (in-package #:arc-3.2)
 
-(defvar *glsl-directory*
-  (merge-pathnames #p "3-chapter/" (asdf/system:system-source-directory :arcsynthesis)))
+(defvar *data-directory*
+  (merge-pathnames #p "3-chapter/data/"
+		   (asdf/system:system-source-directory :arcsynthesis)))
 ;;TODO: what with this garbage here >_>, or should I really build the habit of looking
 ;; at the terminal
 (defvar out *standard-output*)  (defvar dbg *debug-io*) (defvar err *error-output*)
@@ -20,40 +21,10 @@
 (defparameter position-buffer-object nil) ; buffer object handle
 (defparameter x-offset 0) (defparameter y-offset 0)
 
-(defun compute-positions-offset ()
-  "assign the x-offset and y-offset variables values oscilating every 5 seconds"
-  (let* ((loop-duration 5.0)
-	 (scale (/ (* pi 2) loop-duration))
-	 (elapsed-time (/ (sdl2:get-ticks) 1000.0))
-	 ;; this is sorta cool, it in effect creates a value on the range [0, loop-duration)
-	 ;; which is what we want: representing the 5 seconds circle!
-	 (curr-time-through-loop (mod elapsed-time loop-duration)))
-    ;; in the following "0.5" shrinks the cos/sin oscilation from 1 to -1 to 0.5 to -0.5
-    ;; in effect creating a "circle of diameter 1 (from 0.5 to -0.5 = diameter 1)
-    ;; great fun: substitute with cos,sin,tan and see how it beautifully moves in its patterns!
-    (setf x-offset (* (cos (* curr-time-through-loop scale)) 0.5))
-    (setf y-offset (* (sin (* curr-time-through-loop scale)) 0.5))))
 
-(defun adjust-vertex-data ()
-  ;; like Java's STRING passing arround simple-vectors doesn't create copies,
-  ;; they all point to the same vector => changing one chngers the simple-vector
-  ;; for all
-  (let ((new-data (make-array (length *verts*)
-			      :initial-contents *verts*)))
-    ;; TODO: better way to loop through this simple-vector?
-    (loop for i from 0 below (length new-data) by 4 do
-	 (incf (aref new-data i) x-offset)
-	 (incf (aref new-data (1+ i)) y-offset))
-    ;; move lisp *verts* data to gl-array: *vertex-positions*
-    (setf new-data (arc:create-gl-array-from-vector new-data))
-    (gl:bind-buffer :array-buffer position-buffer-object)
-    (gl:buffer-sub-data :array-buffer new-data)
-    (gl:bind-buffer :array-buffer 0)
-    ))
-       
+(defparameter *time* 0.0)
 
-
-(defparameter sdl-ticks 0.0)
+(defvar *program*)
 
 (defun init-shader-program ()
   (let ((shader-list (list)))
@@ -62,26 +33,24 @@
      (arc:create-shader
       :vertex-shader
       (arc:file-to-string
-       (merge-pathnames "vs-calc-offset.glsl" *glsl-directory*)))
+       (merge-pathnames "calc-offset.vert" *data-directory*)))
      shader-list)
     (push
      (arc:create-shader
       :fragment-shader
       (arc:file-to-string
-       (merge-pathnames "fragment-shader-3.glsl" *glsl-directory* )))
+       (merge-pathnames "standard.frag" *data-directory* )))
      shader-list)
     ;; TODO:fragment shader
-    (let ((program (arc:create-program-and-return-it shader-list))
-	  (loop-duration))
+    (setf *program* (arc:create-program shader-list))
+    (let (loop-duration)
       ;; here be uniform locations handlels
-      (setf sdl-ticks (gl:get-uniform-location program "sdl_ticks"))
-      (setf loop-duration (gl:get-uniform-location program "loop_duration"))
-      (%gl:use-program program)
+      (setf *time* (gl:get-uniform-location *program* "time"))
+      (setf loop-duration (gl:get-uniform-location *program* "loop_duration"))
+      (%gl:use-program *program*)
       (%gl:uniform-1f loop-duration 5.0)
-      ;;(gl:use-program 0)
-      )
-    (loop for shader-object in shader-list
-       do (%gl:delete-shader shader-object))))
+      (format t "~a ~a ~a" *time* loop-duration 1)
+      (gl:use-program 0))))
 
 
 (defun set-up-opengl-state ()
@@ -96,25 +65,16 @@
   (%gl:enable-vertex-attrib-array 1) ; color array-buffer
   (%gl:vertex-attrib-pointer 0 4 :float :false 0 0)
   ;; this works :I, so does simply '48' as well :x
-  (%gl:vertex-attrib-pointer 1 4 :float :false 0 (cffi:make-pointer 48)) 
-  )
+  (%gl:vertex-attrib-pointer 1 4 :float :false 0 (cffi:make-pointer 48)))
 
 
 (defun rendering-code ()
-  ;;strange arcsynthesis repeadetly calls "glUseProgram" hmm
-  ;;in the init code it finishes with (gl:use-program 0), and in this rendering code
-  ;;arcsynthesis runs (gl:use-program program) then some code that needs it to be
-  ;; set like: (gl:uniform-1f sdl-ticks ..) and then sets in to (gl:use-program 0)
-  ;; every loop. This could be an indicator that many different shaders will be used?
-  ;;  i.e.: TODO: make program object 'program' a global variable :I
-  ;; AND: TODO: well this will solve my extremly repetitive code, by just passing
-  ;;            the shader program of a certain chapter into it :I
   
   (gl:clear :color-buffer-bit)
+  (gl:use-program *program*)
   ;(compute-positions-offset)
-  (%gl:uniform-1f sdl-ticks (sdl2:get-ticks))
-  (%gl:draw-arrays :triangles 0 3)
-  )
+  (%gl:uniform-1f *time* (/ (sdl2:get-ticks) 1000.0))
+  (%gl:draw-arrays :triangles 0 3))
 
 (defun main ()
   (sdl2:with-init (:everything)

@@ -1,13 +1,14 @@
 (in-package #:arc-3.1)
 
-(defvar *glsl-directory*
-  (merge-pathnames #p "3-chapter/" (asdf/system:system-source-directory :arcsynthesis)))
-;;TODO: what with this garbage here >_>, or should I really build the habit of looking
-;; at the terminal
+(defvar *data-directory*
+  (merge-pathnames #p "3-chapter/data/"
+		   (asdf/system:system-source-directory :arcsynthesis)))
+
 (defvar out *standard-output*)  (defvar dbg *debug-io*) (defvar err *error-output*)
 
 (defparameter *vertex-positions* (gl:alloc-gl-array :float 12))
-;;vertecies followed by colors, also this time an equilateral triangle instead of a isosceles
+;;vertices followed by colors, also this time an equilateral triangle instead of a
+;;isosceles
 (defparameter *verts* #(0.0  0.25   0.0 1.0
 			0.25 -0.183 0.0 1.0
 		       -0.25 -0.183 0.0 1.0
@@ -20,46 +21,24 @@
 (defparameter position-buffer-object nil) ; buffer object handle
 (defparameter x-offset 0) (defparameter y-offset 0)
 
-(defun compute-positions-offset () ;wow, we don't even need x-offset, y-offset (lol!)
+(defun compute-positions-offset ()	;wow, we don't even need x-offset, y-offset (lol!)
   "Return a list containing values which oscilate every 5 seconds"
   (let* ((loop-duration 5.0)
 	 (scale (/ (* pi 2) loop-duration))
 	 (elapsed-time (/ (sdl2:get-ticks) 1000.0))
-	 ;; this is sorta cool, it in effect creates a value on the range [0, loop-duration)
-	 ;; which is what we want: representing the 5 seconds circle!
+	 ;; this is sorta cool, it in effect creates a value on the range [0,
+	 ;; loop-duration) which is what we want: representing the 5 seconds circle!
 	 (curr-time-through-loop (mod elapsed-time loop-duration)))
     ;; in the following "0.5" shrinks the cos/sin oscilation from 1 to -1 to 0.5 to -0.5
-    ;; in effect creating a "circle of diameter 1 (from 0.5 to -0.5 = diameter 1)
-    ;; great fun: substitute with cos,sin,tan and see how it beautifully moves in its patterns!
+    ;; in effect creating a "circle of diameter 1 (from 0.5 to -0.5 = diameter 1) great
+    ;; fun: substitute with cos,sin,tan and see how it beautifully moves in its patterns!
     (setf x-offset (* (cos (* curr-time-through-loop scale)) 0.5))
     (setf y-offset (* (sin (* curr-time-through-loop scale)) 0.5))))
 
-(defun adjust-vertex-data ()
-  ;; like Java's STRING passing arround simple-vectors doesn't create copies,
-  ;; they all point to the same vector => changing one chngers the simple-vector
-  ;; for all
-  (let ((new-data (make-array (length *verts*)
-			      :initial-contents *verts*)))
-    ;; TODO: better way to loop through this simple-vector?
-    (loop for i from 0 below (length new-data) by 4 do
-	 (incf (aref new-data i) x-offset)
-	 (incf (aref new-data (1+ i)) y-offset))
-    ;; move lisp *verts* data to gl-array: *vertex-positions*
-    (setf new-data (arc:create-gl-array-from-vector new-data))
-    (gl:bind-buffer :array-buffer position-buffer-object)
-    ;; (%gl:buffer-sub-data target offset size data)
-    ;; we use this instead of gl:buffer-data, because the memory was already allocated by
-    ;; gl:buffer-data. gl:buffer-SUB-data operates on existing memory ;>
-    ;; TODO: arcsynthesis code uses a fresh gl:gl-array instead of reusing (changing)
-    ;; *vertex-positions* ... :( YEAH this is wrong, we add shit to its parameters
-    ;; all the time, hence our triangle spins out of existence yo!!!
-    (gl:buffer-sub-data :array-buffer new-data)
-    (gl:bind-buffer :array-buffer 0)
-    ))
-       
 
+(defparameter *offset-location* nil)
 
-(defparameter offset-location nil)
+(defvar *program*)
 
 (defun init-shader-program ()
   (let ((shader-list (list)))
@@ -68,25 +47,20 @@
      (arc:create-shader
       :vertex-shader
       (arc:file-to-string
-       (merge-pathnames "vs-position-offset.glsl" *glsl-directory*)))
+       (merge-pathnames "position-offset.vert" *data-directory*)))
      shader-list)
-    ;; (push
-    ;;  (arc:create-shader
-    ;;   :fragment-shader
-    ;;   (arc:file-to-string
-    ;;    (merge-pathnames "fragment-shader-3.glsl" *glsl-directory* )))
-    ;;  shader-list)
+    (push
+     (arc:create-shader
+      :fragment-shader
+      (arc:file-to-string
+       (merge-pathnames "standard.frag" *data-directory* )))
+     shader-list)
     ;; TODO:fragment shader
-    ;; TODO: HOT SHIT: create-program now returns program
-    (let ((program (arc:create-program-and-return-it shader-list)))
-      ;; TODO:"will return -1 if the uniform has no location ...? wut."
-      ;; ah ok, when we give it a variable we didn't really declare in the
-      ;; shader
-      (setf offset-location (gl:get-uniform-location program "offset"))
-      (%gl:use-program program)
-      )
-    (loop for shader-object in shader-list
-       do (%gl:delete-shader shader-object))))
+    (setf *program* (arc:create-program shader-list))
+    ;; TODO:"will return -1 if the uniform has no location ...? wut."
+    ;; ah ok, when we give it a variable we didn't really declare in the
+    ;; shader
+    (setf *offset-location* (gl:get-uniform-location *program* "offset"))))
 
 
 (defun set-up-opengl-state ()
@@ -106,14 +80,14 @@
 
 
 (defun rendering-code ()
-  ;;strange arcsynthesis repeadetly calls "glUseProgram" hmm
   (gl:clear :color-buffer-bit)
+  (gl:use-program *program*)
+
   (compute-positions-offset)
-;;  (adjust-vertex-data) ; this time we use the shader!
-  ;; now we can set some uniforms using the location "handle" offset-location!!
-  (%gl:uniform-2f offset-location x-offset y-offset)
-  (%gl:draw-arrays :triangles 0 3)
-  )
+  ;;  (adjust-vertex-data) ; this time we use the shader!
+  ;; now we can set some uniforms using the location "handle" *offset-location*!!  
+  (%gl:uniform-2f *offset-location* x-offset y-offset)
+  (%gl:draw-arrays :triangles 0 3))
 
 (defun main ()
   (sdl2:with-init (:everything)

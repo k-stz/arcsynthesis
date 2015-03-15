@@ -3,9 +3,9 @@
 out vec4 outputColor;
 
 // arcsynthesis' "time", but we need to use the same uniform as in the
-// same uniform as in the vector shader: vs-calc-offset.glsl
+// same uniform as in the vector shader: calc-offset.vert
 // uniforms are "global" across all shaders, hence this uniform
-// is the same as the one used in the vertex-shader "vs-calc-offset.glsl"
+// is the same as the one used in the vertex-shader "calc-offset.vert"
 uniform float time;
 
 // note because uniforms are "global" if we want to use a new loop_duration

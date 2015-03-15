@@ -175,6 +175,7 @@ described by the arguments given."
 
 
 (defparameter *light-direction* (glm:vec4 0.866 0.5 0.0 0.0))
+(defparameter *draw-colored-cyl* t)
 
 (defun draw ()
   (let ((model-matrix (make-instance 'glutil:matrix-stack))
@@ -279,8 +280,6 @@ described by the arguments given."
 (defconstant +standard-angle-increment+ 11.25)
 (defconstant +small-angle-increment+ 9.0)
 
-
-(defparameter *draw-colored-cyl* t)
 
 (defun main ()
   (arc:with-main
