@@ -27,8 +27,8 @@ written in Common Lisp using cl-sdl2 and cl-opengl"
    (:module "1-chapter/"
    	    :components ((:file "hello-triangle")))
    (:module "2-chapter/"
-	    :components ((:file "fragment-color")
-			 (:file "vertex-color")))
+	    :components ((:file "frag-position")
+			 (:file "vertex-colors")))
    (:module "3-chapter/"
    	    :components ((:file "cpu-position-offset")
    			 (:file "vert-calc-offset")

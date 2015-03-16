@@ -1,9 +1,8 @@
 (in-package #:arc-2)
 
-(defvar *glsl-directory*
-  (merge-pathnames #p "2-chapter/" (asdf/system:system-source-directory :arcsynthesis)))
-(defvar *vertex-shader.glsl-path*
-  (merge-pathnames #p "vertex-shader.glsl" *glsl-directory*))
+(defvar *data-directory*
+  (merge-pathnames #p "2-chapter/data/"
+		   (asdf/system:system-source-directory :arcsynthesis)))
 
 ;;; this time we load shaders from files, check out the (init-shader-program) function
 
@@ -23,11 +22,11 @@
   (let ((shader-list (list)))
     (push (arc:create-shader
 	   :vertex-shader
-	   (arc:file-to-string (merge-pathnames "vertex-shader.glsl" *glsl-directory*)))
+	   (arc:file-to-string (merge-pathnames "frag-position.vert" *data-directory*)))
 	  shader-list)
     (push (arc:create-shader
 	   :fragment-shader
-	   (arc:file-to-string (merge-pathnames "fragment-shader.glsl" *glsl-directory*)))
+	   (arc:file-to-string (merge-pathnames "frag-position.frag" *data-directory*)))
 	  shader-list)
 
     (setf *program*
