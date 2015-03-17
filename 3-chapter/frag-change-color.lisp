@@ -19,13 +19,11 @@
 
 (setf *vertex-positions* (arc::create-gl-array-from-vector *verts*))
 
-(defparameter position-buffer-object nil) ; buffer object handle
-(defparameter x-offset 0) (defparameter y-offset 0)
-
+(defparameter *position-buffer-object* nil) ; buffer object handle
 
 ;; uniforms
-(defparameter time-uniform 0.0)
-(defparameter loop-duration-uniform 0)
+(defparameter *time-uniform* 0.0)
+(defparameter *loop-duration-uniform* 0)
 
 (defvar *program*)
 
@@ -48,25 +46,25 @@
 	  (frag-loop-duration-uniform))
       (setf *program* (arc:create-program shader-list))
       ;; here be uniform locations handlels
-      (setf time-uniform (gl:get-uniform-location *program* "time"))
-      (setf loop-duration-uniform (gl:get-uniform-location *program* "loop_duration"))
+      (setf *time-uniform* (gl:get-uniform-location *program* "time"))
+      (setf *loop-duration-uniform* (gl:get-uniform-location *program* "loop_duration"))
       (setf frag-loop-duration-uniform
 	    (gl:get-uniform-location *program* "frag_loop_duration"))
       (%gl:use-program *program*)
-      (%gl:uniform-1f loop-duration-uniform 5.0)
+      (%gl:uniform-1f *loop-duration-uniform* 5.0)
       (%gl:uniform-1f frag-loop-duration-uniform 3.0)
       
       (gl:use-program 0))))
 
 
 (defun set-up-opengl-state ()
-  (setf position-buffer-object (first (gl:gen-buffers 1)))
-  (%gl:bind-buffer :array-buffer position-buffer-object)
+  (setf *position-buffer-object* (first (gl:gen-buffers 1)))
+  (%gl:bind-buffer :array-buffer *position-buffer-object*)
   ;; we want to change the buffer data, hence NOT :static-draw but :stream-draw
   ;; TODO: any visible performance penalties otherwise?
   (gl:buffer-data :array-buffer :stream-draw *vertex-positions*)
   (gl:bind-buffer :array-buffer 0)
-  (gl:bind-buffer :array-buffer position-buffer-object)
+  (gl:bind-buffer :array-buffer *position-buffer-object*)
   (%gl:enable-vertex-attrib-array 0) ; vertex array-buffer
   (%gl:enable-vertex-attrib-array 1) ; color array-buffer
   (%gl:vertex-attrib-pointer 0 4 :float :false 0 0)
@@ -79,7 +77,7 @@
   ;;strange arcsynthesis repeadetly calls "glUseProgram" hmm
   ;;in the init code it finishes with (gl:use-program 0), and in this rendering code
   ;;arcsynthesis runs (gl:use-program program) then some code that needs it to be
-  ;; set like: (gl:uniform-1f time-uniform ..) and then sets in to (gl:use-program 0)
+  ;; set like: (gl:uniform-1f *time-uniform* ..) and then sets in to (gl:use-program 0)
   ;; every loop. This could be an indicator that many different shaders will be used?
   ;;  i.e.: TODO: make program object 'program' a global variable :I
   ;; AND: TODO: well this will solve my extremly repetitive code, by just passing
@@ -87,12 +85,12 @@
   
   (gl:clear :color-buffer-bit)
   (gl:use-program *program*)
-  (%gl:uniform-1f time-uniform (/ (sdl2:get-ticks) 1000.0))
+  (%gl:uniform-1f *time-uniform* (/ (sdl2:get-ticks) 1000.0))
 
   ;; this cool neat effect gets you thinking more clearly how the rendering happens
-  (%gl:uniform-1f loop-duration-uniform 5.0)
+  (%gl:uniform-1f *loop-duration-uniform* 5.0)
   (%gl:draw-arrays :triangles 0 3)
-  (%gl:uniform-1f loop-duration-uniform 2.5)
+  (%gl:uniform-1f *loop-duration-uniform* 2.5)
   (%gl:draw-arrays :triangles 0 3))
 
 (defun main ()

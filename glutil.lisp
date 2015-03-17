@@ -193,3 +193,52 @@ it will be returned to its former state"
        (push-ms ,matrix-stack)
        ,@(try-key (car body) body '())
        (pop-ms ,matrix-stack))))
+
+
+;;------------------------------------------------------------------------------
+;;ViewPole implementation:
+;; glutil::ViewPole g_viewPole = glutil::ViewPole(g_initialViewData,
+;; 					       g_viewScale,
+;;                                                glutil::MB_LEFT_BTN) ;
+
+;; Implementation following the specification in "chapter 9 - Lights On"
+(defclass view-pole ()
+  ((look-pt :initform (glm:vec3 0.0 0.0 0.0) :initarg :look-pt)
+   (cam-pos :initform (glm:vec3 0.0 0.0 1.0) :initarg :cam-pos)
+   (up-pt :initform (glm:vec3 0.0 1.0 0.0) :initarg up-pt)))
+
+
+
+(defun calc-matrix (view-pole)
+  (calc-look-at-matrix (slot-value view-pole 'cam-pos)
+		       (slot-value view-pole 'look-pt)
+		       (slot-value view-pole 'up-pt)))
+
+(defun calc-look-at-matrix (camera-pt look-pt up-pt)
+  "Returns a transformation matrix that represents an orientation of a camera orientation
+described by the arguments given."
+  ;; TODO: migrate explanation
+  ;; explanation in "world-with-ubo.lisp" in the chapter 7 directory
+  (let* ((look-dir (sb-cga:normalize (sb-cga:vec- look-pt camera-pt)))
+	 (up-dir (sb-cga:normalize up-pt))
+	 (right-dir (sb-cga:normalize (sb-cga:cross-product look-dir up-dir)))
+	 (perp-up-dir (sb-cga:cross-product right-dir look-dir))
+
+	 (rot-mat (glm:make-mat4 1.0))
+	 (trans-mat (glm:make-mat4 1.0)))
+
+    (glm:set-mat4-col rot-mat 0 (glm:vec4-from-vec3 right-dir 0.0))
+    (glm:set-mat4-col rot-mat 1 (glm:vec4-from-vec3 perp-up-dir 0.0))
+    (glm:set-mat4-col rot-mat 2 (glm:vec4-from-vec3 (glm:vec- look-dir) 0.0))
+    ;; TODO: why transpose it eventually? Maybe because it is col-major and setting
+    ;; column-wise and transpose is more efficient than just setting the rows
+    ;; with discontiguous indices
+    (setf rot-mat (sb-cga:transpose-matrix rot-mat))
+    (glm:set-mat4-col trans-mat 3 (glm:vec4-from-vec3 (glm:vec- camera-pt) 1.0))
+    (sb-cga:matrix* rot-mat trans-mat)))
+
+
+
+;; ObjectPole implementation
+;; glutil::ObjectPole g_objtPole = glutil::ObjectPole(g_initialObjectData,
+;; 						   90.0f/250.0f, glutil::MB_RIGHT_B

@@ -34,15 +34,15 @@
     (loop for shader-object in shader-list
 	  do (%gl:delete-shader shader-object))))
 
-(defparameter position-buffer-object nil) ;; buffer object handle
+(defparameter *position-buffer-object* nil) ;; buffer object handle
 
 (defun set-up-opengl-state ()
-  (setf position-buffer-object (first (gl:gen-buffers 1)))
-  (%gl:bind-buffer :array-buffer position-buffer-object)
+  (setf *position-buffer-object* (first (gl:gen-buffers 1)))
+  (%gl:bind-buffer :array-buffer *position-buffer-object*)
 
   (gl:buffer-data :array-buffer :static-draw *vertex-positions*)
   (gl:bind-buffer :array-buffer 0)
-  (gl:bind-buffer :array-buffer position-buffer-object)
+  (gl:bind-buffer :array-buffer *position-buffer-object*)
   (%gl:enable-vertex-attrib-array 0) 
   (%gl:vertex-attrib-pointer 0 4 :float :false 0 0))
 

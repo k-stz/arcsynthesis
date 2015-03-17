@@ -18,9 +18,7 @@
 
 (setf *vertex-positions* (arc::create-gl-array-from-vector *verts*))
 
-(defparameter position-buffer-object nil) ; buffer object handle
-(defparameter x-offset 0) (defparameter y-offset 0)
-
+(defparameter *position-buffer-object* nil) ; buffer object handle
 
 (defparameter *time* 0.0)
 
@@ -54,13 +52,13 @@
 
 
 (defun set-up-opengl-state ()
-  (setf position-buffer-object (first (gl:gen-buffers 1)))
-  (%gl:bind-buffer :array-buffer position-buffer-object)
+  (setf *position-buffer-object* (first (gl:gen-buffers 1)))
+  (%gl:bind-buffer :array-buffer *position-buffer-object*)
   ;; we want to change the buffer data, hence NOT :static-draw but :stream-draw
   ;; TODO: any visible performance penalties otherwise?
   (gl:buffer-data :array-buffer :stream-draw *vertex-positions*)
   (gl:bind-buffer :array-buffer 0)
-  (gl:bind-buffer :array-buffer position-buffer-object)
+  (gl:bind-buffer :array-buffer *position-buffer-object*)
   (%gl:enable-vertex-attrib-array 0) ; vertex array-buffer
   (%gl:enable-vertex-attrib-array 1) ; color array-buffer
   (%gl:vertex-attrib-pointer 0 4 :float :false 0 0)

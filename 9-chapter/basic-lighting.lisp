@@ -173,9 +173,10 @@ described by the arguments given."
     (sb-cga:matrix* rot-mat trans-mat)))
 
 
-
 (defparameter *light-direction* (glm:vec4 0.866 0.5 0.0 0.0))
 (defparameter *draw-colored-cyl* t)
+
+(defparameter *view-pole* (make-instance 'glutil::view-pole :cam-pos (glm:vec3 4.0 0.8 4.0)))
 
 (defun draw ()
   (let ((model-matrix (make-instance 'glutil:matrix-stack))
@@ -188,7 +189,11 @@ described by the arguments given."
 		       (calc-look-at-matrix cam-pos *cam-target* (glm:vec3 0.0 1.0 0.0)))
     
     ;;NEXT-TODO: modelMatrix.setmatrix(g_viewPole.CalcMatrix());
-    (glutil:set-matrix model-matrix (glutil:top-ms cam-matrix))
+    ;; (glutil:set-matrix model-matrix (glutil:top-ms cam-matrix))
+
+    (glutil:set-matrix model-matrix (glutil::calc-matrix *view-pole*))
+
+    
     (setf light-dir-camera-space
     	  (glm:vec4->vec3 (glm:mat*vec (glutil:top-ms model-matrix)
     				       *light-direction*)))
@@ -312,14 +317,22 @@ described by the arguments given."
 	       (incf (glm:vec. *sphere-cam-rel-pos* :x) 1.125))
 	     ;; rotate cam vertically around target
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-i)
-	       (decf (glm:vec. *sphere-cam-rel-pos* :y) 1.125))
+	       ;; (decf (glm:vec. *sphere-cam-rel-pos* :y) 1.125)
+	       ;; up-down for now TODO, use mouse-wheel
+       	       (incf (glm:vec. (slot-value *view-pole* 'glutil::cam-pos) :y) 0.3))
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-k)
-	       (incf (glm:vec. *sphere-cam-rel-pos* :y) 1.125))
+	       ;; (incf (glm:vec. *sphere-cam-rel-pos* :y) 1.125)
+	       (decf (glm:vec. (slot-value *view-pole* 'glutil::cam-pos) :y) 0.3))
 	     ;; zoom camera in/out of target
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-u)
-	       (decf (glm:vec. *sphere-cam-rel-pos* :z) 1.5))
+	       ;; (decf (glm:vec. *sphere-cam-rel-pos* :z) 1.5)
+	       (decf (glm:vec. (slot-value *view-pole* 'glutil::cam-pos) :z) 0.3)
+	       )
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-o)
-	       (incf (glm:vec. *sphere-cam-rel-pos* :z) 1.5))
+	       ;; (incf (glm:vec. *sphere-cam-rel-pos* :z) 1.5)
+	       (incf (glm:vec. (slot-value *view-pole* 'glutil::cam-pos) :z) 0.3)
+
+	       )
 
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-space)
 	       (if *draw-colored-cyl*

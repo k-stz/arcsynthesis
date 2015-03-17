@@ -29,7 +29,7 @@
           (gl:clear-color 0.0 0.0 1.0 1.0)
           (gl:clear :color-buffer)
 
-	  ;;k-stz: doesn't work, causes errors
+	  ;; works with newest cl-sdl2
           ;; (format t "Opening game controllers.~%")
           ;; (finish-output)
           ;; ;; open any game controllers

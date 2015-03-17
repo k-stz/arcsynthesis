@@ -18,10 +18,10 @@
 
 (setf *vertex-positions* (arc::create-gl-array-from-vector *verts*))
 
-(defparameter position-buffer-object nil) ; buffer object handle
-(defparameter x-offset 0) (defparameter y-offset 0)
+(defparameter *position-buffer-object* nil) ; buffer object handle
+(defparameter *x-offset* 0) (defparameter *y-offset* 0)
 
-(defun compute-positions-offset ()	;wow, we don't even need x-offset, y-offset (lol!)
+(defun compute-positions-offset ()	;wow, we don't even need *x-offset*, *y-offset* (lol!)
   "Return a list containing values which oscilate every 5 seconds"
   (let* ((loop-duration 5.0)
 	 (scale (/ (* pi 2) loop-duration))
@@ -32,8 +32,8 @@
     ;; in the following "0.5" shrinks the cos/sin oscilation from 1 to -1 to 0.5 to -0.5
     ;; in effect creating a "circle of diameter 1 (from 0.5 to -0.5 = diameter 1) great
     ;; fun: substitute with cos,sin,tan and see how it beautifully moves in its patterns!
-    (setf x-offset (* (cos (* curr-time-through-loop scale)) 0.5))
-    (setf y-offset (* (sin (* curr-time-through-loop scale)) 0.5))))
+    (setf *x-offset* (* (cos (* curr-time-through-loop scale)) 0.5))
+    (setf *y-offset* (* (sin (* curr-time-through-loop scale)) 0.5))))
 
 
 (defparameter *offset-location* nil)
@@ -64,13 +64,13 @@
 
 
 (defun set-up-opengl-state ()
-  (setf position-buffer-object (first (gl:gen-buffers 1)))
-  (%gl:bind-buffer :array-buffer position-buffer-object)
+  (setf *position-buffer-object* (first (gl:gen-buffers 1)))
+  (%gl:bind-buffer :array-buffer *position-buffer-object*)
   ;; we want to change the buffer data, hence NOT :static-draw but :stream-draw
   ;; TODO: any visible performance penalties otherwise?
   (gl:buffer-data :array-buffer :stream-draw *vertex-positions*)
   (gl:bind-buffer :array-buffer 0)
-  (gl:bind-buffer :array-buffer position-buffer-object)
+  (gl:bind-buffer :array-buffer *position-buffer-object*)
   (%gl:enable-vertex-attrib-array 0) ; vertex array
   (%gl:enable-vertex-attrib-array 1) ; color array
   (%gl:vertex-attrib-pointer 0 4 :float :false 0 0)
@@ -86,7 +86,7 @@
   (compute-positions-offset)
   ;;  (adjust-vertex-data) ; this time we use the shader!
   ;; now we can set some uniforms using the location "handle" *offset-location*!!  
-  (%gl:uniform-2f *offset-location* x-offset y-offset)
+  (%gl:uniform-2f *offset-location* *x-offset* *y-offset*)
   (%gl:draw-arrays :triangles 0 3))
 
 (defun main ()

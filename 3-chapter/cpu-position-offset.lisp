@@ -20,7 +20,7 @@
 (setf *vertex-positions* (arc::create-gl-array-from-vector *verts*))
 
 (defparameter *position-buffer-object* nil) ; buffer object handle
-(defparameter x-offset 0) (defparameter y-offset 0)
+(defparameter *x-offset* 0) (defparameter *y-offset* 0)
 
 (defparameter *curr-sdl-ticks* 0)
 (defparameter *frame-counter* 0)
@@ -37,7 +37,7 @@
   (setf *curr-sdl-ticks* (sdl2:get-ticks)))
   
 
-(defun compute-positions-offset ()	;wow, we don't even need x-offset, y-offset (lol!)
+(defun compute-positions-offset ()
   "Return a list containing values which oscilate every 5 seconds"
   (let* ((loop-duration 5.0)
 	 (scale (/ (* pi 2) loop-duration))
@@ -49,8 +49,8 @@
 	 (curr-time-through-loop (mod elapsed-time loop-duration)))
     ;; in the following "0.5" shrinks the cos/sin oscilation from 1 to -1 to 0.5 to -0.5
     ;; in effect creating a "circle of diameter 1 (from 0.5 to -0.5 = diameter 1)
-    (setf x-offset (* (cos (* curr-time-through-loop scale)) 0.5))
-    (setf y-offset (* (sin (* curr-time-through-loop scale)) 0.5))))
+    (setf *x-offset* (* (cos (* curr-time-through-loop scale)) 0.5))
+    (setf *y-offset* (* (sin (* curr-time-through-loop scale)) 0.5))))
 
 (defun adjust-vertex-data ()
   ;; like Java's STRING passing arround simple-vectors doesn't create copies,
@@ -60,8 +60,8 @@
 			      :initial-contents *verts*)))
     ;; TODO: better way to loop through this simple-vector?
     (loop for i from 0 below (length new-data) by 4 do
-	 (incf (aref new-data i) x-offset)
-	 (incf (aref new-data (1+ i)) y-offset))
+	 (incf (aref new-data i) *x-offset*)
+	 (incf (aref new-data (1+ i)) *y-offset*))
     ;; move lisp *verts* data to gl-array: *vertex-positions*
     (setf new-data (arc:create-gl-array-from-vector new-data))
     (gl:bind-buffer :array-buffer *position-buffer-object*)
