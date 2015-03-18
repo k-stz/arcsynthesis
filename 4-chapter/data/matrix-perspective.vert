@@ -11,9 +11,9 @@ smooth out vec4 fs_colors;
 vec4 cameraPos;
 
 void main() {
-  fs_colors = colors;
-  
   cameraPos = positions + vec4(offset.x, offset.y, 0.0, 0.0);
+
   // beware! Matrix * vector multiplication is NOT commutative
   gl_Position =  perspective_matrix * cameraPos;
+  fs_colors = colors;
 }

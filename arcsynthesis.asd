@@ -36,8 +36,8 @@ written in Common Lisp using cl-sdl2 and cl-opengl"
 			 (:file "frag-change-color")))
    (:module "4-chapter"
 	    :components ((:file "ortho-cube")
-			 (:file "perspective-projection")
-			 (:file "perspective-matrix")
+			 (:file "shader-perspective")
+			 (:file "matrix-perspective")
 			 (:file "aspect-ratio")))
    (:module "5-chapter"
 	    :components ((:file "overlap-no-depth")

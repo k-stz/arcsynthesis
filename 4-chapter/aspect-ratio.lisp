@@ -5,9 +5,9 @@
 
 (in-package #:arc-4.3)
 
-(defvar *glsl-directory*
-  (merge-pathnames #p "4-chapter/" (asdf/system:system-source-directory :arcsynthesis)))
-;;TODO: what with this garbage here >_>, or should I really build the habit of looking
+(defvar *data-directory*
+  (merge-pathnames #p "4-chapter/data/" (asdf/system:system-source-directory :arcsynthesis)))
+
 ;; at the terminal
 (defvar out *standard-output*)  (defvar dbg *debug-io*) (defvar err *error-output*)
 
@@ -111,25 +111,20 @@
 
 	0.0  1.0  1.0  1.0 
 	0.0  1.0  1.0  1.0 
-	0.0  1.0  1.0  1.0 
-			))
+	0.0  1.0  1.0  1.0))
   
 
 
 (setf *vertex-positions* (arc::create-gl-array-from-vector *verts*))
 
-(defparameter position-buffer-object nil) ; buffer object handle
-(defparameter x-offset 0) (defparameter y-offset 0)
-(defparameter program nil "program-object")
-(defparameter offset-uniform 0)
-(defparameter z-near-uniform 0)
-(defparameter z-far-uniform 0)
-(defparameter frustum-scale-uniform 0)
+(defvar *position-buffer-object*) ; buffer object handle
+(defvar *program*)
+(defvar *offset-uniform*)
 
-(defparameter matrix-uniform nil)
-(defparameter perspective-matrix nil)
+(defvar *matrix-uniform*)
+(defparameter *perspective-matrix* nil)
 
-(defparameter frustum-scale 0)
+(defparameter *frustum-scale* 0)
 
 (defun init-shader-program ()
   (let ((shader-list (list)))
@@ -137,18 +132,16 @@
     (push (arc:create-shader
 	   :vertex-shader
 	   (arc:file-to-string
-	    (merge-pathnames "vs-matrix-projection.glsl" *glsl-directory*)))
+	    (merge-pathnames "matrix-perspective.vert" *data-directory*)))
 	  shader-list)
     (push (arc:create-shader
     	   :fragment-shader
-    	   (arc:file-to-string (merge-pathnames "fs.glsl" *glsl-directory* )))
+    	   (arc:file-to-string (merge-pathnames "standard-colors.frag" *data-directory* )))
     	  shader-list)
-    (setf program (arc:create-program-and-return-it shader-list))
-    (let ((s 1.0) (n 0.5) (f 3.0)	;frustum-scale, zNear, zFar
-	  )
-      (setf matrix-uniform (gl:get-uniform-location program "perspective_matrix"))
-      (print matrix-uniform)
-      (setf perspective-matrix
+    (setf *program* (arc:create-program shader-list))
+    (let ((s 1.0) (n 0.5) (f 3.0)) 	;frustum-scale, zNear, zFar
+      (setf *matrix-uniform* (gl:get-uniform-location *program* "perspective_matrix"))
+      (setf *perspective-matrix*
 	    (make-array 16 :element-type 'single-float
 			:initial-contents
 			;; the matrix with its coefficients 'switches' and the perma 
@@ -158,47 +151,37 @@
 			      0.0 0.0 (/ (+ f n) (- n f)) (/ (* 2 f n) (- n f)) ;= z
 			      0.0 0.0 -1.0 0.0)))                               ;= w
 
-      (setf offset-uniform (gl:get-uniform-location program "offset"))
-      (%gl:use-program program)
-      ;; TODO: beware sb-cga
-      ;; TODO: gl:uniform-matrix super useful! lookup implementation!
-      (gl:uniform-matrix matrix-uniform 4 (vector perspective-matrix)))
-    (loop for shader-object in shader-list
-       do (%gl:delete-shader shader-object))))
+      (setf *offset-uniform* (gl:get-uniform-location *program* "offset"))
+      (%gl:use-program *program*)
+      (gl:uniform-matrix *matrix-uniform* 4 (vector *perspective-matrix*)))))
 
 
 (defun set-up-opengl-state ()
-  (setf position-buffer-object (first (gl:gen-buffers 1)))
-  (%gl:bind-buffer :array-buffer position-buffer-object)
+  (setf *position-buffer-object* (first (gl:gen-buffers 1)))
+  (%gl:bind-buffer :array-buffer *position-buffer-object*)
   (gl:buffer-data :array-buffer :stream-draw *vertex-positions*)
   (gl:bind-buffer :array-buffer 0)
-  (gl:bind-buffer :array-buffer position-buffer-object)
+  (gl:bind-buffer :array-buffer *position-buffer-object*)
   (%gl:enable-vertex-attrib-array 0) ; vertex array-buffer
   (%gl:enable-vertex-attrib-array 1) ; color array-buffer
   (%gl:vertex-attrib-pointer 0 4 :float :false 0 0)
   (%gl:vertex-attrib-pointer 1 4 :float :false 0 (/ (* 4 (length *verts*)) 2))
 
   (gl:enable :cull-face)
-  ;; cull-face doesn't seem to be all performance after all, it is a necessity
-  ;; so we don't draw over certain triangles >_>
-  ;; TODO: hm we still have this problem when drawing multiple primitives over
-  ;; each other, no?
   (%gl:cull-face :back)
   (%gl:front-face :cw) ; help gl:cull-face decide who is a :back triangle
-  (gl:viewport 0 0 500 500)
-  )
+  (gl:viewport 0 0 500 500))
 
 
 (defun rendering-code ()
   (gl:clear :color-buffer-bit)
-  (%gl:uniform-2f offset-uniform 0.5 0.5)
-  (%gl:draw-arrays :triangles 0 36)
-  )
+  (%gl:uniform-2f *offset-uniform* 0.5 0.5)
+  (%gl:draw-arrays :triangles 0 36))
 
 (defun resize (win)
   (format t "resizing event emulation executed. ")
-  ;; changing frustum-scale makes vertices grow fonder or ill of their origin :]
-  (setf frustum-scale 1.0) ; TODO: hardcode baaaad
+  ;; changing *frustum-scale* makes vertices grow fonder or ill of their origin :]
+  (setf *frustum-scale* 1.0) ; TODO: hardcode baaaad
   (multiple-value-bind (w h) (sdl2:get-window-size win)
    (list w h)
    ;; this is quite cool: if width becomes bigger than h we effectively multiply the x
@@ -206,12 +189,11 @@
    ;; the multiplication causes shrinkin!
    ;; on the other hand if width is smaller than h then h/w will create a value bigger
    ;; than 1 hence cause a x-enlarging effect!!
-   (setf (aref perspective-matrix 0) (/ frustum-scale (/ w h))) ;coerce to 'single-float?
-   (setf (aref perspective-matrix 5) frustum-scale) 
-   (gl:uniform-matrix matrix-uniform 4 (vector perspective-matrix))
+   (setf (aref *perspective-matrix* 0) (/ *frustum-scale* (/ w h))) ;coerce to 'single-float?
+   (setf (aref *perspective-matrix* 5) *frustum-scale*) 
+   (gl:uniform-matrix *matrix-uniform* 4 (vector *perspective-matrix*))
    (gl:viewport 0 0 w h)
-   (format t "w: ~a h: ~a ~%" w h)
-    ))
+   (format t "w: ~a h: ~a ~%" w h)))
 
 
 (defparameter qux 0)
@@ -219,19 +201,18 @@
 (defparameter eye-y 1.0)
 
 (defun change-eye ()
-  ;; TODO: could just use the 'w' in perspective-matrix as it receives
+  ;; TODO: could just use the 'w' in *perspective-matrix* as it receives
   ;; just 1.0, so: (* 1.0 x) = x from the vertex and will be added to
   ;; the row of any vertex we want to modify by adding values!
   (let* ((matrix (make-array 16 :element-type 'single-float
-			     :initial-contents perspective-matrix))
+			     :initial-contents *perspective-matrix*))
 	 ;; (eye-x 1.0)
 	 (eye-y 0.0)
 	 (eye-z -1.0)
 	 (loop-duration 5.0)
 	 (scale (coerce (/ (* pi 2) loop-duration) 'single-float))
 	 (elapsed-time (/ (sdl2:get-ticks) 1000.0))
-	 (curr-time-through-loop (mod elapsed-time loop-duration))
-	 )
+	 (curr-time-through-loop (mod elapsed-time loop-duration)))
     ;;for experimentation:
     ;;TODO: strange flipping effect; hypothesis: triangle winding isn't on the
     ;;surface everywhere with :cw winding? hence some get culled they shouldn't
@@ -247,9 +228,7 @@
     (incf (aref matrix 0) eye-x)	;x
     (incf (aref matrix 5) eye-y)	;y
     (setf (aref matrix 14) (/ (aref matrix 14) (- eye-z)))
-    (gl:uniform-matrix matrix-uniform 4 (vector matrix) :false))
-
-  )
+    (gl:uniform-matrix *matrix-uniform* 4 (vector matrix) :false)))
 
 (defun main ()
   (sdl2:with-init (:everything)

@@ -1,16 +1,13 @@
 (in-package #:arc-4)
 
-(defvar *glsl-directory*
-  (merge-pathnames #p "4-chapter/" (asdf/system:system-source-directory :arcsynthesis)))
-;;TODO: what with this garbage here >_>, or should I really build the habit of looking
-;; at the terminal
+(defvar *data-directory*
+  (merge-pathnames #p "4-chapter/data/" (asdf/system:system-source-directory :arcsynthesis)))
+
+;; TODO: if external terminal runs lisp image, for slime output:
 (defvar out *standard-output*)  (defvar dbg *debug-io*) (defvar err *error-output*)
 
-(defparameter *vertex-positions* nil)
 
-;;; TODODODODOODOD WHY COLORS NOT LIKE IN ARCSYNTHESIS EXAMPLE???
-;; >_> elegant succinct code
-;; the first 36 values are vertex the next 36 colors
+;; the first 36 values are vertices the next 36 colors
   (defparameter *verts* #(
 ;; vertices:
 
@@ -110,40 +107,39 @@
 
 	0.0 1.0 1.0 1.0
 	0.0 1.0 1.0 1.0
-   	0.0 1.0 1.0 1.0	))
+   	0.0 1.0 1.0 1.0))
 
 
-(setf *vertex-positions* (arc::create-gl-array-from-vector *verts*))
+(defparameter *vertex-positions* (arc::create-gl-array-from-vector *verts*))
 
-(defparameter position-buffer-object nil) ; buffer object handle
-(defparameter x-offset 0) (defparameter y-offset 0)
-(defparameter program nil "program-object")
-(defparameter offset-uniform 0)
+(defvar *position-buffer-object*) ; buffer object handle
+(defvar *program*) ; program object
+(defvar *offset-uniform*)
 
 (defun init-shader-program ()
   (let ((shader-list (list)))
     ;;oh c'mon how to make it local
     (push (arc:create-shader
 	   :vertex-shader
-	   (arc:file-to-string (merge-pathnames "vs.glsl" *glsl-directory*)))
+	   (arc:file-to-string (merge-pathnames "ortho-with-offset.vert" *data-directory*)))
 	  shader-list)
     (push (arc:create-shader
     	   :fragment-shader
-    	   (arc:file-to-string (merge-pathnames "fs.glsl" *glsl-directory* )))
+    	   (arc:file-to-string (merge-pathnames "standard-colors.frag" *data-directory* )))
     	  shader-list)
-    (setf program (arc:create-program-and-return-it shader-list))
-    (setf offset-uniform (gl:get-uniform-location program "offset"))
-    (%gl:use-program program)
+    (setf *program* (arc:create-program shader-list))
+    (setf *offset-uniform* (gl:get-uniform-location *program* "offset"))
+    (%gl:use-program *program*)
     (loop for shader-object in shader-list
        do (%gl:delete-shader shader-object))))
 
 
 (defun set-up-opengl-state ()
-  (setf position-buffer-object (first (gl:gen-buffers 1)))
-  (%gl:bind-buffer :array-buffer position-buffer-object)
+  (setf *position-buffer-object* (first (gl:gen-buffers 1)))
+  (%gl:bind-buffer :array-buffer *position-buffer-object*)
   (gl:buffer-data :array-buffer :stream-draw *vertex-positions*)
   (gl:bind-buffer :array-buffer 0)
-  (gl:bind-buffer :array-buffer position-buffer-object)
+  (gl:bind-buffer :array-buffer *position-buffer-object*)
   (%gl:enable-vertex-attrib-array 0) ; vertex array-buffer
   (%gl:enable-vertex-attrib-array 1) ; color array-buffer
   (%gl:vertex-attrib-pointer 0 4 :float :false 0 0)
@@ -155,7 +151,7 @@
   (gl:enable :cull-face)
   ;; the "back" side of a triangles won't be rendered
   ;; NOTE: :front-and-back to cull them all (e.g. for shader performance tests, as nothing gets
-  ;; drawn to the string)
+  ;; drawn to the screen)
   (%gl:cull-face :back)
   ;; super interesting: this one decides the "back" and "front" sides of a triangle,
   ;; if :cw is set -- clock-wise -- we take three vertices in the order in which  they appear
@@ -163,11 +159,12 @@
   ;; in our :array-buffer and we (the viewer) look at them as they get drawn on the screen
   ;; if they appear in clock-wise distribution order this is considered the front side of
   ;; triangle (opposite: :ccw -- counter-clock-wise)
+  ;; TODO: the Look direction is relative to clip-space hence -z: (vec3 0.0 0.0 -1.0) ?
   (%gl:front-face :cw) ; help gl:cull-face decide who is a :back triangle
   ;; for this to work our *verts* must have vertices distributed accordingly so that those
   ;; facing back are classified as :back triangles
   ;; all it takes is the faces on the outside of the prism to have this property, so that
-  ;; if we where to look through the prism, the outward :cw triangel would be back-to-front
+  ;; if we where to look through the prism, the outward :cw triangle would be back-to-front
   ;; -> always culled np! AAAH that's why "clipping" in games causes walls to disappear entirely
   ;; from view when you traverse them and look at them from behind!!!
   )
@@ -175,10 +172,9 @@
 
 (defun rendering-code ()
   (gl:clear :color-buffer-bit)
-  (%gl:uniform-2f offset-uniform 0.5 0.25)
+  (%gl:uniform-2f *offset-uniform* 0.5 0.25)
   ;; can't see the sides of the rectangular prism!!! AWESOME
-  (%gl:draw-arrays :triangles 0 36)
-  )
+  (%gl:draw-arrays :triangles 0 36))
 
 (defun main ()
   (sdl2:with-init (:everything)
