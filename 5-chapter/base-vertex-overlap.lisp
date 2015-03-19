@@ -21,7 +21,7 @@
     	   :fragment-shader
     	   (arc:file-to-string (merge-pathnames "standard.frag" *data-directory* )))
     	  shader-list)
-    (setf *program* (arc:create-program-and-return-it shader-list))
+    (setf *program* (arc:create-program shader-list))
     (let ((s 1.0) (n 0.5) (f 3.0)	;frustum-scale, zNear, zFar
 	  (perspective-matrix)
 	  (matrix-uniform))
@@ -40,9 +40,7 @@
       (%gl:use-program *program*)
       (format t "off-u:~a mat-u:~a" *offset-uniform* matrix-uniform)
 
-      (gl:uniform-matrix matrix-uniform 4 (vector perspective-matrix)))
-    (loop for shader-object in shader-list
-       do (%gl:delete-shader shader-object))))
+      (gl:uniform-matrix matrix-uniform 4 (vector perspective-matrix)))))
 
 
 (defparameter *vao* nil)
