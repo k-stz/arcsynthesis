@@ -1,29 +1,13 @@
 (in-package #:arc-5)
 
-(defvar *glsl-directory*
-  (merge-pathnames #p "5-chapter/" (asdf/system:system-source-directory :arcsynthesis)))
-;;TODO: what with this garbage here >_>, or should I really build the habit of looking
-;; at the terminal
+(defvar *data-directory*
+  (merge-pathnames #p "5-chapter/data/" (asdf/system:system-source-directory :arcsynthesis)))
+
+;; slime repl output if connecting to lisp image running in different terminal
 (defvar out *standard-output*)  (defvar dbg *debug-io*) (defvar err *error-output*)
 
-(defparameter *verts* NIL)
-
-(defparameter *vertex-positions* nil)
-
-;(setf *vertex-positions* (arc::create-gl-array-from-vector *verts*))
-
-(defparameter position-buffer-object nil) ; buffer object handle
-(defparameter x-offset 0) (defparameter y-offset 0)
 (defparameter *program* nil "program-object")
 (defparameter *offset-uniform* 0)
-(defparameter z-near-uniform 0)
-(defparameter z-far-uniform 0)
-(defparameter frustum-scale-uniform 0)
-
-(defparameter matrix-uniform nil)
-(defparameter perspective-matrix nil)
-
-(defparameter frustum-scale 0)
 
 (defun initialize-program ()
   (let ((shader-list (list)))
@@ -31,15 +15,16 @@
     (push (arc:create-shader
 	   :vertex-shader
 	   (arc:file-to-string
-	    (merge-pathnames "vs-ch5.glsl" *glsl-directory*)))
+	    (merge-pathnames "standard.vert" *data-directory*)))
 	  shader-list)
     (push (arc:create-shader
     	   :fragment-shader
-    	   (arc:file-to-string (merge-pathnames "fs.glsl" *glsl-directory* )))
+    	   (arc:file-to-string (merge-pathnames "standard.frag" *data-directory* )))
     	  shader-list)
     (setf *program* (arc:create-program-and-return-it shader-list))
     (let ((s 1.0) (n 0.5) (f 3.0)	;frustum-scale, zNear, zFar
-	  )
+	  (matrix-uniform)
+	  (perspective-matrix))
       (setf matrix-uniform (gl:get-uniform-location *program* "perspective_matrix"))
       (setf perspective-matrix
 	    (make-array 16 :element-type 'single-float
@@ -67,7 +52,6 @@
 (defparameter *vertex-buffer-object* nil)
 
 (defparameter *vertex-data*
-  ;; TODO fill this with arcsynthesi' data >,<
   (arc:create-gl-array-from-vector 
 #(
   ;; note, as arcsynthesis states itself, our position are 3-dimensional, but

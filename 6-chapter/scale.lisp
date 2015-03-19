@@ -1,6 +1,6 @@
 (in-package #:arc-6.1)
 
-(defvar *glsl-directory*
+(defvar *data-directory*
   (merge-pathnames #p "6-chapter/" (asdf/system:system-source-directory :arcsynthesis)))
 ;;todo: fix this output to slime-repl solution
 (defvar out *standard-output*)  (defvar dbg *debug-io*) (defvar err *error-output*)
@@ -39,12 +39,12 @@ the projection plane)"
     (push (arc:create-shader
 	   :vertex-shader
 	   (arc:file-to-string
-	    (merge-pathnames "pos-color-local-transformation.vert" *glsl-directory*)))
+	    (merge-pathnames "pos-color-local-transformation.vert" *data-directory*)))
 	  shader-list)
     (push (arc:create-shader
     	   :fragment-shader
     	   (arc:file-to-string
-	    (merge-pathnames "color-passthrough.frag" *glsl-directory* )))
+	    (merge-pathnames "color-passthrough.frag" *data-directory* )))
     	  shader-list)
     (setf *program* (arc:create-program-and-return-it shader-list))
 

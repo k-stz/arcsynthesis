@@ -41,14 +41,14 @@ written in Common Lisp using cl-sdl2 and cl-opengl"
 			 (:file "aspect-ratio")))
    (:module "5-chapter"
 	    :components ((:file "overlap-no-depth")
-			 (:file "base-vertex-with-overlap")
-			 (:file "depth-buffering")
+			 (:file "base-vertex-overlap")
+			 (:file "depth-buffer")
 			 (:file "vertex-clipping")
 			 (:file "depth-clamping")))
    (:module "6-chapter"
 	    :components ((:file "translation")
 			 (:file "scale")
-			 (:file "rotation")
+			 (:file "rotations")
 			 (:file "hierarchy")))
    (:module "7-chapter"
 	    :components ((:file "world-scene")
