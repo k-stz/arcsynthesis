@@ -11,7 +11,6 @@
 ;; garbage collection facilitation is bad style since it is there to alleviate
 ;; the programmer of this burden. How to even force object deletion? Probably
 ;; inefficient to force destruction of object or..??
-;;(defun matrix-stack (&optional))
 
 (defgeneric set-matrix (matrix-stack mat4))
 (defmethod set-matrix ((ms matrix-stack) (mat4 simple-array))
