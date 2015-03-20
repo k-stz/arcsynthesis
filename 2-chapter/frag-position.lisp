@@ -1,9 +1,8 @@
 (in-package #:arc-2)
 
-(defvar *glsl-directory*
-  (merge-pathnames #p "2-chapter/" (asdf/system:system-source-directory :arcsynthesis)))
-(defvar *vertex-shader.glsl-path*
-  (merge-pathnames #p "vertex-shader.glsl" *glsl-directory*))
+(defvar *data-directory*
+  (merge-pathnames #p "2-chapter/data/"
+		   (asdf/system:system-source-directory :arcsynthesis)))
 
 ;;; this time we load shaders from files, check out the (init-shader-program) function
 
@@ -23,11 +22,11 @@
   (let ((shader-list (list)))
     (push (arc:create-shader
 	   :vertex-shader
-	   (arc:file-to-string (merge-pathnames "vertex-shader.glsl" *glsl-directory*)))
+	   (arc:file-to-string (merge-pathnames "frag-position.vert" *data-directory*)))
 	  shader-list)
     (push (arc:create-shader
 	   :fragment-shader
-	   (arc:file-to-string (merge-pathnames "fragment-shader.glsl" *glsl-directory*)))
+	   (arc:file-to-string (merge-pathnames "frag-position.frag" *data-directory*)))
 	  shader-list)
 
     (setf *program*
@@ -35,15 +34,15 @@
     (loop for shader-object in shader-list
 	  do (%gl:delete-shader shader-object))))
 
-(defparameter position-buffer-object nil) ;; buffer object handle
+(defparameter *position-buffer-object* nil) ;; buffer object handle
 
 (defun set-up-opengl-state ()
-  (setf position-buffer-object (first (gl:gen-buffers 1)))
-  (%gl:bind-buffer :array-buffer position-buffer-object)
+  (setf *position-buffer-object* (first (gl:gen-buffers 1)))
+  (%gl:bind-buffer :array-buffer *position-buffer-object*)
 
   (gl:buffer-data :array-buffer :static-draw *vertex-positions*)
   (gl:bind-buffer :array-buffer 0)
-  (gl:bind-buffer :array-buffer position-buffer-object)
+  (gl:bind-buffer :array-buffer *position-buffer-object*)
   (%gl:enable-vertex-attrib-array 0) 
   (%gl:vertex-attrib-pointer 0 4 :float :false 0 0))
 

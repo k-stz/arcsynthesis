@@ -11,7 +11,7 @@
 (defsystem #:arcsynthesis
   :description "Modern OpenGL example code from the book 'Learning Modern 3D Graphics Programming'
 by Jason L. McKesson (website:'www.arcsynthesis.org/gltut')
-written in Common Lisp using cl-sdl2 and cl-opengl"
+written in Common Lisp (SBCL) using cl-sdl2 and cl-opengl"
   :version "0.0.1"
   :author "k-stz"
   ;; :licence  TODO
@@ -27,8 +27,8 @@ written in Common Lisp using cl-sdl2 and cl-opengl"
    (:module "1-chapter/"
    	    :components ((:file "hello-triangle")))
    (:module "2-chapter/"
-	    :components ((:file "fragment-color")
-			 (:file "vertex-color")))
+	    :components ((:file "frag-position")
+			 (:file "vertex-colors")))
    (:module "3-chapter/"
    	    :components ((:file "cpu-position-offset")
    			 (:file "vert-calc-offset")
@@ -36,19 +36,19 @@ written in Common Lisp using cl-sdl2 and cl-opengl"
 			 (:file "frag-change-color")))
    (:module "4-chapter"
 	    :components ((:file "ortho-cube")
-			 (:file "perspective-projection")
-			 (:file "perspective-matrix")
+			 (:file "shader-perspective")
+			 (:file "matrix-perspective")
 			 (:file "aspect-ratio")))
    (:module "5-chapter"
 	    :components ((:file "overlap-no-depth")
-			 (:file "base-vertex-with-overlap")
-			 (:file "depth-buffering")
+			 (:file "base-vertex-overlap")
+			 (:file "depth-buffer")
 			 (:file "vertex-clipping")
 			 (:file "depth-clamping")))
    (:module "6-chapter"
 	    :components ((:file "translation")
 			 (:file "scale")
-			 (:file "rotation")
+			 (:file "rotations")
 			 (:file "hierarchy")))
    (:module "7-chapter"
 	    :components ((:file "world-scene")

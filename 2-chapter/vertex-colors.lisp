@@ -1,10 +1,12 @@
 (in-package #:arc-2.1)
-;;TODO: ugly solution fix this yo
-;;yeah this code will still set the "global" variable for all packages so to speak:
+
 ;;TODO use (asdf/system:system-source-directory ...) + merge-pathname
-(setf *default-pathname-defaults* #P"/home/k-stz/sol_sanctum/common_lisp/arcsynthesis/2-chapter/")
-;;TODO: what with this garbage here >_>, or should I really build the habit of looking
-;; at the terminal
+(defvar *data-directory*
+  (merge-pathnames #p "2-chapter/data/"
+		   (asdf/system:system-source-directory :arcsynthesis)))
+
+;; for when we connect to lisp image running in a terminal, we want the output be printed
+;; in SLIME's REPL:
 (defvar out *standard-output*)  (defvar dbg *debug-io*) (defvar err *error-output*)
 
 
@@ -28,27 +30,29 @@
   (let ((shader-list (list)))
     ;;oh c'mon how to make it local
     (push
-     (arc:create-shader :vertex-shader
-			(arc:file-to-string "multi-input-vertex-shader.glsl"))
+     (arc:create-shader
+      :vertex-shader
+      (arc:file-to-string (merge-pathnames "vertex-colors.vert" *data-directory*)))
      shader-list)
     (push
-     (arc:create-shader :fragment-shader
-			(arc:file-to-string "fragment-shader-with-input.glsl"))
+     (arc:create-shader
+      :fragment-shader
+      (arc:file-to-string (merge-pathnames "vertex-colors.frag" *data-directory*)))
      shader-list)
     (setf *program* 
 	  (arc:create-program shader-list))
     (loop for shader-object in shader-list
        do (%gl:delete-shader shader-object))))
 
-(defparameter position-buffer-object nil) ;; buffer object handle
+(defparameter *position-buffer-object* nil) ;; buffer object handle
 
 (defun set-up-opengl-state ()
-  (setf position-buffer-object (first (gl:gen-buffers 1)))
-  (%gl:bind-buffer :array-buffer position-buffer-object)
+  (setf *position-buffer-object* (first (gl:gen-buffers 1)))
+  (%gl:bind-buffer :array-buffer *position-buffer-object*)
 
   (gl:buffer-data :array-buffer :static-draw *vertex-positions*)
   (gl:bind-buffer :array-buffer 0)
-  (gl:bind-buffer :array-buffer position-buffer-object)
+  (gl:bind-buffer :array-buffer *position-buffer-object*)
   (%gl:enable-vertex-attrib-array 0) ; vertex array
   (%gl:enable-vertex-attrib-array 1) ; color array
   (%gl:vertex-attrib-pointer 0 4 :float :false 0 0)

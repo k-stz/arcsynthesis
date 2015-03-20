@@ -1,31 +1,16 @@
-;; TODO: where does sdl2 decide to create a OpenGL with a depth buffer upon
+;; TODO: where does sdl2 decide to create a OpenGL context with a depth buffer upon
 ;; initialization?
 
 (in-package #:arc-5.2)
 
-(defvar *glsl-directory*
-  (merge-pathnames #p "5-chapter/" (asdf/system:system-source-directory :arcsynthesis)))
-;;TODO: what with this garbage here >_>, or should I really build the habit of looking
-;; at the terminal
+(defvar *data-directory*
+  (merge-pathnames #p "5-chapter/data/" (asdf/system:system-source-directory :arcsynthesis)))
+
 (defvar out *standard-output*)  (defvar dbg *debug-io*) (defvar err *error-output*)
 
-(defparameter *verts* NIL) ; superseded for now by direct translation, see *vertex-data*
-
-(defparameter *vertex-positions* nil)
-
-
-(defparameter position-buffer-object nil) ; buffer object handle
-(defparameter x-offset 0) (defparameter y-offset 0)
 (defparameter *program* nil "program-object")
 (defparameter *offset-uniform* 0)
-(defparameter z-near-uniform 0)
-(defparameter z-far-uniform 0)
-(defparameter frustum-scale-uniform 0)
 
-(defparameter matrix-uniform nil)
-(defparameter perspective-matrix nil)
-
-(defparameter frustum-scale 0)
 
 (defun initialize-program ()
   (let ((shader-list (list)))
@@ -33,15 +18,15 @@
     (push (arc:create-shader
 	   :vertex-shader
 	   (arc:file-to-string
-	    (merge-pathnames "vs-ch5.glsl" *glsl-directory*)))
+	    (merge-pathnames "standard.vert" *data-directory*)))
 	  shader-list)
     (push (arc:create-shader
     	   :fragment-shader
-    	   (arc:file-to-string (merge-pathnames "fs.glsl" *glsl-directory* )))
+    	   (arc:file-to-string (merge-pathnames "standard.frag" *data-directory* )))
     	  shader-list)
-    (setf *program* (arc:create-program-and-return-it shader-list))
+    (setf *program* (arc:create-program shader-list))
     (let ((s 1.0) (n 0.5) (f 3.0)	;frustum-scale, zNear, zFar
-	  )
+	  (perspective-matrix))
       (setf matrix-uniform (gl:get-uniform-location *program* "perspective_matrix"))
       (setf perspective-matrix
 	    (make-array 16 :element-type 'single-float
@@ -57,9 +42,7 @@
       (%gl:use-program *program*)
       (format t "off-u:~a mat-u:~a" *offset-uniform* matrix-uniform)
 
-      (gl:uniform-matrix matrix-uniform 4 (vector perspective-matrix)))
-    (loop for shader-object in shader-list
-       do (%gl:delete-shader shader-object))))
+      (gl:uniform-matrix matrix-uniform 4 (vector perspective-matrix)))))
 
 
 (defparameter *vao* nil)
@@ -244,10 +227,7 @@
   (%gl:draw-elements-base-vertex :triangles (gl::gl-array-size *index-data*)
 				 :unsigned-short 0 (/ *number-of-vertices* 2))
   (gl:bind-vertex-array 0)
-  (gl:use-program *program*)
-  
-  ;;swap buffers: in main loop 
-  )
+  (gl:use-program *program*))  ;;swap buffers: in main loop 
 
 (defun main ()
   (sdl2:with-init (:everything)

@@ -29,7 +29,7 @@ void main () {
   // TODO: from what I understand Zclip is = Pz i.e. the perpendicular
   // distance from any vertex to the eye-plane. There is something odd
   // hardcoding clipPos.z doesn't seem to change the program as arcsynthesis
-  // suggests. Idea: propably projection divide has rules not yet fully
+  // suggests. Idea: probably projection divide has rules not yet fully
   // explained
   clipPos.z = cameraPos.z * (zNear + zFar) / (zNear - zFar);
   clipPos.z += 2 * zNear * zFar / (zNear - zFar);
@@ -41,7 +41,7 @@ void main () {
 
   // TODO: why do x,y changing result in expected rendering while
   // changing clipPos.z cause zNear zFar like cutting???
-  //  clipPos.z += 1; cliPos.x -=1;
+  //  clipPos.z += 1; clipPos.x -=1;
   
   gl_Position = clipPos;
   fs_colors = color;
