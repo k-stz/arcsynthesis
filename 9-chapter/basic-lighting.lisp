@@ -175,7 +175,8 @@ described by the arguments given."
 (defparameter *light-direction* (glm:vec4 0.866 0.5 0.0 0.0))
 (defparameter *draw-colored-cyl* t)
 
-(defparameter *view-pole* (make-instance 'glutil::view-pole :cam-pos (glm:vec3 4.0 0.8 4.0)))
+(defparameter *view-pole*
+  (make-instance 'glutil::view-pole :cam-pos (glm:vec3 4.0 0.8 4.0)))
 
 (defun draw ()
   (let ((model-matrix (make-instance 'glutil:matrix-stack))
@@ -221,12 +222,13 @@ described by the arguments given."
       (gl:uniform-matrix (normal-model-to-camera-matrix-unif *white-diffuse-color*) 3
 			 (vector (glm:mat4->mat3 (glutil:top-ms model-matrix))) NIL)
 
-      (gl:uniformfv (light-intensity-unif *white-diffuse-color*) (glm:vec4 1.0 1.0 1.0 1.0))
+      (gl:uniformfv
+       (light-intensity-unif *white-diffuse-color*) (glm:vec4 1.0 1.0 1.0 1.0))
       (framework:render *plane-mesh*)
       (gl:use-program 0))
 
     ;; Render thy Cylinder
-    	;; TODO: g_objtPole.CalcMatrix()
+    ;; TODO: g_objtPole.CalcMatrix()
     (if *draw-colored-cyl*
 	(glutil:with-transform (model-matrix)
 

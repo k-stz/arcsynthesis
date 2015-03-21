@@ -204,14 +204,18 @@ it will be returned to its former state"
 (defclass view-pole ()
   ((look-pt :initform (glm:vec3 0.0 0.0 0.0) :initarg :look-pt)
    (cam-pos :initform (glm:vec3 0.0 0.0 1.0) :initarg :cam-pos)
-   (up-pt :initform (glm:vec3 0.0 1.0 0.0) :initarg up-pt)))
+   (up-pt :initform (glm:vec3 0.0 1.0 0.0) :initarg up-pt)
+   (look-at-matrix :accessor look-at-mat4)))
 
 
 
 (defun calc-matrix (view-pole)
-  (calc-look-at-matrix (slot-value view-pole 'cam-pos)
-		       (slot-value view-pole 'look-pt)
-		       (slot-value view-pole 'up-pt)))
+  (let ((look-at-matrix
+	 (calc-look-at-matrix (slot-value view-pole 'cam-pos)
+			      (slot-value view-pole 'look-pt)
+			      (slot-value view-pole 'up-pt))))
+    (setf (look-at-mat4 view-pole) look-at-matrix)
+    look-at-matrix))
 
 (defun calc-look-at-matrix (camera-pt look-pt up-pt)
   "Returns a transformation matrix that represents an orientation of a camera orientation
@@ -237,6 +241,15 @@ described by the arguments given."
     (sb-cga:matrix* rot-mat trans-mat)))
 
 
+(defun round-matrix (mat)
+  ;; TODO: pretty-print matrix to look symmetrical, for ease of reading
+  (loop for el across mat
+     for i = 0 then (1+ i)
+     :do
+       (when (and (< el 0.00001)
+		  (> el -0.00001))
+	 (setf (aref mat i) 0.0)))
+  mat)
 
 ;; ObjectPole implementation
 ;; glutil::ObjectPole g_objtPole = glutil::ObjectPole(g_initialObjectData,
