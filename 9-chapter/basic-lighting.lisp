@@ -176,30 +176,27 @@ described by the arguments given."
 (defparameter *draw-colored-cyl* t)
 
 (defparameter *view-pole*
-  (make-instance 'glutil::view-pole :cam-pos (glm:vec3 4.0 0.8 4.0)))
+  (make-instance 'glutil::view-pole :cam-pos (glm:vec3 0.0 0.8 8.0)))
+
+;; TODO: provide abstraction class for object rendering, treating the camera as just
+;;       another object
+(defparameter *objt-pole*
+  (make-instance 'glutil::view-pole :cam-pos (glm:vec3 0.0 0.0 8.0)))
+
+
 
 (defun draw ()
   (let ((model-matrix (make-instance 'glutil:matrix-stack))
-	(light-dir-camera-space)
-	;; (cam-pos (resolve-cam-position))
-	;; (cam-matrix (make-instance 'glutil:matrix-stack))
-	)
+	(light-dir-camera-space))
 
 
-    ;; (glutil:set-matrix cam-matrix
-    ;; 		       (calc-look-at-matrix cam-pos *cam-target* (glm:vec3 0.0 1.0 0.0)))
-    
     ;;NEXT-TODO: modelMatrix.setmatrix(g_viewPole.CalcMatrix());
-    ;; (glutil:set-matrix model-matrix (glutil:top-ms cam-matrix))
-
-    ;(glutil:set-matrix model-matrix (glutil::calc-matrix *view-pole*))
     (glutil:set-matrix model-matrix (glutil::get-trans-matrix *view-pole*))
 
     
     (setf light-dir-camera-space
     	  (glm:vec4->vec3 (glm:mat*vec (glutil:top-ms model-matrix)
     				       *light-direction*)))
-
     
     (gl:use-program (the-program *white-diffuse-color*))
     ;; very convenient function, not only does it test the length of the input
@@ -209,66 +206,73 @@ described by the arguments given."
     (gl:uniformfv (dir-to-light-unif *vertex-diffuse-color*) light-dir-camera-space)
     (gl:use-program 0)
 
-
-    ;; Render the ground plane
     (glutil:with-transform (model-matrix)
-	(gl:use-program (the-program *white-diffuse-color*))
-      ;;note how model-to-camera-matrix is mat4 and normal-model-to-camera-matrix is mat3!
-      ;; TODO: explanation needed, wasn't it due to direction vectors discarding their 'w'
-      ;; component?
-
-      :scale 5.0 1.0 5.0
-      (gl:uniform-matrix (model-to-camera-matrix-unif *white-diffuse-color*) 4
-			 (vector (glutil:top-ms model-matrix)) NIL)
-
-      (gl:uniform-matrix (normal-model-to-camera-matrix-unif *white-diffuse-color*) 3
-			 (vector (glm:mat4->mat3 (glutil:top-ms model-matrix))) NIL)
-
-      (gl:uniformfv
-       (light-intensity-unif *white-diffuse-color*) (glm:vec4 1.0 1.0 1.0 1.0))
-      (framework:render *plane-mesh*)
-      (gl:use-program 0))
-
-    ;; Render thy Cylinder
-    ;; TODO: g_objtPole.CalcMatrix()
-    (if *draw-colored-cyl*
+	
+	;; Render the ground plane
 	(glutil:with-transform (model-matrix)
-
-	    (gl:use-program (the-program *vertex-diffuse-color*))
-
-	  :translate 0.0 .5 0.0
-	  (gl:uniform-matrix (model-to-camera-matrix-unif *vertex-diffuse-color*) 4
-			     (vector (glutil:top-ms model-matrix)) NIL)
-
-	  (gl:uniform-matrix (normal-model-to-camera-matrix-unif *vertex-diffuse-color*) 3
-			     (vector (glm:mat4->mat3 (glutil:top-ms model-matrix))) NIL)
-
-	  (gl:uniformfv (light-intensity-unif *vertex-diffuse-color*) (glm:vec4 1.0 1.0 1.0 1.0))
-	  (framework:render-mode *cylinder-mesh* "lit-color")
-	  (gl:use-program 0))
-	;;else:
-	(glutil:with-transform (model-matrix)
-
 	    (gl:use-program (the-program *white-diffuse-color*))
-
-	  :translate 0.0 .5 0.0
+	  ;;note how model-to-camera-matrix is mat4 and normal-model-to-camera-matrix is mat3!
+	  ;; TODO: explanation needed, wasn't it due to direction vectors discarding their 'w'
+	  ;; component?
+	  :scale 10.0 1.0 10.0
 	  (gl:uniform-matrix (model-to-camera-matrix-unif *white-diffuse-color*) 4
 			     (vector (glutil:top-ms model-matrix)) NIL)
 
 	  (gl:uniform-matrix (normal-model-to-camera-matrix-unif *white-diffuse-color*) 3
 			     (vector (glm:mat4->mat3 (glutil:top-ms model-matrix))) NIL)
 
-	  (gl:uniformfv (light-intensity-unif *white-diffuse-color*) (glm:vec4 1.0 1.0 1.0 1.0))
+	  (gl:uniformfv
+	   (light-intensity-unif *white-diffuse-color*) (glm:vec4 1.0 1.0 1.0 1.0))
+	  (framework:render *plane-mesh*)
+	  (gl:use-program 0))
+          ;; Render the Cylinder
+    ;; TODO: g_objtPole.CalcMatrix()
+    (if *draw-colored-cyl*
+	;; TODO: review
+	;(glutil:set-matrix model-matrix (glutil::get-trans-matrix *objt-pole*))
+	(glutil:with-transform (model-matrix)
+
+	  (gl:use-program (the-program *vertex-diffuse-color*))
+
+	  :translate 1.0 .5 1.0
+	  (gl:uniform-matrix (model-to-camera-matrix-unif *vertex-diffuse-color*) 4
+			     (vector (glutil:top-ms model-matrix)) NIL)
+
+	  (gl:uniform-matrix
+	   (normal-model-to-camera-matrix-unif *vertex-diffuse-color*) 3
+	   (vector (glm:mat4->mat3 (glutil:top-ms model-matrix))) NIL)
+
+	  (gl:uniformfv
+	   (light-intensity-unif *vertex-diffuse-color*) (glm:vec4 1.0 1.0 1.0 1.0))
+	  (framework:render-mode *cylinder-mesh* "lit-color")
+	  
+	  (gl:use-program 0))
+
+	;;else:
+	(glutil:with-transform (model-matrix)
+
+	  (gl:use-program (the-program *white-diffuse-color*))
+	  :translate 1.0 .5 1.0
+
+	;	  :translate 0.0 .5 0.0
+	  (gl:uniform-matrix (model-to-camera-matrix-unif *white-diffuse-color*) 4
+			     (vector (glutil:top-ms model-matrix)) NIL)
+
+	  (gl:uniform-matrix (normal-model-to-camera-matrix-unif *white-diffuse-color*) 3
+			     (vector (glm:mat4->mat3 (glutil:top-ms model-matrix))) NIL)
+
+	  (gl:uniformfv (light-intensity-unif *white-diffuse-color*)
+			(glm:vec4 1.0 1.0 1.0 1.0))
 	  (framework:render-mode *cylinder-mesh* "lit")
-	  (gl:use-program 0)))
+	  (gl:use-program 0))))
     ))
 
-(defun display ()
-  (gl:clear-color 0.0 0.0 0.2 1)
-  (gl:clear-depth 1.0)
-  (gl:clear :color-buffer-bit :depth-buffer-bit)
+  (defun display ()
+    (gl:clear-color 0.0 0.0 0.2 1)
+    (gl:clear-depth 1.0)
+    (gl:clear :color-buffer-bit :depth-buffer-bit)
 
-  (draw))
+    (draw))
 
 (defparameter *fz-near* 1.0)
 (defparameter *fz-far* 1000.0)

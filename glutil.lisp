@@ -232,7 +232,7 @@ it will be returned to its former state"
 (defmethod get-trans-matrix ((vp view-pole))
   (let ((mat (glm:mat4-cast (quat vp)))
 	(cam-pos-mat (sb-cga:translate (glm:vec- (cam-pos vp)))))
-    (sb-cga:matrix* mat cam-pos-mat)))
+ (sb-cga:matrix* cam-pos-mat mat)))
 
 (defun calc-matrix (view-pole)
   (let ((look-at-matrix
