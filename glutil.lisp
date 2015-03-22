@@ -202,12 +202,37 @@ it will be returned to its former state"
 
 ;; Implementation following the specification in "chapter 9 - Lights On"
 (defclass view-pole ()
-  ((look-pt :initform (glm:vec3 0.0 0.0 0.0) :initarg :look-pt)
-   (cam-pos :initform (glm:vec3 0.0 0.0 1.0) :initarg :cam-pos)
-   (up-pt :initform (glm:vec3 0.0 1.0 0.0) :initarg up-pt)
+  ((curr-quat :initform (glm:quaternion 1.0 0.0 0.0 0.0) :accessor quat)
+   (look-pt :initform (glm:vec3 0.0 0.0 0.0) :initarg :look-pt :accessor look-pt)
+   (cam-pos :initform (glm:vec3 0.0 0.0 1.0) :initarg :cam-pos :accessor cam-pos)
+   (up-pt :initform (glm:vec3 0.0 1.0 0.0) :initarg up-pt :accessor up-pt)
    (look-at-matrix :accessor look-at-mat4)))
 
 
+(defun rotate-vp-y (deg view-pole)
+  (let* ((trans-quat (glm:make-quat deg (0.0 1.0 0.0)))
+	 (vp-quat (quat view-pole))
+	 (result (glm:quat* vp-quat trans-quat)))
+    (setf (quat view-pole) result)))
+
+(defun rotate-vp-x (deg view-pole)
+  (let* ((trans-quat (glm:make-quat deg (1.0 0.0 0.0)))
+	 (vp-quat (quat view-pole))
+	 (result (glm:quat* vp-quat trans-quat)))
+    (setf (quat view-pole) result)))
+
+(defun rotate-vp-z (deg view-pole)
+  (let* ((trans-quat (glm:make-quat deg (0.0 0.0 1.0)))
+	 (vp-quat (quat view-pole))
+	 (result (glm:quat* vp-quat trans-quat)))
+    (setf (quat view-pole) result)))
+
+;; implementing a quaternion approach, for now parallel solution with CALC-MATRIX
+(defgeneric get-trans-matrix (orientation-obj))
+(defmethod get-trans-matrix ((vp view-pole))
+  (let ((mat (glm:mat4-cast (quat vp)))
+	(cam-pos-mat (sb-cga:translate (glm:vec- (cam-pos vp)))))
+    (sb-cga:matrix* mat cam-pos-mat)))
 
 (defun calc-matrix (view-pole)
   (let ((look-at-matrix
@@ -242,7 +267,7 @@ described by the arguments given."
 
 
 (defun round-matrix (mat)
-  ;; TODO: pretty-print matrix to look symmetrical, for ease of reading
+  ;; TODO: cut of decimal places to make it look symmetrical for ease of reading
   (loop for el across mat
      for i = 0 then (1+ i)
      :do

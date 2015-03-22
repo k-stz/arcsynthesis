@@ -181,17 +181,19 @@ described by the arguments given."
 (defun draw ()
   (let ((model-matrix (make-instance 'glutil:matrix-stack))
 	(light-dir-camera-space)
-	(cam-pos (resolve-cam-position))
-	(cam-matrix (make-instance 'glutil:matrix-stack)))
+	;; (cam-pos (resolve-cam-position))
+	;; (cam-matrix (make-instance 'glutil:matrix-stack))
+	)
 
 
-    (glutil:set-matrix cam-matrix
-		       (calc-look-at-matrix cam-pos *cam-target* (glm:vec3 0.0 1.0 0.0)))
+    ;; (glutil:set-matrix cam-matrix
+    ;; 		       (calc-look-at-matrix cam-pos *cam-target* (glm:vec3 0.0 1.0 0.0)))
     
     ;;NEXT-TODO: modelMatrix.setmatrix(g_viewPole.CalcMatrix());
     ;; (glutil:set-matrix model-matrix (glutil:top-ms cam-matrix))
 
-    (glutil:set-matrix model-matrix (glutil::calc-matrix *view-pole*))
+    ;(glutil:set-matrix model-matrix (glutil::calc-matrix *view-pole*))
+    (glutil:set-matrix model-matrix (glutil::get-trans-matrix *view-pole*))
 
     
     (setf light-dir-camera-space
@@ -313,27 +315,26 @@ described by the arguments given."
 
 	     ;; rotate camera horizontally around target
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-j)
-	       (decf (glm:vec. *sphere-cam-rel-pos* :x) 1.125))
+	       (glutil::rotate-vp-y 10.0 *view-pole*)
+	       (print (glutil::quat *view-pole*)))
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-l)
-	       (incf (glm:vec. *sphere-cam-rel-pos* :x) 1.125))
+	       (glutil::rotate-vp-y -10.0 *view-pole*)
+	       (print (glutil::quat *view-pole*)))
 	     ;; rotate cam vertically around target
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-i)
-	       ;; (decf (glm:vec. *sphere-cam-rel-pos* :y) 1.125)
-	       ;; up-down for now TODO, use mouse-wheel
-       	       (incf (glm:vec. (slot-value *view-pole* 'glutil::cam-pos) :y) 0.3))
+	       	       (glutil::rotate-vp-x 10.0 *view-pole*)
+		       (print (glutil::quat *view-pole*)))
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-k)
-	       ;; (incf (glm:vec. *sphere-cam-rel-pos* :y) 1.125)
-	       (decf (glm:vec. (slot-value *view-pole* 'glutil::cam-pos) :y) 0.3))
+	       	       	       (glutil::rotate-vp-x -10.0 *view-pole*)
+		       (print (glutil::quat *view-pole*)))
 	     ;; zoom camera in/out of target
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-u)
-	       ;; (decf (glm:vec. *sphere-cam-rel-pos* :z) 1.5)
-	       (decf (glm:vec. (slot-value *view-pole* 'glutil::cam-pos) :z) 0.3)
+	       	       (glutil::rotate-vp-z 10.0 *view-pole*)
+		       (print (glutil::quat *view-pole*))
 	       )
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-o)
-	       ;; (incf (glm:vec. *sphere-cam-rel-pos* :z) 1.5)
-	       (incf (glm:vec. (slot-value *view-pole* 'glutil::cam-pos) :z) 0.3)
-
-	       )
+	       	       (glutil::rotate-vp-z -10.0 *view-pole*)
+		       (print (glutil::quat *view-pole*)))
 
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-space)
 	       (if *draw-colored-cyl*
