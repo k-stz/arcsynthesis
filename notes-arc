@@ -948,7 +948,7 @@ and then multiplying it with another to get this relative transformation.
 This is indeed a solution, but there is a problem to it, it is inefficient:
 1. We need to store a whole matrix,
 2. as we apply multiple transforms per frame rendered, expecting 30 frames per second we can see
-   that rounding problems - floating point imprecision may accumulate.
+   that rounding problems - floating point imprecision - may accumulate.
 3. To fight these imprecisions we want to keep the matrix othonormal, a costly operation: every
    base-vector needs to stay normalized and, a bit more problematic, the base-vectors must stay
    perpendicular to one another.
@@ -1139,7 +1139,7 @@ particualr surface/light interaction where the light is reflected in all directi
 Lambertian reflectance,
 a model of diffusion lighting in which a surface will reflect the light equally in all
 directions.
-It's equation, where R=reflected color, D=diffusion surface absorption, I=light intensity
+Its equation, where R=reflected color, D=diffusion surface absorption, I=light intensity
 and theta=angle of incidence
    R = D*I*cos(theta);  // note cos(0-degree) = 1.0 aka brightest also negative values
                         // will be clamped
@@ -1150,12 +1150,12 @@ How to compute: angle of incidence, and where to perform the lighting computatio
 surface normal,
 traingles have this nice property that all its vertices occupy the same plane and
 hence its side has a definite direction it can face: the _surface normal_ or just
-_NORMAL_! Every point along of the surface of single triangle has the same geometric
+_NORMAL_! Every point along the surface of single triangle has the same geometric
 normal.
 But the problem is, we don't want those, as our object's are not to show this property of
 being fundamentally triangles and hence have very faceted lighting. This can be solved by
-assigning to each vertex the normal it /would/ have to be an approximation of object it
-tries to approximate as a part of a polygon. Yes, each vertex will get this additional
+assigning to each vertex the normal it /would/ have to be an approximation of the object
+it tries to approximate as a part of a polygon. Yes, each vertex will gets this additional
 "normal" data.
 
 The vertex will now contain the data: position, color and normal!
@@ -1166,9 +1166,9 @@ This simple and efficient computation has a name:
 
 Gouraud Shading,
 interpolating the result of Lambertian reflectance at the vectors (which contain the
-normals as meta data) of a vector over the surface of triangle. This approach to lighting
-over the surface of a triangle is very efficient - its just color interpolation over the
-triangle - and was in fact the preferred method as it is also a fairly decent
+normals as meta data) of a vector over the surface of the triangle. This approach to
+lighting over the surface of a triangle is very efficient - it's just color interpolation
+over the triangle - and was in fact the preferred method as it is also a fairly decent
 approximation. Its Achilles heel is that it is used for diffusion lighting and that, for
 example, modern games just don't use diffusion lighting anymore and it becomes noticeably
 inaccurate in other lighting models.

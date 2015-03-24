@@ -175,13 +175,21 @@ described by the arguments given."
 (defparameter *light-direction* (glm:vec4 0.866 0.5 0.0 0.0))
 (defparameter *draw-colored-cyl* t)
 
+;; TODO: provide abstraction class for object rendering, treating the camera as just
+;;       another object
+;; NEXT-TODO: free camera rendering, expose api for mainipulation, then
+;;            use api to controll via mouse
 (defparameter *view-pole*
   (make-instance 'glutil::view-pole :cam-pos (glm:vec3 0.0 0.8 8.0)))
 
-;; TODO: provide abstraction class for object rendering, treating the camera as just
-;;       another object
+
+
+;; initialobjectdata position: 0.0 0.5 0.0
+;;                   orientation: (quaternion 1.0 0.0 0.0 0.0)
 (defparameter *objt-pole*
-  (make-instance 'glutil::view-pole :cam-pos (glm:vec3 0.0 0.0 8.0)))
+  (make-instance 'glutil::object-pole
+		 :pos (glm:vec3 0.0 0.5 0.0)
+		 :orient (glm:quaternion 1.0 0.0 0.0 0.0)))
 
 
 
@@ -191,7 +199,7 @@ described by the arguments given."
 
 
     ;;NEXT-TODO: modelMatrix.setmatrix(g_viewPole.CalcMatrix());
-    (glutil:set-matrix model-matrix (glutil::get-trans-matrix *view-pole*))
+    (glutil:set-matrix model-matrix (glutil::calc-matrix *view-pole*))
 
     
     (setf light-dir-camera-space
@@ -214,7 +222,7 @@ described by the arguments given."
 	  ;;note how model-to-camera-matrix is mat4 and normal-model-to-camera-matrix is mat3!
 	  ;; TODO: explanation needed, wasn't it due to direction vectors discarding their 'w'
 	  ;; component?
-	  :scale 10.0 1.0 10.0
+	  :scale 5.0 1.0 5.0
 	  (gl:uniform-matrix (model-to-camera-matrix-unif *white-diffuse-color*) 4
 			     (vector (glutil:top-ms model-matrix)) NIL)
 
@@ -225,46 +233,41 @@ described by the arguments given."
 	   (light-intensity-unif *white-diffuse-color*) (glm:vec4 1.0 1.0 1.0 1.0))
 	  (framework:render *plane-mesh*)
 	  (gl:use-program 0))
-          ;; Render the Cylinder
-    ;; TODO: g_objtPole.CalcMatrix()
-    (if *draw-colored-cyl*
-	;; TODO: review
-	;(glutil:set-matrix model-matrix (glutil::get-trans-matrix *objt-pole*))
-	(glutil:with-transform (model-matrix)
 
-	  (gl:use-program (the-program *vertex-diffuse-color*))
 
-	  :translate 1.0 .5 1.0
-	  (gl:uniform-matrix (model-to-camera-matrix-unif *vertex-diffuse-color*) 4
-			     (vector (glutil:top-ms model-matrix)) NIL)
+      (glutil::apply-matrix model-matrix (glutil::calc-matrix *objt-pole*))
+      ;; Render the Cylinder
+      (if *draw-colored-cyl*
+	  (glutil:with-transform (model-matrix)
+	      (gl:use-program (the-program *vertex-diffuse-color*))
 
-	  (gl:uniform-matrix
-	   (normal-model-to-camera-matrix-unif *vertex-diffuse-color*) 3
-	   (vector (glm:mat4->mat3 (glutil:top-ms model-matrix))) NIL)
+	    (gl:uniform-matrix (model-to-camera-matrix-unif *vertex-diffuse-color*) 4
+			       (vector (glutil:top-ms model-matrix)) NIL)
 
-	  (gl:uniformfv
-	   (light-intensity-unif *vertex-diffuse-color*) (glm:vec4 1.0 1.0 1.0 1.0))
-	  (framework:render-mode *cylinder-mesh* "lit-color")
+	    (gl:uniform-matrix
+	     (normal-model-to-camera-matrix-unif *vertex-diffuse-color*) 3
+	     (vector (glm:mat4->mat3 (glutil:top-ms model-matrix))) NIL)
+
+	    (gl:uniformfv
+	     (light-intensity-unif *vertex-diffuse-color*) (glm:vec4 1.0 1.0 1.0 1.0))
+	    (framework:render-mode *cylinder-mesh* "lit-color")
 	  
-	  (gl:use-program 0))
+	    (gl:use-program 0))
 
-	;;else:
-	(glutil:with-transform (model-matrix)
+	  ;;else:
+	  (glutil:with-transform (model-matrix)
 
-	  (gl:use-program (the-program *white-diffuse-color*))
-	  :translate 1.0 .5 1.0
+	      (gl:use-program (the-program *white-diffuse-color*))
+	    (gl:uniform-matrix (model-to-camera-matrix-unif *white-diffuse-color*) 4
+			       (vector (glutil:top-ms model-matrix)) NIL)
 
-	;	  :translate 0.0 .5 0.0
-	  (gl:uniform-matrix (model-to-camera-matrix-unif *white-diffuse-color*) 4
-			     (vector (glutil:top-ms model-matrix)) NIL)
+	    (gl:uniform-matrix (normal-model-to-camera-matrix-unif *white-diffuse-color*) 3
+			       (vector (glm:mat4->mat3 (glutil:top-ms model-matrix))) NIL)
 
-	  (gl:uniform-matrix (normal-model-to-camera-matrix-unif *white-diffuse-color*) 3
-			     (vector (glm:mat4->mat3 (glutil:top-ms model-matrix))) NIL)
-
-	  (gl:uniformfv (light-intensity-unif *white-diffuse-color*)
-			(glm:vec4 1.0 1.0 1.0 1.0))
-	  (framework:render-mode *cylinder-mesh* "lit")
-	  (gl:use-program 0))))
+	    (gl:uniformfv (light-intensity-unif *white-diffuse-color*)
+			  (glm:vec4 1.0 1.0 1.0 1.0))
+	    (framework:render-mode *cylinder-mesh* "lit")
+	    (gl:use-program 0))))
     ))
 
   (defun display ()
@@ -319,26 +322,20 @@ described by the arguments given."
 
 	     ;; rotate camera horizontally around target
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-j)
-	       (glutil::rotate-vp-y 10.0 *view-pole*)
-	       (print (glutil::quat *view-pole*)))
+	       (glutil::rotate-vp-y 10.0 *view-pole*))
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-l)
-	       (glutil::rotate-vp-y -10.0 *view-pole*)
-	       (print (glutil::quat *view-pole*)))
+	       (glutil::rotate-vp-y -10.0 *view-pole*))
 	     ;; rotate cam vertically around target
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-i)
-	       	       (glutil::rotate-vp-x 10.0 *view-pole*)
-		       (print (glutil::quat *view-pole*)))
+	       (glutil::rotate-vp-x 10.0 *view-pole*))
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-k)
-	       	       	       (glutil::rotate-vp-x -10.0 *view-pole*)
-		       (print (glutil::quat *view-pole*)))
+	       (glutil::rotate-vp-x -10.0 *view-pole*))
+
 	     ;; zoom camera in/out of target
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-u)
-	       	       (glutil::rotate-vp-z 10.0 *view-pole*)
-		       (print (glutil::quat *view-pole*))
-	       )
+	       (glutil::rotate-vp-z 10.0 *view-pole*))
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-o)
-	       	       (glutil::rotate-vp-z -10.0 *view-pole*)
-		       (print (glutil::quat *view-pole*)))
+	       (glutil::rotate-vp-z -10.0 *view-pole*))
 
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-space)
 	       (if *draw-colored-cyl*

@@ -596,8 +596,7 @@ geometry coordinates and returned as a position vector."
     ;;draw building
     (glutil:with-transform (model-matrix)
 	:translate 20.0 0.0 -10.0
-	(draw-parthenon model-matrix)
-	)
+	(draw-parthenon model-matrix))
 
     (when *draw-look-at-point*
       (draw-look-at-point model-matrix))

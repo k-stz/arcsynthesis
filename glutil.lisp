@@ -17,6 +17,14 @@
   "Set the current (top) matrix of the matrix-stack to the given mat4"
   (setf (m-curr-mat ms) mat4))
 
+(defgeneric apply-matrix (matrix-stack mat4))
+(defmethod apply-matrix ((ms matrix-stack) (mat4 simple-array))
+  "Apply the matrix to the current matrix in the matrix-stack and make the
+Result the new current matrix"
+  (let ((curr (top-ms ms)))
+    (setf (m-curr-mat ms)
+	  (sb-cga:matrix* curr mat4))))
+
 (defgeneric top-ms (matrix-stack))
 (defmethod top-ms ((ms matrix-stack))
   "Returns the current-matrix"
@@ -208,7 +216,7 @@ it will be returned to its former state"
    (up-pt :initform (glm:vec3 0.0 1.0 0.0) :initarg up-pt :accessor up-pt)
    (look-at-matrix :accessor look-at-mat4)))
 
-
+;; TODO: abstract
 (defun rotate-vp-y (deg view-pole)
   (let* ((trans-quat (glm:make-quat deg (0.0 1.0 0.0)))
 	 (vp-quat (quat view-pole))
@@ -228,19 +236,19 @@ it will be returned to its former state"
     (setf (quat view-pole) result)))
 
 ;; implementing a quaternion approach, for now parallel solution with CALC-MATRIX
-(defgeneric get-trans-matrix (orientation-obj))
-(defmethod get-trans-matrix ((vp view-pole))
+(defgeneric calc-matrix (pole-object))
+(defmethod calc-matrix ((vp view-pole))
   (let ((mat (glm:mat4-cast (quat vp)))
 	(cam-pos-mat (sb-cga:translate (glm:vec- (cam-pos vp)))))
  (sb-cga:matrix* cam-pos-mat mat)))
 
-(defun calc-matrix (view-pole)
-  (let ((look-at-matrix
-	 (calc-look-at-matrix (slot-value view-pole 'cam-pos)
-			      (slot-value view-pole 'look-pt)
-			      (slot-value view-pole 'up-pt))))
-    (setf (look-at-mat4 view-pole) look-at-matrix)
-    look-at-matrix))
+;; (defun calc-matrix (view-pole)
+;;   (let ((look-at-matrix
+;; 	 (calc-look-at-matrix (slot-value view-pole 'cam-pos)
+;; 			      (slot-value view-pole 'look-pt)
+;; 			      (slot-value view-pole 'up-pt))))
+;;     (setf (look-at-mat4 view-pole) look-at-matrix)
+;;     look-at-matrix))
 
 (defun calc-look-at-matrix (camera-pt look-pt up-pt)
   "Returns a transformation matrix that represents an orientation of a camera orientation
@@ -265,6 +273,21 @@ described by the arguments given."
     (glm:set-mat4-col trans-mat 3 (glm:vec4-from-vec3 (glm:vec- camera-pt) 1.0))
     (sb-cga:matrix* rot-mat trans-mat)))
 
+;; Object-Pole bare minimal implementation:
+(defclass object-pole ()
+  ((pos :initform (glm:vec3 0.0 0.0 0.0) :initarg :pos :accessor pos)
+   (orientation :initform (glm:quaternion 1.0 0.0 0.0 0.0)
+		:initarg :orient
+		:accessor orient)))
+
+
+(defmethod calc-matrix ((obj-p object-pole))
+  (let ((translate-mat (glm:make-mat4 1.0)))
+    (glm:set-mat4-col translate-mat 3
+		      (glm:vec4-from-vec3 (pos obj-p)))
+    (sb-cga:matrix* translate-mat (glm:mat4-cast (orient obj-p)))))
+
+;;------------------------------------------------------------------------------
 
 (defun round-matrix (mat)
   ;; TODO: cut of decimal places to make it look symmetrical for ease of reading
@@ -276,6 +299,3 @@ described by the arguments given."
 	 (setf (aref mat i) 0.0)))
   mat)
 
-;; ObjectPole implementation
-;; glutil::ObjectPole g_objtPole = glutil::ObjectPole(g_initialObjectData,
-;; 						   90.0f/250.0f, glutil::MB_RIGHT_B

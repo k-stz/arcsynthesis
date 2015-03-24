@@ -1,7 +1,3 @@
-;;TODO: how is sb-cga pretty printing its matrix ?
-;;     (deftype matrix (simple-array ..)) then implement print-object
-;;     function on it??
-
 ;; This code tries to emulate the GLM-library
 ;; TODO: readermacro? *matrix*0.x => (mat4-place *matrix* 0 :x)
 
@@ -168,7 +164,7 @@
     ;; LOOP's starting to aid me intuitively
     (loop for element across vec
        and i from 0
-	 do
+       do
 	 (setf (aref vec i) (/ element length)))
     vec))
 
@@ -203,8 +199,7 @@
   `(let ((c1 (row-vec4-from-mat4 ,row-1 ,mat4))
 	(c2 (row-vec4-from-mat4 ,row-2 ,mat4)))
     (set-mat4-row ,mat4 ,row-1 c2)
-    (set-mat4-row ,mat4 ,row-2 c1)
-    ))
+    (set-mat4-row ,mat4 ,row-2 c1)))
 
 (defun make-mat3 (init-diagonal-values)
   (let ((idv init-diagonal-values))
@@ -258,8 +253,7 @@
 	 (matrix (glm:make-mat3 1.0)))
     (glm:set-mat3 matrix 1 :y f-cos) (glm:set-mat3 matrix 2 :y (- f-sin)) 
     (glm:set-mat3 matrix 1 :z f-sin) (glm:set-mat3 matrix 2 :z f-cos)
-    (glm:mat4-from-mat3 matrix)
-    ))
+    (glm:mat4-from-mat3 matrix)))
 
 ;;TODO: all these function probably need some sensible rounding so as that
 ;; applying two times a 180 degree turn would result in the old position
@@ -267,16 +261,14 @@
   (let* ((ang-rad (ang-rad-from-ang-deg ang-deg))
 	 (f-cos (cos ang-rad))
 	 (f-sin (sin ang-rad))
-	 (matrix (glm:make-mat3 1.0))
-	 )
+	 (matrix (glm:make-mat3 1.0)))
     ;; since even this function calculates rotation unlike arcsynthesis I will leave
     ;; this function the way it is (arcsynthesis rotates counter-clockwise with positive
     ;; angles given, positve axis pointing into eye)
     ;; (sb-cga:rotate-around (sb-cga:vec 0.0 1.0 0.0) ang-rad)
     (glm:set-mat3 matrix 0 :x f-cos)     (glm:set-mat3 matrix 2 :x f-sin) 
     (glm:set-mat3 matrix 0 :z (- f-sin)) (glm:set-mat3 matrix 2 :z f-cos)
-    (glm:mat4-from-mat3 matrix)
-    ))
+    (glm:mat4-from-mat3 matrix)))
 
 (defun rotate-z (ang-deg)
   (let* ((ang-rad (ang-rad-from-ang-deg ang-deg))
@@ -285,8 +277,7 @@
 	 (matrix (glm:make-mat3 1.0)))
     (glm:set-mat3 matrix 0 :x f-cos) (glm:set-mat3 matrix 1 :x (- f-sin)) 
     (glm:set-mat3 matrix 0 :y f-sin) (glm:set-mat3 matrix 1 :y f-cos)
-    (glm:mat4-from-mat3 matrix)
-    ))
+    (glm:mat4-from-mat3 matrix)))
 
 
 (defun rotate-axis (axis-x axis-y axis-z ang-deg)
@@ -568,7 +559,7 @@ unit length, this is an intrinsic mathematical property of quaternions."
 
 (defgeneric mat4-cast (t))
 (defmethod mat4-cast ((q1 quat))
-  "Retruns the transformation matrix the input quaternion is representing"
+  "Returns the transformation matrix the input quaternion is representing"
   (let ((w (q.w q1))
 	(x (q.x q1))
 	(y (q.y q1))
@@ -627,7 +618,7 @@ unit length, this is an intrinsic mathematical property of quaternions."
 		 (sb-cga:vec* v2 alpha))))
 
 (defmethod mix ((x single-float) (y single-float) alpha)
-  "linearly interpolate between two values x,y using weight to weight between them"
+  "linearly interpolate between two values x,y using alpha to weight between them"
   (let ((alpha (float alpha 1.0)))
     (+ (* x (- 1.0 alpha))		;yeah.. (1- alpha) != (- 1 alpha)  
        (* y alpha))))
@@ -667,13 +658,13 @@ shortest path."
 
 
 ;; NOTE: this slerp, as opposed to the one in glm:slerp, interpolates using the
-;; straightforward path. This means is doesn't check if there is a shorter path
+;; straightforward path. This means it doesn't check if there is a shorter path
 ;; along the 3-sphere to the destination orientation, and will perform the
-;; interpolation as seen with q -> e
+;; interpolation as seen with q -> e in 8-chapter/interpolation.lisp
 (defgeneric slerp-simple (x y a))
 (defmethod slerp-simple ((x quat) (y quat) (a single-float))
   "Spherical linear interpolation from quaternion orientation x to y, in the order
-provided - ignoring a possible shorter path across the sphere."
+provided - ignoring a possible shorter path across the 3-sphere."
   (let ((z (quaternion (q.w y) (q.x y) (q.y y) (q.z y)))
 	(cos-theta (dot4-product (vectorize x) (vectorize y))))
     ;; this is the part responsible for the interpolating to "take the

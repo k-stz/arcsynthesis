@@ -26,7 +26,7 @@ the sdl2:with-init code."
        (progn ,@body) (continue () :report "Continue")))
 
 (defun update-swank ()
-  "Called from within the main loop, this keep the lisp repl
+  "Called from within the main loop, this keeps the lisp repl
 working while cepl runs"
   (continuable
    (let ((connection
@@ -110,8 +110,7 @@ will be COERCEd to SINGLE-FLOAT"
 
 
 (defun create-program (shader-list)
-   ;;TODO: is this bad style to gl:use it as well?
-  "Create program and RETURN it"
+  "Create a GL program."
   (let ((program (%gl:create-program)))
     ;; "attach" all of the created shader objects to the program object
     (loop for shader-object in shader-list
@@ -124,10 +123,6 @@ will be COERCEd to SINGLE-FLOAT"
     ;; remove shader objects from program:
     (loop for shader-object in shader-list
        do (%gl:detach-shader program shader-object))
-    ;; finally we need to tell OpenGL that rendering commands should use
-    ;; our program object instead of its default rendering state:
-    ;; arcsyntheses: "it, glUseProgram, is later called with 0 to indicate that no
-    ;;                program will be used for rendering"
     program))
 
 ;; TODO: remove from all code, find solution to do such clean-ups more organized in the
@@ -152,7 +147,8 @@ bytes read."
        (gl:glaref gl-array i)))
 
 (defmacro string-case (str &body cases)
-  `(loop for i in (quote ,cases) when (string-equal ,str (car i))
+  `(loop for i in (quote ,cases)
+      when (string-equal ,str (car i))
        return (cadr i)))
 
 (defun string->gl-type (string)

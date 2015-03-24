@@ -1,7 +1,7 @@
 ;;;; -*- Mode: Lisp; Syntax: ANSI-Common-Lisp; Base: 10 -*-
 ;;TODO: loading this file is causing sbcl to compile functions.. they must be put into the
-;;      lisp system (in working memory) i guess. How to disable this by fiat? Well it is
-;;      kinda slow.. nah just want to know what's going on in the background there.
+;;      lisp image. How to disable this by fiat? Well it is kinda slow.. nah just want to know
+;;      what's going on in the background there.
 
 ;; so you don't have to qualify: (asdf:defsystem ..) just (defsystem ..)
 ;; this is unnecassary if you load this file using (asdf::load-asd ..)!
@@ -23,7 +23,7 @@ written in Common Lisp (SBCL) using cl-sdl2 and cl-opengl"
    (:file "glm")
    (:file "glutil")
    (:file "framework")
-   ;; the following solves the "src in subdirectories" problem nicely!
+   ;; ":module" solves the "src in subdirectories" problem nicely!
    (:module "1-chapter/"
    	    :components ((:file "hello-triangle")))
    (:module "2-chapter/"
@@ -60,16 +60,6 @@ written in Common Lisp (SBCL) using cl-sdl2 and cl-opengl"
 			 (:file "interpolation")))
    (:module "9-chapter"
 	    :components ((:file "basic-lighting")))))
-
-
-;; (:file "1-chapter/auxiliary-functions")
-   ;; (:file "1-chapter/hello-triangle")))
-  
-  ;; :components ((:file "package")
-  ;; 	       (:file "1-chapter/auxiliary-functions"
-  ;; 		      :depends-on ("package"))
-  ;; 	       (:file "1-chapter/hello-triangle"
-  ;; 		      :depends-on ("1-chapter/auxiliary-functions")
 
 ;;TODO: bad style?  
 (asdf:load-system :arcsynthesis)
