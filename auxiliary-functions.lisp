@@ -118,8 +118,8 @@ will be COERCEd to SINGLE-FLOAT"
     ;; I guess links all the attached shaders to actually form a program object
     (%gl:link-program program)
     (if (gl:get-program program :link-status)
-	(print "Linking successful! (program object)")
-	(print (gl:get-program-info-log program)))
+	(format t "Linking successful! (program object)~%")
+	(format t "~a~%" (gl:get-program-info-log program)))
     ;; remove shader objects from program:
     (loop for shader-object in shader-list
        do (%gl:detach-shader program shader-object))

@@ -79,7 +79,9 @@
 
 
 
-;; TODO: test with profiler with this CONSes heavily! (invoked on every frame)
+;; TODO: test with profiler if this CONSes heavily! (invoked on every frame)
+;; NEXT-TODO: input needs to be transposed for the free camera to work i basic-lighting.lisp
+;; => is a transposed matrix being build here?
 (defun mat*vec (mat4 vec4)
   "Matrix vector multiplication."
   (multiple-value-bind (x y z w)
@@ -166,6 +168,21 @@
 	(w (float w)))
     (make-array 4 :element-type 'single-float
 		:initial-contents (list x y z w))))
+
+;; TODO: unit test?
+(defun round-obj (simple-vector &optional (delta 0.00001))
+  "Round any lisp simple-vector components to the closest integer if they differ by less than delta.
+This can be for example a vector or a matrix"
+  (loop for i below (length simple-vector)
+     for v = (aref simple-vector i)
+     do (setf (aref simple-vector i)
+	      (if (< (abs (- v (round v))) delta)
+		  (coerce (round v) 'single-float)
+		  v)))
+  simple-vector)
+
+
+
 
 (defun normalize (vec)
   (let ((length))

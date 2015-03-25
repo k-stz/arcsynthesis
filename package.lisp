@@ -33,6 +33,7 @@
    #:vec.
    #:vec3
    #:vec4
+   #:round-obj
    #:vec4*
    #:vec4+
    #:normalize

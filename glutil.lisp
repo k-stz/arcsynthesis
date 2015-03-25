@@ -249,10 +249,29 @@ it will be returned to its former state"
 	 (result (glm:quat* vp-quat trans-quat)))
     (setf (quat view-pole) result)))
 
-(defun move-camera (view-pole vec3-direction)
-  (setf (cam-pos view-pole)
-	(sb-cga:vec+ (cam-pos view-pole) (sb-cga:normalize vec3-direction))))
 
+;; TODO: clean up
+(defun move-camera (view-pole vec3-direction)
+  (let ((pos (cam-pos view-pole))
+	(vp-space-pos)
+	(vp-mat (glm:mat4-cast (quat view-pole)))
+	(new-pos))
+    (setf vp-space-pos (glm:vec4->vec3
+			(glm:mat*vec vp-mat
+				     (glm:vec3->vec4 pos))))
+    (setf (cam-pos view-pole)
+    	  (sb-cga:vec+ (cam-pos view-pole) (sb-cga:normalize vec3-direction)))
+    ;; (setf new-pos
+    ;; 	  (sb-cga:vec+ pos (sb-cga:normalize vec3-direction)))
+    ;; (glm:vec4->vec3
+    ;;  (glm:mat*vec vp-mat
+    ;; 		  (glm:vec3->vec4 new-pos)))
+    ))
+
+
+;; NEXT-TODO: always have the old representation, and just add the new `view-pole*pos
+;;            well and the new position is the one used for orientation. Hence You always
+;;            need to store a transformation for the foundational matrix????
 
 (defgeneric calc-matrix (pole-object))
 (defmethod calc-matrix ((vp view-pole))

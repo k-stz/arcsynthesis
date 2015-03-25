@@ -129,46 +129,8 @@
 
 
 (defparameter *sphere-cam-rel-pos* (glm:vec3 90.0 -33.0 1.0) "Order: phi theta r")
-(defparameter *cam-target* (glm:vec3 0.0 0.4 0.0))
+(defparameter *cam-target* (glm:vec3 0.0 0.0 0.0))
 
-(defun resolve-cam-position ()
-  "Spherical coordinates stored in *sphere-cam-rel-pos* are transformed to Euclidean
-geometry coordinates and returned as a position vector."
-  (let* ((phi (framework:deg-to-rad (glm:vec. *sphere-cam-rel-pos* :x)))
-	 (theta (framework:deg-to-rad (+ (glm:vec. *sphere-cam-rel-pos* :y)
-					 90.0)))
-	 (sin-theta (sin theta))
-	 (cos-theta (cos theta))
-	 (cos-phi (cos phi))
-	 (sin-phi (sin phi))
-	 ;;explanation in "world-with-ubo.lisp" in the chapter 7 directory
-	 (dir-to-camera (glm:vec3 (* sin-theta cos-phi)
-	 			  cos-theta
-	 			  (* sin-theta sin-phi))))
-    (sb-cga:vec+ (sb-cga:vec* dir-to-camera (glm:vec. *sphere-cam-rel-pos* :z))
-		 *cam-target*)))
-
-(defun calc-look-at-matrix (camera-pt look-pt up-pt)
-  "Returns a transformation matrix that represents an orientation of a camera orientation
-described by the arguments given."
-  ;;explanation in "world-with-ubo.lisp" in the chapter 7 directory
-  (let* ((look-dir (sb-cga:normalize (sb-cga:vec- look-pt camera-pt)))
-	 (up-dir (sb-cga:normalize up-pt))
-	 (right-dir (sb-cga:normalize (sb-cga:cross-product look-dir up-dir)))
-	 (perp-up-dir (sb-cga:cross-product right-dir look-dir))
-
-	 (rot-mat (glm:make-mat4 1.0))
-	 (trans-mat (glm:make-mat4 1.0)))
-
-    (glm:set-mat4-col rot-mat 0 (glm:vec4-from-vec3 right-dir 0.0))
-    (glm:set-mat4-col rot-mat 1 (glm:vec4-from-vec3 perp-up-dir 0.0))
-    (glm:set-mat4-col rot-mat 2 (glm:vec4-from-vec3 (glm:vec- look-dir) 0.0))
-    ;; TODO: why transpose it eventually? Maybe because it is col-major and setting
-    ;; column-wise and transpose is more efficient than just setting the rows
-    ;; with discontiguous indices
-    (setf rot-mat (sb-cga:transpose-matrix rot-mat))
-    (glm:set-mat4-col trans-mat 3 (glm:vec4-from-vec3 (glm:vec- camera-pt) 1.0))
-    (sb-cga:matrix* rot-mat trans-mat)))
 
 
 (defparameter *light-direction* (glm:vec4 0.866 0.5 0.0 0.0))
@@ -304,10 +266,15 @@ described by the arguments given."
 (defun test (dir)
   (let* ((mat (glm:mat4-cast (glutil::quat *view-pole*)))
 	 (result
-	  (glm:mat*vec mat (glm:vec3->vec4 dir))))
-    (setf m0 mat)
-    (setf d dir)
-    (glm:vec4->vec3 result)))
+	  (glm:vec4->vec3
+	   ;; NEXT-TODO: mat*vec wrong? Why needs to be transposed??
+	   (glm:mat*vec (sb-cga:transpose-matrix  mat) (glm:vec3->vec4 dir)))))
+    (format t "~a~%" (glm:round-obj (setf m0 mat)))
+    (format t "curr:~a neg:~a~%"
+	    (glm::round-obj result)
+	    (glm:vec3->vec4 (glm:vec- (glm:vec4->vec3 result))))
+    result))
+
 
 (defun main ()
   (arc:with-main
@@ -337,7 +304,8 @@ described by the arguments given."
 
 
      	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-t)
-	       (test (glm:vec4 0.0 0.0 -1.0 1.0)))
+	       (test (glm:vec4 0.0 0.0 -1.0 1.0))
+	       (format t "pos:~a~%~%" (glm:round-obj (glutil::cam-pos *view-pole*) 0.001)))
 	     
 	     ;; move camera
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-w)
@@ -346,17 +314,21 @@ described by the arguments given."
 				     (glm:vec3 0.0 0.0 -1.0))
 				    ;; (glutil::look-dir *view-pole*)
 				    )
-	       )
+	       (format t "pos:~a~%~%" (glm:round-obj (glutil::cam-pos *view-pole*) 0.001)))
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-s)
-
-	       )
+	       (glutil::move-camera *view-pole*
+				    (test
+				     (glm:vec3 0.0 0.0 1.0))
+				    ;; (glutil::look-dir *view-pole*)
+				    )
+	       (format t "~%pos:~a~%~%" (glm:round-obj (glutil::cam-pos *view-pole*) 0.001)))
 
 	     
 	     ;; rotate camera horizontally around target
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-j)
-	       (glutil::rotate-vp-y 10.0 *view-pole*))
+	       (glutil::rotate-vp-y -45.0 *view-pole*))
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-l)
-	       (glutil::rotate-vp-y -10.0 *view-pole*))
+	       (glutil::rotate-vp-y 45.0 *view-pole*))
 	     ;; rotate cam vertically around target
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-i)
 	       (glutil::rotate-vp-x 10.0 *view-pole*))
@@ -378,19 +350,6 @@ described by the arguments given."
 	    (:quit () t)
 	    (:idle ()
 		   ;; MAIN LOOP:
-
-		   ;; preventing special cases (camera transformation):
-		   (setf (glm:vec. *sphere-cam-rel-pos* :y)
-			 (glm:clamp (glm:vec. *sphere-cam-rel-pos* :y) -78.75 1.0))
-		   (setf (glm:vec. *cam-target* :y)
-			 (if (> (glm:vec. *cam-target* :y) 0.0)
-			     (glm:vec. *cam-target* :y)
-			     0.0))
-		   ;; can't zoom in "through" the floor with camera
-		   (setf (glm:vec. *sphere-cam-rel-pos* :z)
-			 (if (> (glm:vec. *sphere-cam-rel-pos* :z) 5.0)
-			     (glm:vec. *sphere-cam-rel-pos* :z)
-			     5.0))		 
 
 		   ;;rendering code:
 		   (display)
