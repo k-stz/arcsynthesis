@@ -214,7 +214,21 @@ it will be returned to its former state"
    (look-pt :initform (glm:vec3 0.0 0.0 0.0) :initarg :look-pt :accessor look-pt)
    (cam-pos :initform (glm:vec3 0.0 0.0 1.0) :initarg :cam-pos :accessor cam-pos)
    (up-pt :initform (glm:vec3 0.0 1.0 0.0) :initarg up-pt :accessor up-pt)
+   (look-dir :accessor look-dir)
    (look-at-matrix :accessor look-at-mat4)))
+
+(defmethod initialize-instance :after ((vp view-pole) &key)
+  ;; calculate look-direction of view-pole
+  (let ((cam (cam-pos vp))
+	(look-pt (look-pt vp)))
+    (setf (look-dir vp) (sb-cga:normalize
+			 (glm:vec- look-pt cam)))))
+
+(defun update-look-dir (view-pole)
+  (let ((mat (glm:mat4-cast (quat view-pole))))
+    (setf (look-dir view-pole)
+	  (glm:vec4->vec3
+	   (glm:mat*vec mat (glm:vec4-from-vec3 (look-dir view-pole)))))))
 
 ;; TODO: abstract
 (defun rotate-vp-y (deg view-pole)
@@ -235,12 +249,20 @@ it will be returned to its former state"
 	 (result (glm:quat* vp-quat trans-quat)))
     (setf (quat view-pole) result)))
 
-;; implementing a quaternion approach, for now parallel solution with CALC-MATRIX
+(defun move-camera (view-pole vec3-direction)
+  (setf (cam-pos view-pole)
+	(sb-cga:vec+ (cam-pos view-pole) (sb-cga:normalize vec3-direction))))
+
+
 (defgeneric calc-matrix (pole-object))
 (defmethod calc-matrix ((vp view-pole))
   (let ((mat (glm:mat4-cast (quat vp)))
 	(cam-pos-mat (sb-cga:translate (glm:vec- (cam-pos vp)))))
- (sb-cga:matrix* cam-pos-mat mat)))
+    ;;updating look-dir TODO: make this more central somewhere more upstream?
+;    (update-look-dir vp)
+    ;; Reversing the order here allows for camera-relative, or model-relative
+    ;; transformation!
+    (sb-cga:matrix* mat cam-pos-mat)))
 
 ;; (defun calc-matrix (view-pole)
 ;;   (let ((look-at-matrix

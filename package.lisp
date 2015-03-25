@@ -38,6 +38,7 @@
    #:normalize
    #:vec4-from-vec3
    #:vec4->vec3
+   #:vec3->vec4
    ;;quaternions:
    #:quat
    #:vectorize   

@@ -78,7 +78,8 @@
 ;; expression returning a "copy" of mat4 as if permutations haven't occured
 
 
-;; TODO: test row/col-major
+
+;; TODO: test with profiler with this CONSes heavily! (invoked on every frame)
 (defun mat*vec (mat4 vec4)
   "Matrix vector multiplication."
   (multiple-value-bind (x y z w)
@@ -87,16 +88,30 @@
 	      (aref vec4 2)
 	      (aref vec4 3))
     (macrolet ((m (col row)
-		 `(aref mat4 ,(+ col (* 4 row)))))
-      (glm:vec4 
-       (apply #'+ (mapcar (lambda (n) (* n x))
-			  (list (m 0 0) (m 0 1) (m 0 2) (m 0 3))))
-       (apply #'+ (mapcar (lambda (n) (* n y))
-			  (list (m 1 0) (m 1 1) (m 1 2) (m 1 3))))
-       (apply #'+ (mapcar (lambda (n) (* n z))
-			  (list (m 2 0) (m 2 1) (m 2 2) (m 2 3))))
-       (apply #'+ (mapcar (lambda (n) (* n w))
-			  (list (m 3 0) (m 3 1) (m 3 2) (m 3 3))))))))
+		 `(aref mat4 ,(+ row (* 4 col)))))
+      (let ((x-col 
+	     (mapcar (lambda (n) (* n x))
+		     (list (m 0 0) (m 0 1) (m 0 2) (m 0 3))))
+	    (y-col 
+	     (mapcar (lambda (n) (* n y))
+		     (list (m 1 0) (m 1 1) (m 1 2) (m 1 3))))
+	    (z-col
+	     (mapcar (lambda (n) (* n z))
+		     (list (m 2 0) (m 2 1) (m 2 2) (m 2 3))))
+	    (w-col
+	     (mapcar (lambda (n) (* n w))
+		     (list (m 3 0) (m 3 1) (m 3 2) (m 3 3))))
+	    (result (glm:vec4 0.0)))
+	;; iterate throw the rows of the columns to add each together to
+	;; finally yield the target vectors components
+	(loop for i below 3 do
+	     (setf (aref result i)
+		   (+ (nth i x-col)
+		      (nth i y-col)
+		      (nth i z-col)
+		      (nth i w-col))))
+	result))))
+
 
 ;; to facilitate pure vector negation 
 (defun vec- (a &optional b)
@@ -169,6 +184,8 @@
     vec))
 
 
+;; TODO: replace with vec3->vec4 in dependent functions, or look if this is a style
+;;       issue
 (defun vec4-from-vec3 (vec3 &optional w)
   "Fills vec4 with vec3 ending in w:1.0!"
   (let ((x (aref vec3 0))
@@ -177,6 +194,9 @@
 	(w (if w w 1.0)))
     (make-array 4 :element-type 'single-float
 		:initial-contents (list x y z w))))
+
+(defun vec3->vec4 (vec3)
+  (vec4-from-vec3 vec3))
 
 (defun vec4->vec3 (vec4)
   "Discard the w component and return vec3"

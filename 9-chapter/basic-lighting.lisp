@@ -18,10 +18,9 @@
 ;; TODO: this might solve the problem:
 ;; (print (uiop/lisp-build:current-lisp-file-pathname)) ?
 ;; TODO: they're identical in all following tutorials? Then remove *glsl-directory*
-(defvar *glsl-directory*
+(defvar *data-directory*
   (merge-pathnames
    #p "9-chapter/data/" (asdf/system:system-source-directory :arcsynthesis)))
-(defvar *data-dir* *glsl-directory*) 
 
 ;;todo: fix this output to slime-repl solution
 (defvar out *standard-output*)  (defvar dbg *debug-io*) (defvar err *error-output*)
@@ -57,11 +56,11 @@
 	(projection-block))
     (push (arc:create-shader
 	   :vertex-shader
-	   (arc:file-to-string (merge-pathnames str-vertex-shader *glsl-directory*)))
+	   (arc:file-to-string (merge-pathnames str-vertex-shader *data-directory*)))
 	  shader-list)
     (push (arc:create-shader
 	   :fragment-shader
-	   (arc:file-to-string (merge-pathnames str-fragment-shader *glsl-directory*)))
+	   (arc:file-to-string (merge-pathnames str-fragment-shader *data-directory*)))
     	  shader-list)
     ;; settings slots of program-object:
     (setf (the-program data) (arc:create-program shader-list))
@@ -101,10 +100,10 @@
   (initialize-program)
 
   (setf *plane-mesh*
-  	(framework:xml->mesh-obj (merge-pathnames *data-dir* "UnitPlane.xml")))
+  	(framework:xml->mesh-obj (merge-pathnames *data-directory* "UnitPlane.xml")))
 
   (setf *cylinder-mesh*
-  	(framework:xml->mesh-obj (merge-pathnames *data-dir* "UnitCylinder.xml")))
+  	(framework:xml->mesh-obj (merge-pathnames *data-directory* "UnitCylinder.xml")))
 
   (gl:enable :cull-face)
   (%gl:cull-face :back)
@@ -222,7 +221,9 @@ described by the arguments given."
 	  ;;note how model-to-camera-matrix is mat4 and normal-model-to-camera-matrix is mat3!
 	  ;; TODO: explanation needed, wasn't it due to direction vectors discarding their 'w'
 	  ;; component?
-	  :scale 5.0 1.0 5.0
+;	  :scale 5.0 1.0 5.0
+ 	  :scale 20.0 1.0 20.0
+
 	  (gl:uniform-matrix (model-to-camera-matrix-unif *white-diffuse-color*) 4
 			     (vector (glutil:top-ms model-matrix)) NIL)
 
@@ -295,6 +296,18 @@ described by the arguments given."
 (defconstant +standard-angle-increment+ 11.25)
 (defconstant +small-angle-increment+ 9.0)
 
+(defparameter m0 nil)
+(defparameter d nil)
+
+
+;; NEXT-TODO: still doesn't move relative to view
+(defun test (dir)
+  (let* ((mat (glm:mat4-cast (glutil::quat *view-pole*)))
+	 (result
+	  (glm:mat*vec mat (glm:vec3->vec4 dir))))
+    (setf m0 mat)
+    (setf d dir)
+    (glm:vec4->vec3 result)))
 
 (defun main ()
   (arc:with-main
@@ -314,12 +327,31 @@ described by the arguments given."
 	     ;; and that's all we need to build the arc viewpole: xrel, yrel
 	     ;; are store the motion relative to the last event!
 
-	     (format t "x:~a y:~a xrel:~a yrel:~a STATE:~a~%" x y xrel yrel state))
+	     (format t "x:~a y:~a xrel:~a yrel:~a STATE:~a~%" x y xrel yrel state)
+	     ;; (print (sdl2-ffi.functions:sdl-get-mouse-focus))
+	     )
 	    
 	    (:keydown
 	     (:keysym keysym)
 	     ;; TODO: capture in macro
 
+
+     	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-t)
+	       (test (glm:vec4 0.0 0.0 -1.0 1.0)))
+	     
+	     ;; move camera
+	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-w)
+	       (glutil::move-camera *view-pole*
+				    (test
+				     (glm:vec3 0.0 0.0 -1.0))
+				    ;; (glutil::look-dir *view-pole*)
+				    )
+	       )
+	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-s)
+
+	       )
+
+	     
 	     ;; rotate camera horizontally around target
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-j)
 	       (glutil::rotate-vp-y 10.0 *view-pole*))
