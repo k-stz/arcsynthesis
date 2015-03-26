@@ -91,7 +91,7 @@ the projection plane)"
 (defmethod translate ((ms matrix-stack) (offset-vec3 simple-array))
   "Translate transform the current-matrix by given vec3"
   (let ((translate-mat4 (glm:make-mat4 1.0))
-	(vec4 (glm:vec4-from-vec3 offset-vec3)))
+	(vec4 (glm:vec3->vec4 offset-vec3)))
     (glm:set-mat4-col translate-mat4 3 vec4)
     (setf (m-curr-mat ms) (sb-cga:matrix* translate-mat4
 					  (m-curr-mat ms)))))
@@ -119,7 +119,7 @@ the projection plane)"
 (defmethod scale ((ms matrix-stack) (scale-vec simple-array))
   (let ((scale-mat4 (glm:make-mat4 1.0)))
     (glm:set-mat4-diagonal scale-mat4
-  			   (glm:vec4-from-vec3 scale-vec))
+  			   (glm:vec3->vec4 scale-vec))
     (setf (m-curr-mat ms) (sb-cga:matrix* (m-curr-mat ms)
 					  scale-mat4))))
 
@@ -128,27 +128,6 @@ the projection plane)"
 			 (vector (top-ms matrix-stack)) NIL)
       (%gl:draw-elements :triangles (gl::gl-array-size index-data)
 			 :unsigned-short 0))
-
-;; (defmacro with-transform ((&key (drawp t)) matrix-stack &body body)
-;;   "Creates PUSH-MS POP-MS wrapper around its input, so many with-transform can
-;; be nested to facilitate the hierarchical model."
-;;   `(progn
-;;      (push-ms ,matrix-stack)
-;;      ,@body ;; put another with-transform here
-;;      ,(when drawp
-;; 	    `(matrix-stack-top-to-shader-and-draw ,matrix-stack))
-;;      (pop-ms ,matrix-stack)))
-
-
-;; this is all garbage and doesn't work yet.. maybe need to read on
-;; ;;this problem before trying an implementation?
-;; (defmacro with-translate2 ((&key (drawp t)) matrix-stack &body body)
-;;   `(progn
-;;        (push-ms ,matrix-stack)
-;;        ,@body
-;;        ,(when drawp
-;; 	      `(matrix-stack-top-to-shader-and-draw ,matrix-stack))
-;;        (pop-ms ,matrix-stack)))
 
 
 ;; (&key (drop t)) removed as having to provide args (matrix-stack-top-to-shader ..) is too
@@ -228,7 +207,7 @@ it will be returned to its former state"
   (let ((mat (glm:mat4-cast (quat view-pole))))
     (setf (look-dir view-pole)
 	  (glm:vec4->vec3
-	   (glm:mat*vec mat (glm:vec4-from-vec3 (look-dir view-pole)))))))
+	   (glm:mat*vec mat (glm:vec3->vec4 (look-dir view-pole)))))))
 
 ;; TODO: abstract
 (defun rotate-vp-y (deg view-pole)
@@ -304,14 +283,14 @@ described by the arguments given."
 	 (rot-mat (glm:make-mat4 1.0))
 	 (trans-mat (glm:make-mat4 1.0)))
 
-    (glm:set-mat4-col rot-mat 0 (glm:vec4-from-vec3 right-dir 0.0))
-    (glm:set-mat4-col rot-mat 1 (glm:vec4-from-vec3 perp-up-dir 0.0))
-    (glm:set-mat4-col rot-mat 2 (glm:vec4-from-vec3 (glm:vec- look-dir) 0.0))
+    (glm:set-mat4-col rot-mat 0 (glm:vec3->vec4 right-dir 0.0))
+    (glm:set-mat4-col rot-mat 1 (glm:vec3->vec4 perp-up-dir 0.0))
+    (glm:set-mat4-col rot-mat 2 (glm:vec3->vec4 (glm:vec- look-dir) 0.0))
     ;; TODO: why transpose it eventually? Maybe because it is col-major and setting
     ;; column-wise and transpose is more efficient than just setting the rows
     ;; with discontiguous indices
     (setf rot-mat (sb-cga:transpose-matrix rot-mat))
-    (glm:set-mat4-col trans-mat 3 (glm:vec4-from-vec3 (glm:vec- camera-pt) 1.0))
+    (glm:set-mat4-col trans-mat 3 (glm:vec3->vec4 (glm:vec- camera-pt) 1.0))
     (sb-cga:matrix* rot-mat trans-mat)))
 
 ;; Object-Pole bare minimal implementation:
@@ -325,7 +304,7 @@ described by the arguments given."
 (defmethod calc-matrix ((obj-p object-pole))
   (let ((translate-mat (glm:make-mat4 1.0)))
     (glm:set-mat4-col translate-mat 3
-		      (glm:vec4-from-vec3 (pos obj-p)))
+		      (glm:vec3->vec4 (pos obj-p)))
     (sb-cga:matrix* translate-mat (glm:mat4-cast (orient obj-p)))))
 
 ;;------------------------------------------------------------------------------

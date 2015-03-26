@@ -104,7 +104,7 @@
 	     (mapcar (lambda (n) (* n w))
 		     (list (m 3 0) (m 3 1) (m 3 2) (m 3 3))))
 	    (result (glm:vec4 0.0)))
-	;; iterate throw the rows of the columns to add each together to
+	;; iterate through the rows of the columns to add each together to
 	;; finally yield the target vectors components
 	(loop for i below 3 do
 	     (setf (aref result i)
@@ -212,8 +212,8 @@ This can be for example a vector or a matrix"
     (make-array 4 :element-type 'single-float
 		:initial-contents (list x y z w))))
 
-(defun vec3->vec4 (vec3)
-  (vec4-from-vec3 vec3))
+(defun vec3->vec4 (vec3 &optional w)
+  (vec4-from-vec3 vec3 w))
 
 (defun vec4->vec3 (vec4)
   "Discard the w component and return vec3"
