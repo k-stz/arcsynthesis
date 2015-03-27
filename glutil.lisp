@@ -232,12 +232,7 @@ it will be returned to its former state"
 ;; TODO: clean up
 (defun move-camera (view-pole vec3-direction)
   (let ((pos (cam-pos view-pole))
-	(vp-space-pos)
-	(vp-mat (glm:mat4-cast (quat view-pole)))
-	(new-pos))
-    (setf vp-space-pos (glm:vec4->vec3
-			(glm:mat*vec vp-mat
-				     (glm:vec3->vec4 pos))))
+	(vp-mat (glm:mat4-cast (quat view-pole))))
     (setf (cam-pos view-pole)
     	  (sb-cga:vec+ (cam-pos view-pole) (sb-cga:normalize vec3-direction)))
     ;; (setf new-pos

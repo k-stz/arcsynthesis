@@ -80,8 +80,6 @@
 
 
 ;; TODO: test with profiler if this CONSes heavily! (invoked on every frame)
-;; NEXT-TODO: input needs to be transposed for the free camera to work i basic-lighting.lisp
-;; => is a transposed matrix being build here?
 (defun mat*vec (mat4 vec4)
   "Matrix vector multiplication."
   (multiple-value-bind (x y z w)

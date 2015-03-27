@@ -262,13 +262,11 @@
 (defparameter d nil)
 
 
-;; NEXT-TODO: still doesn't move relative to view
 (defun test (dir)
   (let* ((mat (glm:mat4-cast (glutil::quat *view-pole*)))
 	 (result
 	  (glm:vec4->vec3
-	   ;; NEXT-TODO: mat*vec wrong? Why needs to be transposed??
-	   (glm:mat*vec (sb-cga:transpose-matrix  mat) (glm:vec3->vec4 dir)))))
+	   (glm:mat*vec (sb-cga:transpose-matrix mat) (glm:vec3->vec4 dir)))))
     (format t "~a~%" (glm:round-obj (setf m0 mat)))
     (format t "curr:~a neg:~a~%"
 	    (glm::round-obj result)
