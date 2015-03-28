@@ -249,12 +249,16 @@ it will be returned to its former state"
 
 (defgeneric calc-matrix (pole-object))
 (defmethod calc-matrix ((vp view-pole))
-  (let ((mat (glm:mat4-cast (quat vp)))
+  ;; NEXT-TODO THE MAT4-CAST CREATES A TRANSPOSED MATRIX!!!
+  (let ((mat (sb-cga:transpose-matrix (glm:mat4-cast (quat vp))))
 	(cam-pos-mat (sb-cga:translate (glm:vec- (cam-pos vp)))))
     ;;updating look-dir TODO: make this more central somewhere more upstream?
 ;    (update-look-dir vp)
     ;; Reversing the order here allows for camera-relative, or model-relative
     ;; transformation!
+    ;; NEXT-TODO: model-relative transformation already behaves like the disired
+    ;; "polar coordinate" movement around the object! So provide a switch to provide
+    ;; a model and camera relative transform
     (sb-cga:matrix* mat cam-pos-mat)))
 
 ;; (defun calc-matrix (view-pole)
