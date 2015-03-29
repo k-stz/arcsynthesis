@@ -266,7 +266,7 @@
   (let* ((mat (glm:mat4-cast (glutil::quat *view-pole*)))
 	 (result
 	  (glm:vec4->vec3
-	   (glm:mat*vec (sb-cga:transpose-matrix mat) (glm:vec3->vec4 dir)))))
+	   (glm:mat*vec mat (glm:vec3->vec4 dir)))))
     (format t "~a~%" (glm:round-obj (setf m0 mat)))
     (format t "curr:~a neg:~a~%"
 	    (glm::round-obj result)
@@ -324,14 +324,14 @@
 	     
 	     ;; rotate camera horizontally around target
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-j)
-	       (glutil::rotate-vp-y -45.0 *view-pole*))
+	       (glutil::rotate-vp-y 10.0 *view-pole*))
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-l)
-	       (glutil::rotate-vp-y 45.0 *view-pole*))
+	       (glutil::rotate-vp-y -10.0 *view-pole*))
 	     ;; rotate cam vertically around target
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-i)
-	       (glutil::rotate-vp-x 10.0 *view-pole*))
-	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-k)
 	       (glutil::rotate-vp-x -10.0 *view-pole*))
+	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-k)
+	       (glutil::rotate-vp-x 10.0 *view-pole*))
 
 	     ;; zoom camera in/out of target
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-u)

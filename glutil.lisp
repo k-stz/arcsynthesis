@@ -249,7 +249,7 @@ it will be returned to its former state"
 
 (defgeneric calc-matrix (pole-object))
 (defmethod calc-matrix ((vp view-pole))
-  ;; NEXT-TODO THE MAT4-CAST CREATES A TRANSPOSED MATRIX!!!
+  ;; TODO (for another time): why does it need to be transposed?
   (let ((mat (sb-cga:transpose-matrix (glm:mat4-cast (quat vp))))
 	(cam-pos-mat (sb-cga:translate (glm:vec- (cam-pos vp)))))
     ;;updating look-dir TODO: make this more central somewhere more upstream?
@@ -259,7 +259,10 @@ it will be returned to its former state"
     ;; NEXT-TODO: model-relative transformation already behaves like the disired
     ;; "polar coordinate" movement around the object! So provide a switch to provide
     ;; a model and camera relative transform
-    (sb-cga:matrix* mat cam-pos-mat)))
+    ;; UPDATE: for the "polar coordinate" behaviour the quaternion casted matrix above
+    ;; "mat" needs to be transposed, then, for now unclear reasons, it will behave
+    ;; properly
+    (sb-cga:matrix* cam-pos-mat mat)))
 
 ;; (defun calc-matrix (view-pole)
 ;;   (let ((look-at-matrix
