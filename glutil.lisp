@@ -262,7 +262,7 @@ it will be returned to its former state"
     ;; UPDATE: for the "polar coordinate" behaviour the quaternion casted matrix above
     ;; "mat" needs to be transposed, then, for now unclear reasons, it will behave
     ;; properly
-    (sb-cga:matrix* cam-pos-mat mat)))
+    (sb-cga:matrix* mat cam-pos-mat)))
 
 ;; (defun calc-matrix (view-pole)
 ;;   (let ((look-at-matrix
