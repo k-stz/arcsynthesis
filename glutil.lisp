@@ -229,7 +229,20 @@ it will be returned to its former state"
     (setf (quat view-pole) result)))
 
 
-;; TODO: clean up
+
+(defun pole-direction (view-pole dir)
+  "Returns a direction vector, that is muliplied with the
+view-pole. Can be used to perform pole-relative transformations"
+  (let* ((mat (glm:mat4-cast (glutil::quat view-pole)))
+	 (result
+	  (glm:vec4->vec3
+	   (glm:mat*vec mat (glm:vec3->vec4 dir)))))
+    (format t "~a~%" (glm:round-obj (setf m0 mat)))
+    (format t "curr:~a neg:~a~%"
+	    (glm::round-obj result)
+	    (glm:vec3->vec4 (glm:vec- (glm:vec4->vec3 result))))
+    result))
+
 (defun move-camera (view-pole vec3-direction)
   (let ((pos (cam-pos view-pole))
 	(vp-mat (glm:mat4-cast (quat view-pole))))

@@ -258,22 +258,6 @@
 (defconstant +standard-angle-increment+ 11.25)
 (defconstant +small-angle-increment+ 9.0)
 
-(defparameter m0 nil)
-(defparameter d nil)
-
-
-(defun test (dir)
-  (let* ((mat (glm:mat4-cast (glutil::quat *view-pole*)))
-	 (result
-	  (glm:vec4->vec3
-	   (glm:mat*vec mat (glm:vec3->vec4 dir)))))
-    (format t "~a~%" (glm:round-obj (setf m0 mat)))
-    (format t "curr:~a neg:~a~%"
-	    (glm::round-obj result)
-	    (glm:vec3->vec4 (glm:vec- (glm:vec4->vec3 result))))
-    result))
-
-
 (defun main ()
   (arc:with-main
     (sdl2:with-init (:everything)
@@ -302,23 +286,23 @@
 
 
      	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-t)
-	       (test (glm:vec4 0.0 0.0 -1.0 1.0))
+	       (glutil::pole-direction (glm:vec4 0.0 0.0 -1.0 1.0) *view-pole*)
 	       (format t "pos:~a~%~%" (glm:round-obj (glutil::cam-pos *view-pole*) 0.001)))
 	     
 	     ;; move camera
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-w)
 	       (glutil::move-camera *view-pole*
-				    (test
-				     (glm:vec3 0.0 0.0 -1.0))
-				    ;; (glutil::look-dir *view-pole*)
-				    )
+				    (glutil::pole-direction
+				     ;(glm:vec3 0.0 0.0 -1.0)
+				     *view-pole*
+				     (glm:vec3 0.0 0.0 -1.0)))
+	       
 	       (format t "pos:~a~%~%" (glm:round-obj (glutil::cam-pos *view-pole*) 0.001)))
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-s)
 	       (glutil::move-camera *view-pole*
-				    (test
-				     (glm:vec3 0.0 0.0 1.0))
-				    ;; (glutil::look-dir *view-pole*)
-				    )
+				    (glutil::pole-direction
+				     *view-pole*
+				      (glm:vec3 0.0 0.0 1.0)))
 	       (format t "~%pos:~a~%~%" (glm:round-obj (glutil::cam-pos *view-pole*) 0.001)))
 
 	     
