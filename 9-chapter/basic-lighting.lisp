@@ -258,6 +258,13 @@
 (defconstant +standard-angle-increment+ 11.25)
 (defconstant +small-angle-increment+ 9.0)
 
+;; TODO: wow, just works, with minor z-axis tilting deviations
+(defun mouse-rel-transform (xrel yrel)
+  "Allow to look around with the mouse, just like in egoshooters."
+  (glutil::rotate-vp-y (- xrel) *view-pole*)
+  (glutil::rotate-vp-x (- yrel) *view-pole*))
+
+
 (defun main ()
   (arc:with-main
     (sdl2:with-init (:everything)
@@ -275,11 +282,10 @@
 	     (:x x :y y :xrel xrel :yrel yrel :state state)
 	     ;; and that's all we need to build the arc viewpole: xrel, yrel
 	     ;; are store the motion relative to the last event!
-
 	     (format t "x:~a y:~a xrel:~a yrel:~a STATE:~a~%" x y xrel yrel state)
+	     (mouse-rel-transform xrel yrel)
 	     ;; (print (sdl2-ffi.functions:sdl-get-mouse-focus))
 	     )
-	    
 	    (:keydown
 	     (:keysym keysym)
 	     ;; TODO: capture in macro
