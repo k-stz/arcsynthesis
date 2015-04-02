@@ -194,7 +194,12 @@ it will be returned to its former state"
    (cam-pos :initform (glm:vec3 0.0 0.0 1.0) :initarg :cam-pos :accessor cam-pos)
    (up-pt :initform (glm:vec3 0.0 1.0 0.0) :initarg up-pt :accessor up-pt)
    (look-dir :accessor look-dir)
-   (look-at-matrix :accessor look-at-mat4)))
+   (look-at-matrix :accessor look-at-mat4)
+   ;; used to determine how to use the data in this object to get a transformation
+   ;; for now: camera and look-pt
+   (trans-mode :initform :camera
+	       :initarg :trans-mode
+	       :accessor trans-relative-to)))
 
 (defmethod initialize-instance :after ((vp view-pole) &key)
   ;; calculate look-direction of view-pole
@@ -237,15 +242,14 @@ view-pole. Can be used to perform pole-relative transformations"
 	 (result
 	  (glm:vec4->vec3
 	   (glm:mat*vec mat (glm:vec3->vec4 dir)))))
-    (format t "~a~%" (glm:round-obj (setf m0 mat)))
     (format t "curr:~a neg:~a~%"
 	    (glm::round-obj result)
 	    (glm:vec3->vec4 (glm:vec- (glm:vec4->vec3 result))))
     result))
 
 (defun move-camera (view-pole vec3-direction)
-  (let ((pos (cam-pos view-pole))
-	(vp-mat (glm:mat4-cast (quat view-pole))))
+  (let (;(vp-mat (glm:mat4-cast (quat view-pole)))
+	)
     (setf (cam-pos view-pole)
     	  (sb-cga:vec+ (cam-pos view-pole) (sb-cga:normalize vec3-direction)))
     ;; (setf new-pos
@@ -263,7 +267,7 @@ view-pole. Can be used to perform pole-relative transformations"
 (defgeneric calc-matrix (pole-object))
 (defmethod calc-matrix ((vp view-pole))
   ;; TODO (for another time): why does it need to be transposed?
-  (let ((mat (sb-cga:transpose-matrix (glm:mat4-cast (quat vp))))
+  (let ((mat (glm:mat4-cast (quat vp)))
 	(cam-pos-mat (sb-cga:translate (glm:vec- (cam-pos vp)))))
     ;;updating look-dir TODO: make this more central somewhere more upstream?
 ;    (update-look-dir vp)
@@ -275,16 +279,14 @@ view-pole. Can be used to perform pole-relative transformations"
     ;; UPDATE: for the "polar coordinate" behaviour the quaternion casted matrix above
     ;; "mat" needs to be transposed, then, for now unclear reasons, it will behave
     ;; properly
-    (sb-cga:matrix* mat cam-pos-mat)))
+    
+    ;; is (eq :look-pt ..) poor abstraction?
+    (if (eq :look-pt (trans-relative-to vp))
+	(sb-cga:matrix* cam-pos-mat mat)
+	(sb-cga:matrix* (sb-cga:transpose-matrix mat) cam-pos-mat))))
 
-;; (defun calc-matrix (view-pole)
-;;   (let ((look-at-matrix
-;; 	 (calc-look-at-matrix (slot-value view-pole 'cam-pos)
-;; 			      (slot-value view-pole 'look-pt)
-;; 			      (slot-value view-pole 'up-pt))))
-;;     (setf (look-at-mat4 view-pole) look-at-matrix)
-;;     look-at-matrix))
-
+;; TODO: now used anywhere. Either use with polar coordinates representation or get
+;;       it to work with CALC-MATRIX
 (defun calc-look-at-matrix (camera-pt look-pt up-pt)
   "Returns a transformation matrix that represents an orientation of a camera orientation
 described by the arguments given."

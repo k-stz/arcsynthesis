@@ -141,7 +141,10 @@
 ;; NEXT-TODO: free camera rendering, expose api for mainipulation, then
 ;;            use api to controll via mouse
 (defparameter *view-pole*
-  (make-instance 'glutil::view-pole :cam-pos (glm:vec3 0.0 0.8 8.0)))
+  (make-instance 'glutil::view-pole :cam-pos (glm:vec3 0.0 0.8 8.0)
+		 ;; calculate trasformation relative to the look-pt
+		 ;; for now changes calc-matrix behaviour
+		 :trans-mode :look-pt))
 
 
 
@@ -180,9 +183,10 @@
 	;; Render the ground plane
 	(glutil:with-transform (model-matrix)
 	    (gl:use-program (the-program *white-diffuse-color*))
-	  ;;note how model-to-camera-matrix is mat4 and normal-model-to-camera-matrix is mat3!
-	  ;; TODO: explanation needed, wasn't it due to direction vectors discarding their 'w'
-	  ;; component?
+	  ;;note how model-to-camera-matrix is mat4 and normal-model-to-camera-matrix is
+	  ;;mat3!
+	  ;; TODO: explanation needed, wasn't it due to direction vectors discarding their
+	  ;; 'w' component?
 ;	  :scale 5.0 1.0 5.0
  	  :scale 20.0 1.0 20.0
 
@@ -258,14 +262,14 @@
 (defconstant +standard-angle-increment+ 11.25)
 (defconstant +small-angle-increment+ 9.0)
 
-;; TODO: wow, just works, with minor z-axis tilting deviations, because:
-;;       If we look down somewhere we will have the whole world tilted upwards (closer to our eye)
-;;       hence moving around: for example behind us, we will have the world tilted downwards because
-;;       our camera position is the pivot of the balance. What we need then, is for us to move down,
-;;       and then move on the surface of a circle that is paralel to the ground! What we need, is to
-;;       change the value of a single angle in a polar coordinates orientation representation!
-;;       Remember how lines in polar coordinates are circles! And we want to move on these circles
-;;       using the mouse's xrel and yrel from sdl2!
+;; TODO: wow, just works, with minor z-axis tilting deviations, because: If we look down
+;; somewhere we will have the whole world tilted upwards (closer to our eye) hence moving
+;; around: for example behind us, we will have the world tilted downwards because our
+;; camera position is the pivot of the balance. What we need then, is for us to move down,
+;; and then move on the surface of a circle that is paralel to the ground! What we need,
+;; is to change the value of a single angle in a polar coordinates orientation
+;; representation!  Remember how lines in polar coordinates are circles! And we want to
+;; move on these circles using the mouse's xrel and yrel from sdl2!
 (defun mouse-rel-transform (xrel yrel)
   "Allow to look around with the mouse, just like in egoshooters."
   (glutil::rotate-vp-y (- xrel) *view-pole*)
@@ -315,8 +319,9 @@
 	       (glutil::move-camera *view-pole*
 				    (glutil::pole-direction
 				     *view-pole*
-				      (glm:vec3 0.0 0.0 1.0)))
-	       (format t "~%pos:~a~%~%" (glm:round-obj (glutil::cam-pos *view-pole*) 0.001)))
+				     (glm:vec3 0.0 0.0 1.0)))
+	       (format t "~%pos:~a~%~%"
+		       (glm:round-obj (glutil::cam-pos *view-pole*) 0.001)))
 
 	     
 	     ;; rotate camera horizontally around target

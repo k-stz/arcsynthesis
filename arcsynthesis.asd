@@ -1,7 +1,7 @@
 ;;;; -*- Mode: Lisp; Syntax: ANSI-Common-Lisp; Base: 10 -*-
 ;;TODO: loading this file is causing sbcl to compile functions.. they must be put into the
-;;      lisp image. How to disable this by fiat? Well it is kinda slow.. nah just want to know
-;;      what's going on in the background there.
+;;      lisp image. How to disable this by fiat? Well it is kinda slow.. nah just want to
+;;      know what's going on in the background there.
 
 ;; so you don't have to qualify: (asdf:defsystem ..) just (defsystem ..)
 ;; this is unnecassary if you load this file using (asdf::load-asd ..)!
