@@ -218,7 +218,8 @@ it will be returned to its former state"
 (defun rotate-vp-y (deg view-pole)
   (let* ((trans-quat (glm:make-quat deg (0.0 1.0 0.0)))
 	 (vp-quat (quat view-pole))
-	 (result (glm:quat* vp-quat trans-quat)))
+	 (result (glm:quat* trans-quat vp-quat)))
+    (print 'BOOOM)
     (setf (quat view-pole) result)))
 
 (defun rotate-vp-x (deg view-pole)

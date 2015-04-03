@@ -144,7 +144,7 @@
   (make-instance 'glutil::view-pole :cam-pos (glm:vec3 0.0 0.8 8.0)
 		 ;; calculate trasformation relative to the look-pt
 		 ;; for now changes calc-matrix behaviour
-		 :trans-mode :look-pt))
+		 :trans-mode :camera-pos))
 
 
 
