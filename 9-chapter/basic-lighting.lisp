@@ -276,6 +276,9 @@
   (glutil::rotate-vp-x (- yrel) *view-pole*))
 
 
+(defun lmb-pressed-p (state)
+  (= state 1))
+
 (defun main ()
   (arc:with-main
     (sdl2:with-init (:everything)
@@ -294,7 +297,8 @@
 	     ;; and that's all we need to build the arc viewpole: xrel, yrel
 	     ;; are store the motion relative to the last event!
 	     (format t "x:~a y:~a xrel:~a yrel:~a STATE:~a~%" x y xrel yrel state)
-	     (mouse-rel-transform xrel yrel)
+	     (when (lmb-pressed-p state)
+	       (mouse-rel-transform xrel yrel))
 	     ;; (print (sdl2-ffi.functions:sdl-get-mouse-focus))
 	     )
 	    (:keydown

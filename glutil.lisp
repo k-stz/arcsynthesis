@@ -197,7 +197,7 @@ it will be returned to its former state"
    (look-at-matrix :accessor look-at-mat4)
    ;; used to determine how to use the data in this object to get a transformation
    ;; for now: camera and look-pt
-   (trans-mode :initform :camera
+   (trans-mode :initform :camera-pos
 	       :initarg :trans-mode
 	       :accessor trans-relative-to)))
 
@@ -281,12 +281,14 @@ view-pole. Can be used to perform pole-relative transformations"
     ;; properly
     
     ;; is (eq :look-pt ..) poor abstraction?
-    (if (eq :look-pt (trans-relative-to vp))
-	(sb-cga:matrix* cam-pos-mat mat)
-	(sb-cga:matrix* (sb-cga:transpose-matrix mat) cam-pos-mat))))
 
-;; TODO: now used anywhere. Either use with polar coordinates representation or get
-;;       it to work with CALC-MATRIX
+    (ecase (trans-relative-to vp)
+      (:look-pt (sb-cga:matrix* cam-pos-mat mat))
+      (:camera-pos (sb-cga:matrix* (sb-cga:transpose-matrix mat) cam-pos-mat))
+	  )))
+
+  ;; TODO: now used anywhere. Either use with polar coordinates representation or get
+  ;;       it to work with CALC-MATRIX
 (defun calc-look-at-matrix (camera-pt look-pt up-pt)
   "Returns a transformation matrix that represents an orientation of a camera orientation
 described by the arguments given."
