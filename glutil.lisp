@@ -218,8 +218,7 @@ it will be returned to its former state"
 (defun rotate-vp-y (deg view-pole)
   (let* ((trans-quat (glm:make-quat deg (0.0 1.0 0.0)))
 	 (vp-quat (quat view-pole))
-	 (result (glm:quat* trans-quat vp-quat)))
-    (print 'BOOOM)
+	 (result (glm:quat* vp-quat trans-quat)))
     (setf (quat view-pole) result)))
 
 (defun rotate-vp-x (deg view-pole)
@@ -232,6 +231,16 @@ it will be returned to its former state"
   (let* ((trans-quat (glm:make-quat deg (0.0 0.0 1.0)))
 	 (vp-quat (quat view-pole))
 	 (result (glm:quat* vp-quat trans-quat)))
+    (setf (quat view-pole) result)))
+
+
+;; test camera relative
+(defun rotate-y-cam-relative (deg view-pole)
+  ;; idea: I just need the current view-poles own y-axis and
+  ;; yield the rotation matrix from that
+  (let* ((trans-quat (glm:make-quat deg (0.0 1.0 0.0)))
+	 (vp-quat (quat view-pole))
+	 (result (glm:quat* trans-quat vp-quat)))
     (setf (quat view-pole) result)))
 
 
@@ -274,18 +283,14 @@ view-pole. Can be used to perform pole-relative transformations"
 ;    (update-look-dir vp)
     ;; Reversing the order here allows for camera-relative, or model-relative
     ;; transformation!
-    ;; NEXT-TODO: model-relative transformation already behaves like the disired
-    ;; "polar coordinate" movement around the object! So provide a switch to provide
-    ;; a model and camera relative transform
-    ;; UPDATE: for the "polar coordinate" behaviour the quaternion casted matrix above
-    ;; "mat" needs to be transposed, then, for now unclear reasons, it will behave
-    ;; properly
     
-    ;; is (eq :look-pt ..) poor abstraction?
-
     (ecase (trans-relative-to vp)
       (:look-pt (sb-cga:matrix* cam-pos-mat mat))
       (:camera-pos (sb-cga:matrix* (sb-cga:transpose-matrix mat) cam-pos-mat))
+      (:camera ;; this will provide the behaviour wanted by arc where we transform
+               ;; the object relative to our camera
+       (sb-cga:matrix* cam-pos-mat mat)
+       )
 	  )))
 
   ;; TODO: now used anywhere. Either use with polar coordinates representation or get

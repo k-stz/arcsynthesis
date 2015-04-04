@@ -144,7 +144,7 @@
   (make-instance 'glutil::view-pole :cam-pos (glm:vec3 0.0 0.8 8.0)
 		 ;; calculate trasformation relative to the look-pt
 		 ;; for now changes calc-matrix behaviour
-		 :trans-mode :camera-pos))
+		 :trans-mode :camera))
 
 
 
@@ -234,8 +234,7 @@
 	    (gl:uniformfv (light-intensity-unif *white-diffuse-color*)
 			  (glm:vec4 1.0 1.0 1.0 1.0))
 	    (framework:render-mode *cylinder-mesh* "lit")
-	    (gl:use-program 0))))
-    ))
+	    (gl:use-program 0))))))
 
   (defun display ()
     (gl:clear-color 0.0 0.0 0.2 1)
@@ -262,14 +261,6 @@
 (defconstant +standard-angle-increment+ 11.25)
 (defconstant +small-angle-increment+ 9.0)
 
-;; TODO: wow, just works, with minor z-axis tilting deviations, because: If we look down
-;; somewhere we will have the whole world tilted upwards (closer to our eye) hence moving
-;; around: for example behind us, we will have the world tilted downwards because our
-;; camera position is the pivot of the balance. What we need then, is for us to move down,
-;; and then move on the surface of a circle that is paralel to the ground! What we need,
-;; is to change the value of a single angle in a polar coordinates orientation
-;; representation!  Remember how lines in polar coordinates are circles! And we want to
-;; move on these circles using the mouse's xrel and yrel from sdl2!
 (defun mouse-rel-transform (xrel yrel)
   "Allow to look around with the mouse, just like in egoshooters."
   (glutil::rotate-vp-y (- xrel) *view-pole*)
@@ -327,6 +318,14 @@
 	       (format t "~%pos:~a~%~%"
 		       (glm:round-obj (glutil::cam-pos *view-pole*) 0.001)))
 
+
+	     ;; testing camera-relative object transformation
+     	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-a)
+	       (glutil::rotate-y-cam-relative 10.0 *view-pole*))
+	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-d)
+	       (glutil::rotate-y-cam-relative -10.0 *view-pole*))
+
+	     
 	     
 	     ;; rotate camera horizontally around target
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-j)
