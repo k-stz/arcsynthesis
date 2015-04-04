@@ -234,15 +234,30 @@ it will be returned to its former state"
     (setf (quat view-pole) result)))
 
 
+(defun rotate-x-cam-relative (deg view-pole)
+  ;; idea: I just need the current view-poles own y-axis and
+  ;; yield the rotation matrix from that
+  (let* ((trans-quat (glm:make-quat deg (1.0 0.0 0.0)))
+	 (vp-quat (quat view-pole))
+	 (result (glm:quat* trans-quat vp-quat)))
+    (setf (quat view-pole) result)))
+
 ;; test camera relative
 (defun rotate-y-cam-relative (deg view-pole)
   ;; idea: I just need the current view-poles own y-axis and
   ;; yield the rotation matrix from that
   (let* ((trans-quat (glm:make-quat deg (0.0 1.0 0.0)))
 	 (vp-quat (quat view-pole))
-	 (result (glm:quat* trans-quat vp-quat)))
+	 (result (glm:quat* vp-quat trans-quat)))
     (setf (quat view-pole) result)))
 
+(defun rotate-z-cam-relative (deg view-pole)
+  ;; idea: I just need the current view-poles own y-axis and
+  ;; yield the rotation matrix from that
+  (let* ((trans-quat (glm:make-quat deg (0.0 0.0 1.0)))
+	 (vp-quat (quat view-pole))
+	 (result (glm:quat* trans-quat vp-quat)))
+    (setf (quat view-pole) result)))
 
 
 (defun pole-direction (view-pole dir)

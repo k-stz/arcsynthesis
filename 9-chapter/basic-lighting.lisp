@@ -263,8 +263,10 @@
 
 (defun mouse-rel-transform (xrel yrel)
   "Allow to look around with the mouse, just like in egoshooters."
-  (glutil::rotate-vp-y (- xrel) *view-pole*)
-  (glutil::rotate-vp-x (- yrel) *view-pole*))
+;  (glutil::rotate-vp-y (- xrel) *view-pole*)
+;  (glutil::rotate-vp-x (- yrel) *view-pole*)
+  (glutil::rotate-y-cam-relative  xrel *view-pole*)
+  (glutil::rotate-x-cam-relative  yrel *view-pole*))
 
 
 (defun lmb-pressed-p (state)
@@ -320,10 +322,16 @@
 
 
 	     ;; testing camera-relative object transformation
+	     ;; seems to work, time to abstract this mess away!
      	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-a)
 	       (glutil::rotate-y-cam-relative 10.0 *view-pole*))
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-d)
 	       (glutil::rotate-y-cam-relative -10.0 *view-pole*))
+     	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-q)
+	       (print 'reached)
+	       (glutil::rotate-z-cam-relative 10.0 *view-pole*))
+	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-e)
+	       (glutil::rotate-z-cam-relative -10.0 *view-pole*))
 
 	     
 	     
