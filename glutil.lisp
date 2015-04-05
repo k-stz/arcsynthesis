@@ -197,7 +197,7 @@ it will be returned to its former state"
    (look-at-matrix :accessor look-at-mat4)
    ;; used to determine how to use the data in this object to get a transformation
    ;; for now: camera and look-pt
-   (trans-mode :initform :camera-pos
+   (trans-mode :initform :free-camera
 	       :initarg :trans-mode
 	       :accessor trans-relative-to)))
 
@@ -214,7 +214,33 @@ it will be returned to its former state"
 	  (glm:vec4->vec3
 	   (glm:mat*vec mat (glm:vec3->vec4 (look-dir view-pole)))))))
 
-;; TODO: abstract
+
+(defmacro rotate-vp (x-y-z-axis deg view-pole)
+  (ecase x-y-z-axis
+    (:x `(apply-quat-to-vp (glm:make-quat ,deg (1.0 0.0 0.0)) ,view-pole))
+    (:y
+     ;; TODO: remove this hack
+     `(case (trans-relative-to ,view-pole)
+        (:1st-person (1st-person-rotate (glm:make-quat ,deg (0.0 1.0 0.0)) ,view-pole))
+	(t (apply-quat-to-vp (glm:make-quat ,deg (0.0 1.0 0.0)) ,view-pole))))
+    (:z `(apply-quat-to-vp (glm:make-quat ,deg (0.0 0.0 1.0)) ,view-pole))
+    ))
+
+(defun apply-quat-to-vp (trans-quat view-pole)
+  (let ((vp-quat (quat view-pole)))
+    (setf (quat view-pole)
+	  (case (trans-relative-to view-pole)
+	    (:1st-person (glm:quat* vp-quat (glm:conjugate-quat trans-quat)))	    
+	    (:free-camera (glm:quat* vp-quat (glm:conjugate-quat trans-quat)))
+	    (:camera-relative (glm:quat* trans-quat vp-quat))))))
+
+
+(defun 1st-person-rotate (trans-quat view-pole)
+  (let* ((vp-quat (quat view-pole))
+	 (result (glm:quat* (glm:conjugate-quat trans-quat) vp-quat)))
+    (setf (quat view-pole) result)))
+
+
 (defun rotate-vp-y (deg view-pole)
   (let* ((trans-quat (glm:make-quat deg (0.0 1.0 0.0)))
 	 (vp-quat (quat view-pole))
@@ -248,7 +274,7 @@ it will be returned to its former state"
   ;; yield the rotation matrix from that
   (let* ((trans-quat (glm:make-quat deg (0.0 1.0 0.0)))
 	 (vp-quat (quat view-pole))
-	 (result (glm:quat* vp-quat trans-quat)))
+	 (result (glm:quat* trans-quat vp-quat)))
     (setf (quat view-pole) result)))
 
 (defun rotate-z-cam-relative (deg view-pole)
@@ -273,21 +299,14 @@ view-pole. Can be used to perform pole-relative transformations"
     result))
 
 (defun move-camera (view-pole vec3-direction)
-  (let (;(vp-mat (glm:mat4-cast (quat view-pole)))
-	)
-    (setf (cam-pos view-pole)
-    	  (sb-cga:vec+ (cam-pos view-pole) (sb-cga:normalize vec3-direction)))
-    ;; (setf new-pos
-    ;; 	  (sb-cga:vec+ pos (sb-cga:normalize vec3-direction)))
-    ;; (glm:vec4->vec3
-    ;;  (glm:mat*vec vp-mat
-    ;; 		  (glm:vec3->vec4 new-pos)))
-    ))
-
-
-;; NEXT-TODO: always have the old representation, and just add the new `view-pole*pos
-;;            well and the new position is the one used for orientation. Hence You always
-;;            need to store a transformation for the foundational matrix????
+  (setf (cam-pos view-pole)
+	(sb-cga:vec+ (cam-pos view-pole) (sb-cga:normalize vec3-direction)))
+  ;; (setf new-pos
+  ;; 	  (sb-cga:vec+ pos (sb-cga:normalize vec3-direction)))
+  ;; (glm:vec4->vec3
+  ;;  (glm:mat*vec vp-mat
+  ;; 		  (glm:vec3->vec4 new-pos)))
+  )
 
 (defgeneric calc-matrix (pole-object))
 (defmethod calc-matrix ((vp view-pole))
@@ -300,38 +319,14 @@ view-pole. Can be used to perform pole-relative transformations"
     ;; transformation!
     
     (ecase (trans-relative-to vp)
-      (:look-pt (sb-cga:matrix* cam-pos-mat mat))
-      (:camera-pos (sb-cga:matrix* (sb-cga:transpose-matrix mat) cam-pos-mat))
-      (:camera ;; this will provide the behaviour wanted by arc where we transform
+      ;; tries to follow "egoshooter" rules
+      (:1st-person (sb-cga:matrix* (sb-cga:transpose-matrix mat) cam-pos-mat))
+      ;; camera can move 
+      (:free-camera (sb-cga:matrix* (sb-cga:transpose-matrix  mat) cam-pos-mat))
+      (:camera-relative ;; this will provide the behaviour wanted by arc where we transform
                ;; the object relative to our camera
        (sb-cga:matrix* cam-pos-mat mat)
-       )
-	  )))
-
-  ;; TODO: now used anywhere. Either use with polar coordinates representation or get
-  ;;       it to work with CALC-MATRIX
-(defun calc-look-at-matrix (camera-pt look-pt up-pt)
-  "Returns a transformation matrix that represents an orientation of a camera orientation
-described by the arguments given."
-  ;; TODO: migrate explanation
-  ;; explanation in "world-with-ubo.lisp" in the chapter 7 directory
-  (let* ((look-dir (sb-cga:normalize (sb-cga:vec- look-pt camera-pt)))
-	 (up-dir (sb-cga:normalize up-pt))
-	 (right-dir (sb-cga:normalize (sb-cga:cross-product look-dir up-dir)))
-	 (perp-up-dir (sb-cga:cross-product right-dir look-dir))
-
-	 (rot-mat (glm:make-mat4 1.0))
-	 (trans-mat (glm:make-mat4 1.0)))
-
-    (glm:set-mat4-col rot-mat 0 (glm:vec3->vec4 right-dir 0.0))
-    (glm:set-mat4-col rot-mat 1 (glm:vec3->vec4 perp-up-dir 0.0))
-    (glm:set-mat4-col rot-mat 2 (glm:vec3->vec4 (glm:vec- look-dir) 0.0))
-    ;; TODO: why transpose it eventually? Maybe because it is col-major and setting
-    ;; column-wise and transpose is more efficient than just setting the rows
-    ;; with discontiguous indices
-    (setf rot-mat (sb-cga:transpose-matrix rot-mat))
-    (glm:set-mat4-col trans-mat 3 (glm:vec3->vec4 (glm:vec- camera-pt) 1.0))
-    (sb-cga:matrix* rot-mat trans-mat)))
+       ))))
 
 ;; Object-Pole bare minimal implementation:
 (defclass object-pole ()

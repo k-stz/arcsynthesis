@@ -144,7 +144,7 @@
   (make-instance 'glutil::view-pole :cam-pos (glm:vec3 0.0 0.8 8.0)
 		 ;; calculate trasformation relative to the look-pt
 		 ;; for now changes calc-matrix behaviour
-		 :trans-mode :camera))
+		 :trans-mode :camera-relative))
 
 
 
@@ -263,10 +263,8 @@
 
 (defun mouse-rel-transform (xrel yrel)
   "Allow to look around with the mouse, just like in egoshooters."
-;  (glutil::rotate-vp-y (- xrel) *view-pole*)
-;  (glutil::rotate-vp-x (- yrel) *view-pole*)
-  (glutil::rotate-y-cam-relative  xrel *view-pole*)
-  (glutil::rotate-x-cam-relative  yrel *view-pole*))
+  (glutil::rotate-vp :y xrel *view-pole*)
+  (glutil::rotate-vp :x yrel *view-pole*))
 
 
 (defun lmb-pressed-p (state)
@@ -289,7 +287,8 @@
 	     (:x x :y y :xrel xrel :yrel yrel :state state)
 	     ;; and that's all we need to build the arc viewpole: xrel, yrel
 	     ;; are store the motion relative to the last event!
-	     (format t "x:~a y:~a xrel:~a yrel:~a STATE:~a~%" x y xrel yrel state)
+	     (format t "x:~a y:~a xrel:~a yrel:~a STATE:~a TRANS:~a~%" x y xrel yrel state
+		     (glutil::trans-relative-to *view-pole*))
 	     (when (lmb-pressed-p state)
 	       (mouse-rel-transform xrel yrel))
 	     ;; (print (sdl2-ffi.functions:sdl-get-mouse-focus))
@@ -300,8 +299,13 @@
 
 
      	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-t)
-	       (glutil::pole-direction (glm:vec4 0.0 0.0 -1.0 1.0) *view-pole*)
-	       (format t "pos:~a~%~%" (glm:round-obj (glutil::cam-pos *view-pole*) 0.001)))
+	       ;; switch through transforms for debugging purpose
+	       (case (glutil::trans-relative-to *view-pole*)
+		 (:1st-person (setf (glutil::trans-relative-to *view-pole*) :free-camera))
+		 (:free-camera (setf (glutil::trans-relative-to *view-pole*)
+				     :camera-relative))
+		 (:camera-relative (setf (glutil::trans-relative-to *view-pole*)
+					 :1st-person))))
 	     
 	     ;; move camera
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-w)
