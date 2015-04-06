@@ -206,24 +206,25 @@
       ;; Render the Cylinder
       (if *draw-colored-cyl*
 	  (glutil:with-transform (model-matrix)
-	      ;; :translate 1.0 2.0 3.0	      
-	      ;; :rotate-x 45.0
 
-
+	      ;;NEXT-TODO: more experiments
+;	      :translate 2.0 1.0 0.0
+;	      :rotate-y 45.0
+	      
 	      (gl:use-program (the-program *vertex-diffuse-color*))
 
-	    (gl:uniform-matrix (model-to-camera-matrix-unif *vertex-diffuse-color*) 4
-			       (vector (glutil:top-ms model-matrix)) NIL)
+	      (gl:uniform-matrix (model-to-camera-matrix-unif *vertex-diffuse-color*) 4
+				 (vector (glutil:top-ms model-matrix)) NIL)
 
-	    (gl:uniform-matrix
-	     (normal-model-to-camera-matrix-unif *vertex-diffuse-color*) 3
-	     (vector (glm:mat4->mat3 (glutil:top-ms model-matrix))) NIL)
+	      (gl:uniform-matrix
+	       (normal-model-to-camera-matrix-unif *vertex-diffuse-color*) 3
+	       (vector (glm:mat4->mat3 (glutil:top-ms model-matrix))) NIL)
 
-	    (gl:uniformfv
-	     (light-intensity-unif *vertex-diffuse-color*) (glm:vec4 1.0 1.0 1.0 1.0))
-	    (framework:render-mode *cylinder-mesh* "lit-color")
+	      (gl:uniformfv
+	       (light-intensity-unif *vertex-diffuse-color*) (glm:vec4 1.0 1.0 1.0 1.0))
+	      (framework:render-mode *cylinder-mesh* "lit-color")
 	  
-	    (gl:use-program 0))
+	      (gl:use-program 0))
 
 	  ;;else:
 	  (glutil:with-transform (model-matrix)

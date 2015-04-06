@@ -320,7 +320,7 @@ view-pole. Can be used to perform pole-relative transformations"
     
     (ecase (trans-relative-to vp)
       ;; tries to follow "egoshooter" rules
-      (:1st-person (sb-cga:matrix* mat cam-pos-mat))
+      (:1st-person (sb-cga:matrix* (sb-cga:transpose-matrix mat) cam-pos-mat))
       ;; camera can move 
       (:free-camera (sb-cga:matrix* (sb-cga:transpose-matrix mat) cam-pos-mat))
       (:camera-relative ;; this will provide the behaviour wanted by arc where we transform

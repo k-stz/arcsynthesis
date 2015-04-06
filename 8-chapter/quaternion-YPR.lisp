@@ -109,8 +109,7 @@
   (gl:clear-depth 1.0)
   (gl:clear :color-buffer-bit :depth-buffer-bit)
 
-  (draw)
-  )
+  (draw))
 
 (defparameter *fz-near* 1.0)
 (defparameter *fz-far* 1000.0)
