@@ -206,6 +206,10 @@
       ;; Render the Cylinder
       (if *draw-colored-cyl*
 	  (glutil:with-transform (model-matrix)
+	      ;; :translate 1.0 2.0 3.0	      
+	      ;; :rotate-x 45.0
+
+
 	      (gl:use-program (the-program *vertex-diffuse-color*))
 
 	    (gl:uniform-matrix (model-to-camera-matrix-unif *vertex-diffuse-color*) 4

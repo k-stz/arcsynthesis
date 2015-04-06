@@ -93,8 +93,8 @@ the projection plane)"
   (let ((translate-mat4 (glm:make-mat4 1.0))
 	(vec4 (glm:vec3->vec4 offset-vec3)))
     (glm:set-mat4-col translate-mat4 3 vec4)
-    (setf (m-curr-mat ms) (sb-cga:matrix* translate-mat4
-					  (m-curr-mat ms)))))
+    (setf (m-curr-mat ms) (sb-cga:matrix* (m-curr-mat ms)
+					  translate-mat4))))
 
 
 (defgeneric rotate-x (matrix-stack float))
@@ -320,9 +320,9 @@ view-pole. Can be used to perform pole-relative transformations"
     
     (ecase (trans-relative-to vp)
       ;; tries to follow "egoshooter" rules
-      (:1st-person (sb-cga:matrix* (sb-cga:transpose-matrix mat) cam-pos-mat))
+      (:1st-person (sb-cga:matrix* mat cam-pos-mat))
       ;; camera can move 
-      (:free-camera (sb-cga:matrix* (sb-cga:transpose-matrix  mat) cam-pos-mat))
+      (:free-camera (sb-cga:matrix* (sb-cga:transpose-matrix mat) cam-pos-mat))
       (:camera-relative ;; this will provide the behaviour wanted by arc where we transform
                ;; the object relative to our camera
        (sb-cga:matrix* cam-pos-mat mat)
