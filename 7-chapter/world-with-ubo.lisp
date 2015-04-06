@@ -423,9 +423,8 @@ geometry coordinates and returned as a position vector."
 (defun draw-column (matrix-stack &optional (height 5.0))
   ;; Draw the bottom of the column
   (glutil:with-transform (matrix-stack)
-;      (print (glutil:top-ms matrix-stack))
       :scale 1.0 *column-base-height* 1.0
-;      :translate 0.0 0.5 0.0 ;; this is on purpose to prevent z-fighting?
+      :translate 0.0 0.5 0.0
       
       (gl:use-program (the-program *uniform-color-tint*))
       (gl:uniform-matrix (model-to-world-matrix-unif *uniform-color-tint*) 4
@@ -437,20 +436,17 @@ geometry coordinates and returned as a position vector."
   (glutil:with-transform (matrix-stack)
       :translate 0.0 (- height *column-base-height*) 0.0
       :scale 1.0 *column-base-height* 1.0
-      ;; TODO: had to change from y = 0.5, maybe arc code is not up-to-date?
-      :translate 0.0 -0.25 0.0
+      :translate 0.0 0.5 0.0
       (gl:use-program (the-program *uniform-color-tint*))
       (gl:uniform-matrix (model-to-world-matrix-unif *uniform-color-tint*) 4
 			 (vector (glutil:top-ms matrix-stack)) NIL)
       (%gl:uniform-4f (base-color-unif *uniform-color-tint*) 0.9 0.9 0.9 0.9)
       (framework:render *cube-tint-mesh*)
       (gl:use-program 0))
-  ;; Draw the main column ;; TODO: why does it draw it falsely
   (glutil:with-transform (matrix-stack)
       :translate 0.0 *column-base-height* 0.0
       :scale 0.8 (- height (* *column-base-height* 2.0)) 0.8
-      ;; changed from y = 0.5
-      :translate 0.0 2.0 0.0
+      :translate 0.0 0.5 0.0
       (gl:use-program (the-program *uniform-color-tint*))
       (gl:uniform-matrix (model-to-world-matrix-unif *uniform-color-tint*) 4
 			 (vector (glutil:top-ms matrix-stack)) NIL)
@@ -518,8 +514,7 @@ geometry coordinates and returned as a position vector."
       :translate 0.0 1.0 0.0
       :scale (- *parthenon-width* 6.0) *parthenon-column-height*
       (- *parthenon-length* 6.0)
-      ;; changed from y = 0.5
-      :translate 0.0 1.5 0.0
+      :translate 0.0 0.5 0.0
       ;; secret-cube :>
       (gl:use-program (the-program *object-color*))
       (gl:uniform-matrix (model-to-world-matrix-unif *object-color*) 4
@@ -539,9 +534,7 @@ geometry coordinates and returned as a position vector."
       (gl:uniform-matrix (model-to-world-matrix-unif *object-color*) 4
 			 (vector (glutil:top-ms matrix-stack)) NIL)
       (framework:render *cube-color-mesh*)
-      (gl:use-program 0))
-    
-  )
+      (gl:use-program 0)))
 
 (defparameter *look-pt* (glm:vec3 0.0 0.0 0.0)) ; look at actual vertex of drawn object
 (defparameter *cam-pt* (glm:vec3 0.0 0.0 1.0))

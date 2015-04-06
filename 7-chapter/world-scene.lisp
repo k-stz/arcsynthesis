@@ -221,7 +221,7 @@ geometry coordinates and returned as a position vector."
   ;; Draw trunk
   (glutil:with-transform (matrix-stack)
       :scale 1.0 trunk-height 1.0
-      :translate 0.0 0.5 0.0 ;; check out the z-fighting when y = 1.0 !
+      :translate 0.0 0.5 0.0
       ;; TODO: write with-program-data macro?
       (gl:use-program (the-program *uniform-color-tint*))
       (gl:uniform-matrix (model-to-world-matrix-unif *uniform-color-tint*) 4
