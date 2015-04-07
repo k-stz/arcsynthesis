@@ -223,8 +223,7 @@ it will be returned to its former state"
      `(case (trans-relative-to ,view-pole)
         (:1st-person (1st-person-rotate (glm:make-quat ,deg (0.0 1.0 0.0)) ,view-pole))
 	(t (apply-quat-to-vp (glm:make-quat ,deg (0.0 1.0 0.0)) ,view-pole))))
-    (:z `(apply-quat-to-vp (glm:make-quat ,deg (0.0 0.0 1.0)) ,view-pole))
-    ))
+    (:z `(apply-quat-to-vp (glm:make-quat ,deg (0.0 0.0 1.0)) ,view-pole))))
 
 (defun apply-quat-to-vp (trans-quat view-pole)
   (let ((vp-quat (quat view-pole)))
@@ -314,10 +313,9 @@ view-pole. Can be used to perform pole-relative transformations"
   (let ((mat (glm:mat4-cast (quat vp)))
 	(cam-pos-mat (sb-cga:translate (glm:vec- (cam-pos vp)))))
     ;;updating look-dir TODO: make this more central somewhere more upstream?
-;    (update-look-dir vp)
+    ; (update-look-dir vp)
     ;; Reversing the order here allows for camera-relative, or model-relative
     ;; transformation!
-    
     (ecase (trans-relative-to vp)
       ;; tries to follow "egoshooter" rules
       (:1st-person (sb-cga:matrix* (sb-cga:transpose-matrix mat) cam-pos-mat))

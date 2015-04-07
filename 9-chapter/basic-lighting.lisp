@@ -11,8 +11,6 @@
 ;;           do anything regarding that
 ;;
 ;;           TWO vertex-shaders are used!
-
-
 (in-package #:arc-9)
 
 ;; TODO: this might solve the problem:
@@ -161,8 +159,6 @@
   (let ((model-matrix (make-instance 'glutil:matrix-stack))
 	(light-dir-camera-space))
 
-
-    ;;NEXT-TODO: modelMatrix.setmatrix(g_viewPole.CalcMatrix());
     (glutil:set-matrix model-matrix (glutil::calc-matrix *view-pole*))
 
     
@@ -183,13 +179,9 @@
 	;; Render the ground plane
 	(glutil:with-transform (model-matrix)
 	    (gl:use-program (the-program *white-diffuse-color*))
+	  :scale 5.0 1.0 5.0
 	  ;;note how model-to-camera-matrix is mat4 and normal-model-to-camera-matrix is
 	  ;;mat3!
-	  ;; TODO: explanation needed, wasn't it due to direction vectors discarding their
-	  ;; 'w' component?
-;	  :scale 5.0 1.0 5.0
- 	  :scale 20.0 1.0 20.0
-
 	  (gl:uniform-matrix (model-to-camera-matrix-unif *white-diffuse-color*) 4
 			     (vector (glutil:top-ms model-matrix)) NIL)
 
@@ -206,11 +198,6 @@
       ;; Render the Cylinder
       (if *draw-colored-cyl*
 	  (glutil:with-transform (model-matrix)
-
-	      ;;NEXT-TODO: more experiments
-;	      :translate 2.0 1.0 0.0
-;	      :rotate-y 45.0
-	      
 	      (gl:use-program (the-program *vertex-diffuse-color*))
 
 	      (gl:uniform-matrix (model-to-camera-matrix-unif *vertex-diffuse-color*) 4
@@ -300,8 +287,6 @@
 	     )
 	    (:keydown
 	     (:keysym keysym)
-	     ;; TODO: capture in macro
-
 
      	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-t)
 	       ;; switch through transforms for debugging purpose
@@ -312,15 +297,15 @@
 		 (:camera-relative (setf (glutil::trans-relative-to *view-pole*)
 					 :1st-person))))
 	     
-	     ;; move camera
+	     ;; move camera: front
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-w)
 	       (glutil::move-camera *view-pole*
 				    (glutil::pole-direction
-				     ;(glm:vec3 0.0 0.0 -1.0)
 				     *view-pole*
 				     (glm:vec3 0.0 0.0 -1.0)))
-	       
 	       (format t "pos:~a~%~%" (glm:round-obj (glutil::cam-pos *view-pole*) 0.001)))
+
+	     ;; back
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-s)
 	       (glutil::move-camera *view-pole*
 				    (glutil::pole-direction
@@ -328,38 +313,6 @@
 				     (glm:vec3 0.0 0.0 1.0)))
 	       (format t "~%pos:~a~%~%"
 		       (glm:round-obj (glutil::cam-pos *view-pole*) 0.001)))
-
-
-	     ;; testing camera-relative object transformation
-	     ;; seems to work, time to abstract this mess away!
-     	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-a)
-	       (glutil::rotate-y-cam-relative 10.0 *view-pole*))
-	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-d)
-	       (glutil::rotate-y-cam-relative -10.0 *view-pole*))
-     	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-q)
-	       (print 'reached)
-	       (glutil::rotate-z-cam-relative 10.0 *view-pole*))
-	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-e)
-	       (glutil::rotate-z-cam-relative -10.0 *view-pole*))
-
-	     
-	     
-	     ;; rotate camera horizontally around target
-	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-j)
-	       (glutil::rotate-vp-y 10.0 *view-pole*))
-	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-l)
-	       (glutil::rotate-vp-y -10.0 *view-pole*))
-	     ;; rotate cam vertically around target
-	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-i)
-	       (glutil::rotate-vp-x -10.0 *view-pole*))
-	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-k)
-	       (glutil::rotate-vp-x 10.0 *view-pole*))
-
-	     ;; zoom camera in/out of target
-	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-u)
-	       (glutil::rotate-vp-z 10.0 *view-pole*))
-	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-o)
-	       (glutil::rotate-vp-z -10.0 *view-pole*))
 
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-space)
 	       (if *draw-colored-cyl*
@@ -376,6 +329,5 @@
 
 		   ;;live editing enabled:
 		   (arc:update-swank)
-
 		   (sdl2:gl-swap-window win))))))))
 
