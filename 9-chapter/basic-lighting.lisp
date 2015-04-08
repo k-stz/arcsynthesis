@@ -134,10 +134,6 @@
 (defparameter *light-direction* (glm:vec4 0.866 0.5 0.0 0.0))
 (defparameter *draw-colored-cyl* t)
 
-;; TODO: provide abstraction class for object rendering, treating the camera as just
-;;       another object
-;; NEXT-TODO: free camera rendering, expose api for mainipulation, then
-;;            use api to controll via mouse
 (defparameter *view-pole*
   (make-instance 'glutil::view-pole :cam-pos (glm:vec3 0.0 0.8 8.0)
 		 ;; calculate trasformation relative to the look-pt
@@ -296,21 +292,22 @@
 				     :camera-relative))
 		 (:camera-relative (setf (glutil::trans-relative-to *view-pole*)
 					 :1st-person))))
-	     
+
+	     ;; NEXT-TODO: make camera relative transform work and integrate mouse-wheel usage
 	     ;; move camera: front
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-w)
 	       (glutil::move-camera *view-pole*
-				    (glutil::pole-direction
-				     *view-pole*
-				     (glm:vec3 0.0 0.0 -1.0)))
+	       			    (glutil::pole-direction
+	       			     *view-pole*
+	       			     (glm:vec3 0.0 0.0 -1.0)))
 	       (format t "pos:~a~%~%" (glm:round-obj (glutil::cam-pos *view-pole*) 0.001)))
 
 	     ;; back
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-s)
 	       (glutil::move-camera *view-pole*
-				    (glutil::pole-direction
-				     *view-pole*
-				     (glm:vec3 0.0 0.0 1.0)))
+	       			    (glutil::pole-direction
+	       			     *view-pole*
+	       			     (glm:vec3 0.0 0.0 1.0)))
 	       (format t "~%pos:~a~%~%"
 		       (glm:round-obj (glutil::cam-pos *view-pole*) 0.001)))
 

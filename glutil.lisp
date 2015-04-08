@@ -288,14 +288,19 @@ it will be returned to its former state"
 (defun pole-direction (view-pole dir)
   "Returns a direction vector, that is muliplied with the
 view-pole. Can be used to perform pole-relative transformations"
-  (let* ((mat (glm:mat4-cast (glutil::quat view-pole)))
-	 (result
-	  (glm:vec4->vec3
-	   (glm:mat*vec mat (glm:vec3->vec4 dir)))))
-    (format t "curr:~a neg:~a~%"
-	    (glm::round-obj result)
-	    (glm:vec3->vec4 (glm:vec- (glm:vec4->vec3 result))))
-    result))
+  ;; camera relative orientation is perhaps not straightforwardly implemented
+  (if (eq :camera-relative (glutil::trans-relative-to view-pole))
+      dir
+      ;; else
+      (let* ((mat (glm:mat4-cast (glutil::quat view-pole)))
+	     (dir (glm:vec3->vec4 dir))
+	     (result
+	      (glm:vec4->vec3
+	       (glm:mat*vec mat dir))))
+	(format t "curr:~a neg:~a~%"
+		(glm::round-obj result)
+		(glm:vec3->vec4 (glm:vec- (glm:vec4->vec3 result))))
+	result)))
 
 (defun move-camera (view-pole vec3-direction)
   (setf (cam-pos view-pole)
