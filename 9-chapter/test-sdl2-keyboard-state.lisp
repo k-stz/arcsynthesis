@@ -17,12 +17,16 @@
      (keystate-at keycode)))
 
 
+;;mouse
+
+(defvar *mousestates*)
+(defvar *1st-mouse*)
+
 (defun main ()
   (arc::with-main
     (sdl2:with-init (:everything)
       (sdl2:with-window (win :w 500 :h 500 :flags '(:shown :opengl))
 	(sdl2:with-gl-context (gl-context win)
-	  (setf *keystates*
 		;;mutliple value, for some reason the 2nd value is the array?
 		;;TODO: yeah, time to take a closer look at cffi?
 
@@ -31,12 +35,18 @@
 		;; SAP= System Area Pointer
 		;; this dereferences the pointer: (cffi:mem-ref *keystates* :int )
 		
-		(sdl2-ffi.functions:sdl-get-keyboard-state
-		 (cffi-sys:null-pointer)))
+		;; (sdl2-ffi.functions:sdl-get-keyboard-state
+		;;  (cffi-sys:null-pointer)))
 	  (multiple-value-bind (a arr)
 	      (sdl2-ffi.functions:sdl-get-keyboard-state (cffi-sys:null-pointer))
 	    (setf *1st* a)
 	    (setf *keystates* arr))
+
+	  (multiple-value-bind (a arr)
+	      (sdl2-ffi.functions:sdl-get-mouse-state (cffi-sys:null-pointer) (cffi-sys:null-pointer))
+	    (setf *1st-mouse* a)
+	    (setf *mousestate* arr))
+	  
 	  (sdl2:with-event-loop (:method :poll)
 	    (:keydown
 	     (:keysym keysym)
@@ -52,7 +62,7 @@
 	       (format t "keysym:~a scancode-val:~a~%" keysym
 		       (sdl2:scancode-value keysym))
 	       ;; (print 
-	       ;; 	(cffi:mem-ref *keystates* :int sdl2-ffi:+sdl-scancode-space+))
+ 	       ;; 	(cffi:mem-ref *keystates* :int sdl2-ffi:+sdl-scancode-space+))
 	       )
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-escape)
 	       (sdl2:push-event :quit)))

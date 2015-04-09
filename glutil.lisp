@@ -188,6 +188,7 @@ it will be returned to its former state"
 ;;                                                glutil::MB_LEFT_BTN) ;
 
 ;; Implementation following the specification in "chapter 9 - Lights On"
+;; TODO: implement proper cam-pos -> look-pt usage to get proper initial orientatino
 (defclass view-pole ()
   ((curr-quat :initform (glm:quaternion 1.0 0.0 0.0 0.0) :accessor quat)
    (look-pt :initform (glm:vec3 0.0 0.0 0.0) :initarg :look-pt :accessor look-pt)
