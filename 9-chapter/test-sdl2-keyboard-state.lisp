@@ -2,12 +2,10 @@
   (:use :cl))
 (in-package #:test)
 
+
+;;keyboard
 (defvar *1st*)
 (defvar *keystates*)
-
-
-
-(defun foo () )
 
 (defun keystate-at (keycode)
   (cffi:mem-ref *keystates* :int keycode))
@@ -18,38 +16,41 @@
 
 
 ;;mouse
+(defvar *mousestate*)
 
-(defvar *mousestates*)
-(defvar *1st-mouse*)
 
 (defun main ()
   (arc::with-main
     (sdl2:with-init (:everything)
       (sdl2:with-window (win :w 500 :h 500 :flags '(:shown :opengl))
 	(sdl2:with-gl-context (gl-context win)
-		;;mutliple value, for some reason the 2nd value is the array?
-		;;TODO: yeah, time to take a closer look at cffi?
+	  ;;mutliple value, for some reason the 2nd value is the array?
+	  ;;TODO: yeah, time to take a closer look at cffi?
 
-		;;NOTE: cffi:mem-aref access of index in an array
-		;;      cffi:mem-ref dereference pointer
-		;; SAP= System Area Pointer
-		;; this dereferences the pointer: (cffi:mem-ref *keystates* :int )
-		
-		;; (sdl2-ffi.functions:sdl-get-keyboard-state
-		;;  (cffi-sys:null-pointer)))
+	  ;;NOTE: cffi:mem-aref access of index in an array
+	  ;;      cffi:mem-ref dereference pointer
+	  ;; SAP= System Area Pointer
+	  ;; this dereferences the pointer: (cffi:mem-ref *keystates* :int <index>)
+	  
+	  ;; (sdl2-ffi.functions:sdl-get-keyboard-state
+	  ;;  (cffi-sys:null-pointer)))
 	  (multiple-value-bind (a arr)
 	      (sdl2-ffi.functions:sdl-get-keyboard-state (cffi-sys:null-pointer))
 	    (setf *1st* a)
 	    (setf *keystates* arr))
 
-	  (multiple-value-bind (a arr)
-	      (sdl2-ffi.functions:sdl-get-mouse-state (cffi-sys:null-pointer) (cffi-sys:null-pointer))
-	    (setf *1st-mouse* a)
-	    (setf *mousestate* arr))
+	  (setf *mousestate* (sdl2-ffi.functions:sdl-get-mouse-state
+			      (cffi-sys:null-pointer)
+			      (cffi-sys:null-pointer)))
 	  
 	  (sdl2:with-event-loop (:method :poll)
+	    ;; argh!! there IS a mousewheel event all along!!
+	    (:mousewheel
+	     (:x x :y y :window-id w :which wh :timestamp time :type type)
+	     (print (list x y w wh time type)))
 	    (:keydown
 	     (:keysym keysym)
+
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-e)
 	       ;; WORKS: ..but if we test for a key and it is indeed pressed
 	       ;;        it returns "1" just like the sdl2 documentation states
@@ -62,20 +63,20 @@
 	       (format t "keysym:~a scancode-val:~a~%" keysym
 		       (sdl2:scancode-value keysym))
 	       ;; (print 
- 	       ;; 	(cffi:mem-ref *keystates* :int sdl2-ffi:+sdl-scancode-space+))
+	       ;; 	(cffi:mem-ref *keystates* :int sdl2-ffi:+sdl-scancode-space+))
 	       )
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-escape)
 	       (sdl2:push-event :quit)))
 	    (:quit () t)
 	    (:idle ()
 
-		   ;;; TEST 1
+;;; TEST 1
 		   ;; (let ((val (loop for i upto 10 when
 		   ;; 		   (/= 0 (cffi:mem-ref *keystates* :int i))
 		   ;; 		 return i)))
 		   ;;   (when val (print val)))
 
-		   ;;; TEST 2
+;;; TEST 2
 		   ;; WORKS: note how 'f' key can be read via: :int 6 AND 9, could
 		   ;; this correspond to keydown/keyup-f??
 		   ;; (when (/= 0 (cffi:mem-ref *keystates* :int
@@ -83,19 +84,33 @@
 		   ;;   (print 'reached))
 		   ;;
 
-		   ;;; TEST 3
+;;; TEST 3
 		   ;; This finally seems to prove that 6 and 9 are both testing the
 		   ;; same value?
 		   ;; (let ((arr-val-1 (keystate-at sdl2-ffi:+sdl-scancode-f+))
 		   ;; 	 (arr-val-2 (keystate-at 9)))
 		   ;;   (print (list arr-val-1 arr-val-2)))
 
-		   ;;; TEST 4
+;;; TEST 4
 		   ;; multiple input test,
 		   ;; TODO: create simple mapping "lctrl" -> sdl2-ffi:+sdl-scancode-lctrl+
 		   (when (and (pushed-p sdl2-ffi:+sdl-scancode-lctrl+)
 			      (pushed-p sdl2-ffi:+sdl-scancode-f+))
 		     (print 'BOOOM))
+
+
+
+		   ;; mouse tests:
+		   ;; TEST 1
+		   ;; returns the state of the mouse but only for the clickable buttons and NOT
+		   ;; the mousewheel.. which is about what we really need for the camera ._.
+		   
+		   ;; (print
+		   ;; (sdl2-ffi.functions:sdl-get-mouse-state
+		   ;;  (cffi-sys:null-pointer)
+		   ;;  (cffi-sys:null-pointer)))
+
+		   
 		   (arc::update-swank)
 		   (sdl2:gl-swap-window win))))))))
 

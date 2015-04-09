@@ -270,20 +270,34 @@
 	  ;; TODO: callback for reshape; for now used to setup cam-to-clip-space matrix
 	  (reshape 500.0 500.0)
 	  (sdl2:with-event-loop (:method :poll)
-	    ;(:mousebuttondown () ())
+	    (:mousewheel
+	     (:y y) ; stores the vertical mousewheel motion
+
+	     ;; zoom in/out
+	     (when (= y 1)
+	       (glutil::move-camera *view-pole*
+				    (glutil::pole-direction
+				     *view-pole*
+				     (glm:vec3 0.0 0.0 -1.0)))
+	       (format t "pos:~a~%~%" (glm:round-obj (glutil::cam-pos *view-pole*) 0.001)))
+	     (when (= y -1)
+	       (glutil::move-camera *view-pole*
+				    (glutil::pole-direction
+				     *view-pole*
+				     (glm:vec3 0.0 0.0 1.0)))
+	       (format t "pos:~a~%~%" (glm:round-obj (glutil::cam-pos *view-pole*) 0.001))))
+	    
 	    (:mousemotion
 	     (:x x :y y :xrel xrel :yrel yrel :state state)
 	     ;; and that's all we need to build the arc viewpole: xrel, yrel
-	     ;; are store the motion relative to the last event!
+	     ;; store the motion relative to the last event!
 	     (format t "x:~a y:~a xrel:~a yrel:~a STATE:~a TRANS:~a~%" x y xrel yrel state
 		     (glutil::trans-relative-to *view-pole*))
 	     (when (lmb-pressed-p state)
-	       (mouse-rel-transform xrel yrel))
-	     ;; (print (sdl2-ffi.functions:sdl-get-mouse-focus))
-	     )
+	       (mouse-rel-transform xrel yrel)))
+	    
 	    (:keydown
 	     (:keysym keysym)
-
      	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-t)
 	       ;; switch through transforms for debugging purpose
 	       (case (glutil::trans-relative-to *view-pole*)
