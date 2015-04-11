@@ -3,19 +3,25 @@
 ;; TODO: sbcl specifics?
 (declaim (optimize (speed 0) (safety 3) (debug 3)))
 
-;; TODO: about
+;;; About: Shows the simplest lighting model: "lambertian reflectance" to compute the
+;;;        colors at each primitives vertex then interpolate them over the surface
+;;;        of the triangle (Gouroud Shading). See: the vertex shaders
+;;;        The a "directional light source" is being used, this means that every vertex
+;;;        on the screen receives the light at the same angle, the angle of incidence,
+;;;        this light source usage makes sense when the light source is very far away
+;;;        like the sun from earth. See: *light-direction*.
+;;;        This tutorials camera may be controlled by clicking on the screen and
+;;;        thereby moving it. Use the mousewheel to zoom in/out. See: *view-pole*
 
-
-;; REMEMBER: the lighting intensity is already given, and the light
-;;           direction IS ALREADY IN CAMERA SPACE, the shader doesn't
-;;           do anything regarding that
-;;
-;;           TWO vertex-shaders are used!
+;;; REMEMBER: the lighting intensity is already given, and the light
+;;;           direction IS ALREADY IN CAMERA SPACE, the shader doesn't
+;;;           do anything regarding that
+;;;
+;;;           TWO vertex-shaders are used!
 (in-package #:arc-9)
 
 ;; TODO: this might solve the problem:
 ;; (print (uiop/lisp-build:current-lisp-file-pathname)) ?
-;; TODO: they're identical in all following tutorials? Then remove *glsl-directory*
 (defvar *data-directory*
   (merge-pathnames
    #p "9-chapter/data/" (asdf/system:system-source-directory :arcsynthesis)))
@@ -25,13 +31,13 @@
 
 
 ;; now acts a lot like a C++-struct, (:conc-name NIL) ensures that the automatically
-;; reader functions of a struct don't start with program-data-.. which is the default
-;; behaviour but with nothing at all, NIL. A string could be specified after :conc-name
-;; to get custom prefix reader string: (:conc-name "foo-") -> (foo-the-program obj)
-;; This solution has been chosen, instead of
-;; (defclass program-data (...) :accessor the-program)
-;; due to DEFCLASS considered overkill. Plus it has a nice print representation by
-;; default.  hmmm TODO: (class-of <program-data-obj>) ==> #<STRUCTURE-CLASS TEST>
+;; generated reader functions of a struct don't start with program-data-.. which is the
+;; default behaviour but with nothing at all, NIL. A string could be specified after
+;; :conc-name to get custom prefix reader string: (:conc-name "foo-") -> (foo-the-program
+;; obj) This solution has been chosen, instead of (defclass program-data (...) :accessor
+;; the-program) due to DEFCLASS considered overkill. Plus it has a nice print
+;; representation by default.  hmmm TODO: (class-of <program-data-obj>) ==>
+;; #<STRUCTURE-CLASS TEST>
 (defstruct (program-data (:conc-name NIL)) ; don't hyphenate struct readers
   the-program
 
@@ -43,7 +49,6 @@
 
 (defvar *white-diffuse-color*)
 (defvar *vertex-diffuse-color*)
-
 
 (defconstant +projection-block-index+ 2)
 
@@ -228,7 +233,6 @@
     (gl:clear-color 0.0 0.0 0.2 1)
     (gl:clear-depth 1.0)
     (gl:clear :color-buffer-bit :depth-buffer-bit)
-
     (draw))
 
 (defparameter *fz-near* 1.0)
@@ -244,10 +248,6 @@
     (gl:bind-buffer :uniform-buffer 0))
   (%gl:viewport 0 0 w h))
 
-
-
-(defconstant +standard-angle-increment+ 11.25)
-(defconstant +small-angle-increment+ 9.0)
 
 (defun mouse-rel-transform (xrel yrel)
   "Allow to look around with the mouse, just like in egoshooters."
@@ -266,12 +266,11 @@
 	(sdl2:with-gl-context (gl-context win)
 	  ;; INIT code:
 	  (init)
-	  
 	  ;; TODO: callback for reshape; for now used to setup cam-to-clip-space matrix
 	  (reshape 500.0 500.0)
 	  (sdl2:with-event-loop (:method :poll)
 	    (:mousewheel
-	     (:y y) ; stores the vertical mousewheel motion
+	     (:y y)			; stores the vertical mousewheel motion
 
 	     ;; zoom in/out
 	     (when (= y 1)
@@ -279,13 +278,15 @@
 				    (glutil::pole-direction
 				     *view-pole*
 				     (glm:vec3 0.0 0.0 -1.0)))
-	       (format t "pos:~a~%~%" (glm:round-obj (glutil::cam-pos *view-pole*) 0.001)))
+	       (format t "pos:~a~%~%"
+		       (glm:round-obj (glutil::cam-pos *view-pole*) 0.001)))
 	     (when (= y -1)
 	       (glutil::move-camera *view-pole*
 				    (glutil::pole-direction
 				     *view-pole*
 				     (glm:vec3 0.0 0.0 1.0)))
-	       (format t "pos:~a~%~%" (glm:round-obj (glutil::cam-pos *view-pole*) 0.001))))
+	       (format t "pos:~a~%~%"
+		       (glm:round-obj (glutil::cam-pos *view-pole*) 0.001))))
 	    
 	    (:mousemotion
 	     (:x x :y y :xrel xrel :yrel yrel :state state)
@@ -306,24 +307,6 @@
 				     :camera-relative))
 		 (:camera-relative (setf (glutil::trans-relative-to *view-pole*)
 					 :1st-person))))
-
-	     ;; NEXT-TODO: make camera relative transform work and integrate mouse-wheel usage
-	     ;; move camera: front
-	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-w)
-	       (glutil::move-camera *view-pole*
-	       			    (glutil::pole-direction
-	       			     *view-pole*
-	       			     (glm:vec3 0.0 0.0 -1.0)))
-	       (format t "pos:~a~%~%" (glm:round-obj (glutil::cam-pos *view-pole*) 0.001)))
-
-	     ;; back
-	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-s)
-	       (glutil::move-camera *view-pole*
-	       			    (glutil::pole-direction
-	       			     *view-pole*
-	       			     (glm:vec3 0.0 0.0 1.0)))
-	       (format t "~%pos:~a~%~%"
-		       (glm:round-obj (glutil::cam-pos *view-pole*) 0.001)))
 
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-space)
 	       (if *draw-colored-cyl*
