@@ -1193,3 +1193,30 @@ points of the fruit is much different. Analogy: the farther two adjacent lines m
 their ends the smaller the angle between them, with great distance they can even be
 considered to be parallel (same angle relative to the surface they shine on, the same
 direction relative to each point on the scene's surfaces).
+
+--------------------------------------------------------------------------------
+Transforming Normals Non-Uniformely,
+Normals may not represent the object once non-uniform transformations take place,
+such as: scaling non-uniformely :scale 1.0 2.0 0.2, or other :rotate 45.0 etc.
+combinations.
+
+This can be solved by applying an _inverse-transpose_ on the matrix before passing it for
+normals to be transformed by. The explanation will be omittet, not only is it somewhat
+hard it also is very rarely used, that's because non-uniform scaling is rarely used! But
+for the arcsynthesis tutorial we will use non-uniform scales to build complex constructs
+from simple primitives, that's why they're briefly introduced. It should be noted though
+as I have read this myself a few times that any number of arbitrary transformations to
+a matrix M_ can be expressed as a scale-matrix sandwiched by two rotation matrices:
+M_ = R1*S1*R2 !!
+
+The process is just a (transpose (inverse norm-matrix)) and the high-level reason for it
+is that normals will now be represented properly after any amount of non-uniform scaling
+rotations and other transformations combined.
+(see scale-and-lighting.lisp for an interactive graphics example)
+
+It is still interesting how these operation is derived, just so as to see how matrix
+equations can be solved to yield a simple final operation. Like mathamaticians yearn
+for short equations, so does the graphics programmer, as the GPU in question will
+have to execute them quite a lot. The bottleneck then is widened through matrix
+arithmetic. Finally note that this operation is still an expensive one, and should be
+avoided.
