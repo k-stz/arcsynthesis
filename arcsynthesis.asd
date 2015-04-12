@@ -59,7 +59,8 @@ written in Common Lisp (SBCL) using cl-sdl2 and cl-opengl"
 			 (:file "camera-relative")
 			 (:file "interpolation")))
    (:module "9-chapter"
-	    :components ((:file "basic-lighting")))))
+	    :components ((:file "basic-lighting")
+			 (:file "scale-and-lighting")))))
 
 ;;TODO: bad style?  
 (asdf:load-system :arcsynthesis)
