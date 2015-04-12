@@ -140,7 +140,7 @@
 (defparameter *draw-colored-cyl* t)
 
 (defparameter *view-pole*
-  (make-instance 'glutil::view-pole :cam-pos (glm:vec3 0.0 0.8 8.0)
+  (make-instance 'glutil:view-pole :cam-pos (glm:vec3 0.0 0.8 8.0)
 		 ;; calculate trasformation relative to the look-pt
 		 ;; for now changes calc-matrix behaviour
 		 :trans-mode :camera-relative))
@@ -150,7 +150,7 @@
 ;; initialobjectdata position: 0.0 0.5 0.0
 ;;                   orientation: (quaternion 1.0 0.0 0.0 0.0)
 (defparameter *objt-pole*
-  (make-instance 'glutil::object-pole
+  (make-instance 'glutil:object-pole
 		 :pos (glm:vec3 0.0 0.5 0.0)
 		 :orient (glm:quaternion 1.0 0.0 0.0 0.0)))
 
@@ -160,7 +160,7 @@
   (let ((model-matrix (make-instance 'glutil:matrix-stack))
 	(light-dir-camera-space))
 
-    (glutil:set-matrix model-matrix (glutil::calc-matrix *view-pole*))
+    (glutil:set-matrix model-matrix (glutil:calc-matrix *view-pole*))
 
     
     (setf light-dir-camera-space
@@ -195,7 +195,7 @@
 	  (gl:use-program 0))
 
 
-      (glutil::apply-matrix model-matrix (glutil::calc-matrix *objt-pole*))
+      (glutil:apply-matrix model-matrix (glutil:calc-matrix *objt-pole*))
       ;; Render the Cylinder
       (if *draw-colored-cyl*
 	  (glutil:with-transform (model-matrix)
@@ -251,8 +251,8 @@
 
 (defun mouse-rel-transform (xrel yrel)
   "Allow to look around with the mouse, just like in egoshooters."
-  (glutil::rotate-vp :y xrel *view-pole*)
-  (glutil::rotate-vp :x yrel *view-pole*))
+  (glutil:rotate-vp :y xrel *view-pole*)
+  (glutil:rotate-vp :x yrel *view-pole*))
 
 
 (defun lmb-pressed-p (state)
@@ -274,26 +274,26 @@
 
 	     ;; zoom in/out
 	     (when (= y 1)
-	       (glutil::move-camera *view-pole*
-				    (glutil::pole-direction
+	       (glutil:move-camera *view-pole*
+				    (glutil:pole-direction
 				     *view-pole*
 				     (glm:vec3 0.0 0.0 -1.0)))
 	       (format t "pos:~a~%~%"
-		       (glm:round-obj (glutil::cam-pos *view-pole*) 0.001)))
+		       (glm:round-obj (glutil:cam-pos *view-pole*) 0.001)))
 	     (when (= y -1)
-	       (glutil::move-camera *view-pole*
-				    (glutil::pole-direction
+	       (glutil:move-camera *view-pole*
+				    (glutil:pole-direction
 				     *view-pole*
 				     (glm:vec3 0.0 0.0 1.0)))
 	       (format t "pos:~a~%~%"
-		       (glm:round-obj (glutil::cam-pos *view-pole*) 0.001))))
+		       (glm:round-obj (glutil:cam-pos *view-pole*) 0.001))))
 	    
 	    (:mousemotion
 	     (:x x :y y :xrel xrel :yrel yrel :state state)
 	     ;; and that's all we need to build the arc viewpole: xrel, yrel
 	     ;; store the motion relative to the last event!
 	     (format t "x:~a y:~a xrel:~a yrel:~a STATE:~a TRANS:~a~%" x y xrel yrel state
-		     (glutil::trans-relative-to *view-pole*))
+		     (glutil:trans-relative-to *view-pole*))
 	     (when (lmb-pressed-p state)
 	       (mouse-rel-transform xrel yrel)))
 	    
@@ -301,11 +301,11 @@
 	     (:keysym keysym)
      	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-t)
 	       ;; switch through transforms for debugging purpose
-	       (case (glutil::trans-relative-to *view-pole*)
-		 (:1st-person (setf (glutil::trans-relative-to *view-pole*) :free-camera))
-		 (:free-camera (setf (glutil::trans-relative-to *view-pole*)
+	       (case (glutil:trans-relative-to *view-pole*)
+		 (:1st-person (setf (glutil:trans-relative-to *view-pole*) :free-camera))
+		 (:free-camera (setf (glutil:trans-relative-to *view-pole*)
 				     :camera-relative))
-		 (:camera-relative (setf (glutil::trans-relative-to *view-pole*)
+		 (:camera-relative (setf (glutil:trans-relative-to *view-pole*)
 					 :1st-person))))
 
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-space)

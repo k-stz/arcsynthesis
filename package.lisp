@@ -74,7 +74,16 @@
    #:with-transform
    #:perspective
    #:top-ms
-   #:set-matrix))
+   #:set-matrix
+   #:apply-matrix
+   #:view-pole
+   #:cam-pos
+   #:trans-relative-to
+   #:rotate-vp
+   #:move-camera
+   #:pole-direction
+   #:object-pole
+   #:calc-matrix))
 
 (defpackage #:framework
   (:use :cl)

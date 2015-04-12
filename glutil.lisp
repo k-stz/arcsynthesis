@@ -303,6 +303,11 @@ view-pole. Can be used to perform pole-relative transformations"
 		(glm:vec3->vec4 (glm:vec- (glm:vec4->vec3 result))))
 	result)))
 
+;; NEXT-TODO: provide special behaviour for :1st-person camera transformation
+;;            the moving direction shall be always perpendicular to the ground
+;;            like in "egoshooters" (looking up but still walking in front instead
+;;            of up, the former behaviour shall be reserved for the :free-camera
+;;            transformation-mode)!
 (defun move-camera (view-pole vec3-direction)
   (setf (cam-pos view-pole)
 	(sb-cga:vec+ (cam-pos view-pole) (sb-cga:normalize vec3-direction)))
@@ -313,6 +318,8 @@ view-pole. Can be used to perform pole-relative transformations"
   ;; 		  (glm:vec3->vec4 new-pos)))
   )
 
+;; TODO: you can combine DEFGENERIC with DEFMETHOD by puttin :METHOD slots in
+;;       the generic body!!!!!
 (defgeneric calc-matrix (pole-object))
 (defmethod calc-matrix ((vp view-pole))
   ;; TODO (for another time): why does it need to be transposed?
