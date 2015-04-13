@@ -238,5 +238,9 @@
 (defpackage #:arc-9.1
   (:documentation "Lights On - Normal Transformation")
   (:use :cl)
-  (:export #:main
-	   #:*scale-cyl-p*))
+  (:export #:main))
+
+(defpackage #:arc-9.2
+  (:documentation "Lights On - Global Illumination")
+  (:use :cl)
+  (:export #:main))

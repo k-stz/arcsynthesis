@@ -60,7 +60,8 @@ written in Common Lisp (SBCL) using cl-sdl2 and cl-opengl"
 			 (:file "interpolation")))
    (:module "9-chapter"
 	    :components ((:file "basic-lighting")
-			 (:file "scale-and-lighting")))))
+			 (:file "scale-and-lighting")
+			 (:file "ambient-lighting")))))
 
 ;;TODO: bad style?  
 (asdf:load-system :arcsynthesis)
