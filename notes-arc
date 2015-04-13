@@ -1220,3 +1220,27 @@ for short equations, so does the graphics programmer, as the GPU in question wil
 have to execute them quite a lot. The bottleneck then is widened through matrix
 arithmetic. Finally note that this operation is still an expensive one, and should be
 avoided.
+--------------------------------------------------------------------------------
+Global illumination,
+Our cylinder in basic-lighting.lisp has a pitch black back side. This is not realistic,
+as anyone can observe themselves: if the sun of the light doesn't hit an object directly
+doesn't mean it will be pitch black.
+
+This is due to the property of object reflecting light in all directions thereby the
+shadows are only shadows, not pitch black relms, because light from other object reaches
+it. This property of the world, a phenomenon, is called: _interreflection_!
+
+A lighting model that employs interreflection is said to handle _global illumination_!
+
+In contrast: Modelling light only from a light-emitting surface is called:
+_local illumination_ or _direction illumination_! Our previous example, hence, employed
+direction illumination.
+
+But doing actuall global illuminatino is very hard, we will instead use a time-tested
+frugal technique called:
+
+Ambient lighting,
+this one is simple: we assume that on each point in the scene there is a certain
+level of lightintensity always present. This is like a crude approximation to the fact
+that light comes from everywhere to some degree. Note that for this model we don't even
+need a angle of incidence!
