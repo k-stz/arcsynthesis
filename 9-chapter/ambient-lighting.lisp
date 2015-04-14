@@ -84,7 +84,6 @@
 	(load-program "DirVertexLighting_PN.vert" "ColorPassthrough.frag"))
   (setf *vertex-diffuse-color*
 	(load-program "DirVertexLighting_PCN.vert" "ColorPassthrough.frag"))
-
   (setf *white-amb-diffuse-color*
 	(load-program "DirAmbVertexLighting_PN.vert" "ColorPassthrough.frag"))
   (setf *vertex-amb-diffuse-color*
@@ -145,26 +144,44 @@
 		 :pos (glm:vec3 0.0 0.5 0.0)
 		 :orient (glm:quaternion 1.0 0.0 0.0 0.0)))
 
+(defparameter *draw-colored-cyl* t)
 (defparameter *scale-cyl-p* t)
 (defparameter *do-inv-transpose-p* nil)
+(defparameter *show-ambient-p* nil)
+
 
 (defun draw ()
   (let ((model-matrix (make-instance 'glutil:matrix-stack))
-	(light-dir-camera-space))
+	(light-dir-camera-space)
+	;; here we decide if _ambient lighting_ will be used
+	(white-diffuse
+	 (if *show-ambient-p* *white-amb-diffuse-color* *white-diffuse-color*))
+	(vertex-diffuse
+	 (if *show-ambient-p* *vertex-amb-diffuse-color* *vertex-diffuse-color*)))
 
     (glutil:set-matrix model-matrix (glutil:calc-matrix *view-pole*))
-
     
     (setf light-dir-camera-space
     	  (glm:vec4->vec3 (glm:mat*vec (glutil:top-ms model-matrix)
     				       *light-direction*)))
+
+    (if *show-ambient-p*
+	(progn
+	  (gl:use-program (the-program white-diffuse))
+	  (gl:uniformfv (light-intensity-unif white-diffuse) (glm:vec4 0.8 0.8 0.8 1.0))
+	  (gl:uniformfv (ambient-intensity-unif white-diffuse) (glm:vec4 0.2 0.2 0.2 1.0))
+	  (gl:use-program (the-program vertex-diffuse))
+	  (gl:uniformfv (light-intensity-unif vertex-diffuse) (glm:vec4 0.8 0.8 0.8 1.0))
+	  (gl:uniformfv (ambient-intensity-unif vertex-diffuse) (glm:vec4 0.2 0.2 0.2 1.0)))
+	;; else:
+	)
     
-    (gl:use-program (the-program *white-diffuse-color*))
-    ;; very convenient function, not only does it test the length of the input
-    ;; (uniform-..1-4..-f) but it also accepts a vector as input!
-    (gl:uniformfv (dir-to-light-unif *white-diffuse-color*) light-dir-camera-space)
-    (gl:use-program (the-program *vertex-diffuse-color*))
-    (gl:uniformfv (dir-to-light-unif *vertex-diffuse-color*) light-dir-camera-space)
+
+    
+    (gl:use-program (the-program white-diffuse))
+    (gl:uniformfv (dir-to-light-unif white-diffuse) light-dir-camera-space)
+    (gl:use-program (the-program vertex-diffuse))
+    (gl:uniformfv (dir-to-light-unif vertex-diffuse) light-dir-camera-space)
     (gl:use-program 0)
 
     (glutil:with-transform (model-matrix)
@@ -190,15 +207,7 @@
       (glutil:apply-matrix model-matrix (glutil:calc-matrix *objt-pole*))
       ;; Render the Cylinder
       (glutil:with-transform (model-matrix)
-
-	  ;; TODO: here we see the limitation of the WITH-TRANSFORM macro, it can't check
-	  ;; for transform keywords inside forms yet, hence we need to leave them in their
-	  ;; verbose form
-	  (when *scale-cyl-p*
-	    ;; :scale 1.0 1.0 0.2		;doesn't work!
-	    (GLUTIL::SCALE MODEL-MATRIX (GLM:VEC3 1.0 1.0 0.2)))
-	  
-	  (gl:use-program (the-program *vertex-diffuse-color*))
+	(gl:use-program (the-program *vertex-diffuse-color*))
 
 	(gl:uniform-matrix (model-to-camera-matrix-unif *vertex-diffuse-color*) 4
 			   (vector (glutil:top-ms model-matrix)) NIL)
@@ -289,15 +298,14 @@
 	    (:keydown
 	     (:keysym keysym)
      	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-t)
-	       ;; NEXT-TODO: ambient lighting 
-	       	       (setf *do-inv-transpose-p* (not *do-inv-transpose-p*))
-		       (if *do-inv-transpose-p*
-			   (print "Doing Invserse Transpose.")
-			   (print "Bad lighting." )))
+	       (setf *show-ambient-p* (not *show-ambient-p*))
+	       (if *show-ambient-p*
+		   (print "Ambient Lighting On.")
+		   (print "Ambient Lighting Off.")))
 
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-space)
-	       ;; toggle scaling
-	       (setf *scale-cyl-p* (not *scale-cyl-p*)))
+	       ;; toggle color on cylinder
+	       (setf *draw-colored-cyl* (not *draw-colored-cyl*)))
 
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-escape)
 	       (sdl2:push-event :quit)))
