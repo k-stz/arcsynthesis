@@ -208,25 +208,41 @@
 
       (glutil:apply-matrix model-matrix (glutil:calc-matrix *objt-pole*))
       ;; Render the Cylinder
-      (glutil:with-transform (model-matrix)
-	(gl:use-program (the-program vertex-diffuse))
+      (if *draw-colored-cyl*
+	  (glutil:with-transform (model-matrix)
+	      (gl:use-program (the-program vertex-diffuse))
 
-	(gl:uniform-matrix (model-to-camera-matrix-unif vertex-diffuse) 4
-			   (vector (glutil:top-ms model-matrix)) NIL)
+	    (gl:uniform-matrix (model-to-camera-matrix-unif vertex-diffuse) 4
+			       (vector (glutil:top-ms model-matrix)) NIL)
 
-	(let ((norm-matrix (glutil:top-ms model-matrix)))
-	  (when *do-inv-transpose-p*
-	    (setf norm-matrix
-		  (sb-cga:transpose-matrix (sb-cga:inverse-matrix norm-matrix))))
-	  (gl:uniform-matrix
-	   (normal-model-to-camera-matrix-unif vertex-diffuse) 3
-	   (vector (glm:mat4->mat3 norm-matrix)) NIL))
+	    (let ((norm-matrix (glutil:top-ms model-matrix)))
+	      (gl:uniform-matrix
+	       (normal-model-to-camera-matrix-unif vertex-diffuse) 3
+	       (vector (glm:mat4->mat3 norm-matrix)) NIL))
 
-	(gl:uniformfv
-	 (light-intensity-unif vertex-diffuse) (glm:vec4 1.0 1.0 1.0 1.0))
-	(framework:render-mode *cylinder-mesh* "lit-color")
-	
-	(gl:use-program 0)))))
+	    (gl:uniformfv
+	     (light-intensity-unif vertex-diffuse) (glm:vec4 1.0 1.0 1.0 1.0))
+
+	    (framework:render-mode *cylinder-mesh* "lit-color")
+	    (gl:use-program 0))
+	  
+	  ;;else
+	  (glutil:with-transform (model-matrix)
+	      (gl:use-program (the-program white-diffuse))
+
+	    (gl:uniform-matrix (model-to-camera-matrix-unif white-diffuse) 4
+			       (vector (glutil:top-ms model-matrix)) NIL)
+
+	    (let ((norm-matrix (glutil:top-ms model-matrix)))
+	      (gl:uniform-matrix
+	       (normal-model-to-camera-matrix-unif white-diffuse) 3
+	       (vector (glm:mat4->mat3 norm-matrix)) NIL))
+
+	    (gl:uniformfv
+	     (light-intensity-unif white-diffuse) (glm:vec4 1.0 1.0 1.0 1.0))
+
+	    (framework:render-mode *cylinder-mesh* "lit")
+	    (gl:use-program 0))))))
 
   (defun display ()
     (gl:clear-color 0.0 0.0 0.2 1)

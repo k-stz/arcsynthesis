@@ -1244,3 +1244,24 @@ this one is simple: we assume that on each point in the scene there is a certain
 level of lightintensity always present. This is like a crude approximation to the fact
 that light comes from everywhere to some degree. Note that for this model we don't even
 need a angle of incidence!
+
+--------------------------------------------------------------------------------
+Mesh Topology,
+because each vertex attribute shares one index namespace --each value has a unique index,
+we want to combine position vertex-attributes with normal vertex-attributes we can't store
+them in two different arrays and map in a meaningful way, say, to represent a cube.
+Instead we must have a unique index for the combination of the two:
+(pos, normal) so that on each execution of e.g. the vertex shader the "layout... vec3
+pos... and layout vec3 normal" store a corresponding value. This also means that since
+many positions share the same normal (for example all position of a single face) we need
+to provide the data each time the position is needed in a vertex array. This providing,
+association of meaningful data to a single shader call or vertex attributes is called a
+mesh's topology, because it is this topology of interconnectedness that is needed to draw
+a meaningful object like a cube, cylinder etc.
+
+Again this wasteful creation of unique combination of repetitive data (each face's
+position has the same normal, or even the same color) is needed because we only have a
+single index array to draw a single index value from. See the "layouts" from the
+gl:enable-vertex-attrib-array etc. calls. And this single index needs to associate all
+the unique combinations with eachoter (position, normal, color) to draw the desired
+graphic from the mesh.
