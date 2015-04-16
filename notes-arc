@@ -1265,3 +1265,10 @@ single index array to draw a single index value from. See the "layouts" from the
 gl:enable-vertex-attrib-array etc. calls. And this single index needs to associate all
 the unique combinations with eachoter (position, normal, color) to draw the desired
 graphic from the mesh.
+
+--------------------------------------------------------------------------------
+_point light source_,
+the light source is represented by a position in the world, hence the light direction
+is not contant anymore but relative to this position and will be computed now for
+each point of interest.
+

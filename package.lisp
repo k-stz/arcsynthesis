@@ -244,3 +244,8 @@
   (:documentation "Lights On - Global Illumination")
   (:use :cl)
   (:export #:main))
+
+(defpackage #:arc-10
+  (:documentation "Lights On - Plane Lights")
+  (:use :cl)
+  (:export #:main))
