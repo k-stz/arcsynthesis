@@ -9,7 +9,7 @@
 ;; (print (uiop/lisp-build:current-lisp-file-pathname)) ?
 (defvar *data-directory*
   (merge-pathnames
-   #p "9-chapter/data/" (asdf/system:system-source-directory :arcsynthesis)))
+   #p "10-chapter/data/" (asdf/system:system-source-directory :arcsynthesis)))
 
 ;;todo: fix this output to slime-repl solution
 (defvar out *standard-output*)  (defvar dbg *debug-io*) (defvar err *error-output*)
@@ -32,11 +32,6 @@
   
   model-to-camera-matrix-unif
   normal-model-to-camera-matrix-unif)
-
-(defvar *white-diffuse-color*)
-(defvar *vertex-diffuse-color*)
-(defvar *white-amb-diffuse-color*)
-(defvar *vertex-amb-diffuse-color*)
 
 (defconstant +projection-block-index+ 2)
 
@@ -77,21 +72,20 @@
      (the-program data) projection-block +projection-block-index+)
     data))
 
-
+(defvar *white-diffuse-color*)
+(defvar *vertex-diffuse-color*)
+(defvar *unlit*)
 
 (defun initialize-program ()
   (setf *white-diffuse-color*
-	(load-program "DirVertexLighting_PN.vert" "ColorPassthrough.frag"))
+	(load-program "PosVertexLighting_PN.vert" "ColorPassthrough.frag"))
   (setf *vertex-diffuse-color*
-	(load-program "DirVertexLighting_PCN.vert" "ColorPassthrough.frag"))
-  (setf *white-amb-diffuse-color*
-	(load-program "DirAmbVertexLighting_PN.vert" "ColorPassthrough.frag"))
-  (setf *vertex-amb-diffuse-color*
-	(load-program "DirAmbVertexLighting_PCN.vert" "ColorPassthrough.frag")))
+	(load-program "PosVertexLighting_PCN.vert" "ColorPassthrough.frag")))
 
 
 (defvar *plane-mesh*)
 (defvar *cylinder-mesh*)
+(defvar *cube-mesh*)
 
 (defparameter *projection-uniform-buffer* 0)
 
@@ -99,10 +93,11 @@
   (initialize-program)
 
   (setf *plane-mesh*
-  	(framework:xml->mesh-obj (merge-pathnames *data-directory* "UnitPlane.xml")))
-
+  	(framework:xml->mesh-obj (merge-pathnames *data-directory* "LargePlane.xml")))
   (setf *cylinder-mesh*
   	(framework:xml->mesh-obj (merge-pathnames *data-directory* "UnitCylinder.xml")))
+  (setf *cube-mesh*
+  	(framework:xml->mesh-obj (merge-pathnames *data-directory* "UnitCube.xml")))
 
   (gl:enable :cull-face)
   (%gl:cull-face :back)
@@ -316,10 +311,8 @@
 	    (:keydown
 	     (:keysym keysym)
      	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-t)
-	       (setf *show-ambient-p* (not *show-ambient-p*))
-	       (if *show-ambient-p*
-		   (print "Ambient Lighting On.")
-		   (print "Ambient Lighting Off.")))
+
+	       )
 
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-space)
 	       ;; toggle color on cylinder
