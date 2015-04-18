@@ -23,19 +23,39 @@
 ;; the-program) due to DEFCLASS considered overkill. Plus it has a nice print
 ;; representation by default.  hmmm TODO: (class-of <program-data-obj>) ==>
 ;; #<STRUCTURE-CLASS TEST>
-(defstruct (program-data (:conc-name NIL)) ; don't hyphenate struct readers
-  the-program
+;;
+;; UPDATE: well it useful until we need to dispatch the accessor function over one more
+;; struct that uses the same accessor name "the-program" to get at the program, like in
+;; this tutorial. Hence we will implement program-data and unlitprogdata as classes so
+;; (the-program <obj>) dispatches appropriately depending on the object class passed.
+;; (defstruct (program-data (:conc-name NIL)) ; don't hyphenate struct readers
+;;   the-program
 
-  dir-to-light-unif
-  light-intensity-unif
-  ambient-intensity-unif
+;;   light-pos-unif
+;;   light-intensity-unif
+;;   ambient-intensity-unif
   
-  model-to-camera-matrix-unif
-  normal-model-to-camera-matrix-unif)
+;;   model-to-camera-matrix-unif
+;;   normal-model-to-camera-matrix-unif)
+
+(defclass program-data ()
+  ((the-program :accessor the-program)
+
+   (light-pos-unif :accessor light-pos-unif)
+   (light-intensity-unif :accessor light-intensity-unif)
+   (ambient-intensity-unif :accessor ambient-intensity-unif)
+  
+   (model-to-camera-matrix-unif :accessor model-to-camera-matrix-unif)
+   (normal-model-to-camera-matrix-unif :accessor normal-model-to-camera-matrix-unif)))
+
+;; so that old code works again:
+(defun make-program-data ()
+  (make-instance 'program-data))
+
 
 (defconstant +projection-block-index+ 2)
 
-(defun load-program (str-vertex-shader str-fragment-shader)
+(defun load-lit-program (str-vertex-shader str-fragment-shader)
   "Create program-data object from shader strings. Hardcoded uniform reference."
   (let ((shader-list (list))
 	(data (make-program-data))
@@ -54,15 +74,14 @@
 	  (gl:get-uniform-location (the-program data) "modelToCameraMatrix"))
     (setf (normal-model-to-camera-matrix-unif data)
 	  (gl:get-uniform-location (the-program data) "normalModelToCameraMatrix"))
-    (setf (dir-to-light-unif data)
-	  (gl:get-uniform-location (the-program data) "dirToLight"))
+    (setf (light-pos-unif data)
+	  (gl:get-uniform-location (the-program data) "lightPos"))
     (setf (light-intensity-unif data)
 	  (gl:get-uniform-location (the-program data) "lightIntensity"))
-    ;; note how some shaders don't even have this uniform, but it doesn' bother OpenGL!
+    ;; note how some shaders don't even have this uniform, but it doesn't bother OpenGL!
     (setf (ambient-intensity-unif data)
 	  (gl:get-uniform-location (the-program data) "ambientIntensity"))
     
-
     (setf projection-block
 	  ;; TODO: get cl-opengl version containing this version
 	  ;;(gl:get-uniform-block-index (the-program data) "Projection")
@@ -78,9 +97,9 @@
 
 (defun initialize-program ()
   (setf *white-diffuse-color*
-	(load-program "PosVertexLighting_PN.vert" "ColorPassthrough.frag"))
+	(load-lit-program "PosVertexLighting_PN.vert" "ColorPassthrough.frag"))
   (setf *vertex-diffuse-color*
-	(load-program "PosVertexLighting_PCN.vert" "ColorPassthrough.frag")))
+	(load-lit-program "PosVertexLighting_PCN.vert" "ColorPassthrough.frag")))
 
 
 (defvar *plane-mesh*)
@@ -176,9 +195,9 @@
 	  (gl:uniformfv (ambient-intensity-unif vertex-diffuse) (glm:vec4 1.0 1.0 1.0 1.0))))
     
     (gl:use-program (the-program white-diffuse))
-    (gl:uniformfv (dir-to-light-unif white-diffuse) light-dir-camera-space)
+    ;;;(gl:uniformfv (dir-to-light-unif white-diffuse) light-dir-camera-space)
     (gl:use-program (the-program vertex-diffuse))
-    (gl:uniformfv (dir-to-light-unif vertex-diffuse) light-dir-camera-space)
+    ;;;(gl:uniformfv (dir-to-light-unif vertex-diffuse) light-dir-camera-space)
     (gl:use-program 0)
 
     (glutil:with-transform (model-matrix)
@@ -186,7 +205,6 @@
 	;; Render the ground plane
 	(glutil:with-transform (model-matrix)
 	    (gl:use-program (the-program white-diffuse))
-	  :scale 5.0 1.0 5.0
 	  ;;note how model-to-camera-matrix is mat4 and normal-model-to-camera-matrix is
 	  ;;mat3!
 	  (gl:uniform-matrix (model-to-camera-matrix-unif white-diffuse) 4
