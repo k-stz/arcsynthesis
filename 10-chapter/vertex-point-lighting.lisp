@@ -204,7 +204,15 @@
 
 (defun calc-light-position ()
   ;;NEXT-TODO:
-  (glm:vec3 0.0 *light-height* 0.0))
+  (let ((curr-time-through-loop (/ (sdl2:get-ticks) 1000.0))
+	(ret (glm:vec4 0.0 *light-height* 0.0 1.0)))
+    (setf (glm:vec. ret :x) (cos (* curr-time-through-loop
+				    (* (coerce pi 'single-float) 2.0)
+				    *light-radius*)))
+    (setf (glm:vec. ret :z) (sin (* curr-time-through-loop
+				    (* (coerce pi 'single-float) 2.0)
+				    *light-radius*)))
+    ret))
 
 (defun draw ()
   (let* ((model-matrix (make-instance 'glutil:matrix-stack))
@@ -214,7 +222,7 @@
 	 (light-pos-camera-space
 	  ;; TODO: make mat*vec smarter so we don't need to cast so much in code?
 	  (glm:vec4->vec3 (glm:mat*vec (glutil:top-ms model-matrix)
-				       (glm:vec3->vec4 world-light-pos)))))
+				       world-light-pos))))
 
     (glutil:set-matrix model-matrix (glutil:calc-matrix *view-pole*))
 
@@ -368,10 +376,15 @@
 	    
 	    (:keydown
 	     (:keysym keysym)
-     	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-t)
-
-	       )
-
+     	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-i)
+	       (incf *light-height*))
+	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-k)
+	       (decf *light-height*))
+	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-l)
+	       (incf *light-radius*))
+	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-j)
+	       (decf *light-radius*))
+	     
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-y)
 	       ;; toggle light rendering
 	       (setf *draw-light* (not *draw-light*)))
