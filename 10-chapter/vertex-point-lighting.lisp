@@ -25,11 +25,11 @@
 ;; #<STRUCTURE-CLASS TEST>
 ;;
 ;; UPDATE: well it useful until we need to dispatch the accessor function over one more
-;; struct that uses the same accessor name "the-program" to get at the program, like in
-;; this tutorial. Hence we will implement program-data and unlitprogdata as classes so
-;; (the-program <obj>) dispatches appropriately depending on the object class passed.
-;; (defstruct (program-data (:conc-name NIL)) ; don't hyphenate struct readers
-;;   the-program
+;; struct that uses the same accessor name e.g. "the-program" to get at the program data,
+;; like in this tutorial. Hence we will implement program-data and unlitprogdata as
+;; classes so (the-program <obj>) dispatches appropriately depending on the object class
+;; passed.  (defstruct (program-data (:conc-name NIL)) ; don't hyphenate struct readers
+;; the-program
 
 ;;   light-pos-unif
 ;;   light-intensity-unif
@@ -52,8 +52,43 @@
 (defun make-program-data ()
   (make-instance 'program-data))
 
+(defclass unlit-prog-data ()
+  ((the-program :accessor the-program)
+
+   (object-color-unif :accessor object-color-unif)
+   (model-to-camera-matrix-unif :accessor model-to-camera-matrix-unif)))
+
 
 (defconstant +projection-block-index+ 2)
+
+(defun load-unlit-program (str-vertex-shader str-fragment-shader)
+  "Create unlit-prog-data object from shader strings."
+  (let ((shader-list (list))
+	(data (make-instance 'unlit-prog-data))
+	(projection-block))
+    (push (arc:create-shader
+	   :vertex-shader
+	   (arc:file-to-string (merge-pathnames str-vertex-shader *data-directory*)))
+	  shader-list)
+    (push (arc:create-shader
+	   :fragment-shader
+	   (arc:file-to-string (merge-pathnames str-fragment-shader *data-directory*)))
+    	  shader-list)
+    ;; settings slots of program-object:
+    (setf (the-program data) (arc:create-program shader-list))
+    (setf (model-to-camera-matrix-unif data)
+	  (gl:get-uniform-location (the-program data) "modelToCameraMatrix"))
+    (setf (object-color-unif data)
+	  (gl:get-uniform-location (the-program data) "objectColor"))
+    
+    (setf projection-block
+	  ;; TODO: get cl-opengl version containing this version
+	  ;;(gl:get-uniform-block-index (the-program data) "Projection")
+	  (cffi:with-foreign-string (s "Projection")
+	    (%gl:get-uniform-block-index (the-program data) s)))
+    (%gl:uniform-block-binding
+     (the-program data) projection-block +projection-block-index+)
+    data))
 
 (defun load-lit-program (str-vertex-shader str-fragment-shader)
   "Create program-data object from shader strings. Hardcoded uniform reference."
@@ -99,7 +134,9 @@
   (setf *white-diffuse-color*
 	(load-lit-program "PosVertexLighting_PN.vert" "ColorPassthrough.frag"))
   (setf *vertex-diffuse-color*
-	(load-lit-program "PosVertexLighting_PCN.vert" "ColorPassthrough.frag")))
+	(load-lit-program "PosVertexLighting_PCN.vert" "ColorPassthrough.frag"))
+  (setf *unlit*
+	(load-unlit-program "PosTransform.vert" "UniformColor.frag")))
 
 
 (defvar *plane-mesh*)
