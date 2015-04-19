@@ -140,6 +140,8 @@ it will be returned to its former state"
     ;;TODO: add searching &body for transform keywords, so as to implement nested
     ;; constructs like:
     ;; (with-transform (ms) (cons :this (:that :rotate-x 10.0) (:this :scale ..)))
+    ;;TODO: :translate obj-evaluating-to-vector <- doesn't work, also it should
+    ;;      be able to deal with 3d and 4d vectors!
   (labels ((try-key (car l exp)
 	     (cond ((null l)
 		    (nreverse exp))

@@ -196,6 +196,8 @@
 		 :orient (glm:quaternion 1.0 0.0 0.0 0.0)))
 
 (defparameter *draw-colored-cyl* t)
+(defparameter *draw-light* nil)
+
 
 (defparameter *light-height* 1.5)
 (defparameter *light-radius* 1.0)
@@ -279,7 +281,21 @@
       	       (vector (glm:mat4->mat3 norm-matrix)) NIL))
 	    
       	    (framework:render-mode *cylinder-mesh* "lit")
-      	    (gl:use-program 0))))))
+      	    (gl:use-program 0)))
+      ;; Render the light
+      (when *draw-light*
+	(glutil:with-transform (model-matrix)
+	    ;; TODO: another weakness of WITH-TRANSFORM can't accept
+	    ;;       objects evaluating to vectors as input
+	    (glutil::translate model-matrix world-light-pos)
+	  :scale 0.1 0.1 0.1
+
+	  (gl:use-program (the-program *unlit*))
+	  (gl:uniform-matrix (model-to-camera-matrix-unif *unlit*) 4
+			     (vector (glutil:top-ms model-matrix)) NIL)
+	  (gl:uniformfv (object-color-unif *unlit*)
+			(glm:vec4 0.8078 0.8706 0.9922 1.0))
+	  (framework:render-mode *cube-mesh* "flat"))))))
 
   (defun display ()
     (gl:clear-color 0.0 0.0 0.2 1)
@@ -355,6 +371,13 @@
      	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-t)
 
 	       )
+
+	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-y)
+	       ;; toggle light rendering
+	       (setf *draw-light* (not *draw-light*)))
+	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-z)
+	       ;; toggle light rendering
+	       (setf *draw-light* (not *draw-light*)))
 
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-space)
 	       ;; toggle color on cylinder
