@@ -203,8 +203,7 @@
 (defparameter *light-radius* 1.0)
 
 (defun calc-light-position ()
-  ;;NEXT-TODO:
-  (let ((curr-time-through-loop (/ (sdl2:get-ticks) 1000.0))
+  (let ((curr-time-through-loop (/ (sdl2:get-ticks) 10000.0))
 	(ret (glm:vec4 0.0 *light-height* 0.0 1.0)))
     (setf (glm:vec. ret :x) (cos (* curr-time-through-loop
 				    (* (coerce pi 'single-float) 2.0)
@@ -219,12 +218,14 @@
 
 	 (world-light-pos (calc-light-position))
 
-	 (light-pos-camera-space
-	  ;; TODO: make mat*vec smarter so we don't need to cast so much in code?
-	  (glm:vec4->vec3 (glm:mat*vec (glutil:top-ms model-matrix)
-				       world-light-pos))))
+	 (light-pos-camera-space))
+    
 
     (glutil:set-matrix model-matrix (glutil:calc-matrix *view-pole*))
+	  ;; TODO: make mat*vec smarter so we don't need to cast so much in code?
+    (setf light-pos-camera-space
+	  (glm:vec4->vec3 (glm:mat*vec (glutil:top-ms model-matrix)
+				       world-light-pos)))
 
     (gl:use-program (the-program *white-diffuse-color*))
     (gl:uniformfv (light-pos-unif *white-diffuse-color*) light-pos-camera-space)
