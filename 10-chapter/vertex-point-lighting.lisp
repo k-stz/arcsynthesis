@@ -202,16 +202,25 @@
 (defparameter *light-height* 1.5)
 (defparameter *light-radius* 1.0)
 
+(defparameter *rotate-light-p* t)
+(defparameter *world-light-pos-save* (glm:vec4 0.0 0.0 0.0 1.0))
+
+
 (defun calc-light-position ()
-  (let ((curr-time-through-loop (/ (sdl2:get-ticks) 10000.0))
+  (let ((curr-time-through-loop
+	 (/ (sdl2:get-ticks) 10000.0))
 	(ret (glm:vec4 0.0 *light-height* 0.0 1.0)))
-    (setf (glm:vec. ret :x) (cos (* curr-time-through-loop
-				    (* (coerce pi 'single-float) 2.0)
-				    *light-radius*)))
-    (setf (glm:vec. ret :z) (sin (* curr-time-through-loop
-				    (* (coerce pi 'single-float) 2.0)
-				    *light-radius*)))
-    ret))
+    (setf (glm:vec. ret :x) (* (cos (* curr-time-through-loop
+				       (* (coerce pi 'single-float) 2.0)))
+			       *light-radius*))
+    (setf (glm:vec. ret :z) (* (sin (* curr-time-through-loop
+				       (* (coerce pi 'single-float) 2.0)))
+			       *light-radius*))
+    (when *rotate-light-p*
+      (setf *world-light-pos-save* ret))
+    (if *rotate-light-p* 
+	ret
+	*world-light-pos-save*)))
 
 (defun draw ()
   (let* ((model-matrix (make-instance 'glutil:matrix-stack))
@@ -392,6 +401,10 @@
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-z)
 	       ;; toggle light rendering
 	       (setf *draw-light* (not *draw-light*)))
+
+	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-b)
+	       ;; break rotation
+	       (setf *rotate-light-p* (not *rotate-light-p*)))	     
 
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-space)
 	       ;; toggle color on cylinder
