@@ -378,13 +378,13 @@
 	    (:keydown
 	     (:keysym keysym)
      	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-i)
-	       (incf *light-height*))
+	       (incf *light-height* 0.2))
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-k)
-	       (decf *light-height*))
+	       (decf *light-height* 0.2))
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-l)
-	       (incf *light-radius*))
+	       (incf *light-radius* 0.2))
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-j)
-	       (decf *light-radius*))
+	       (decf *light-radius* 0.2))
 	     
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-y)
 	       ;; toggle light rendering
