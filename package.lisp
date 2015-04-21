@@ -249,3 +249,8 @@
   (:documentation "Lights On - Plane Lights")
   (:use :cl)
   (:export #:main))
+
+(defpackage #:arc-10.1
+  (:documentation "Lights On - Fragment Lighting")
+  (:use :cl)
+  (:export #:main))

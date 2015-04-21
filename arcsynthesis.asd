@@ -63,7 +63,8 @@ written in Common Lisp (SBCL) using cl-sdl2 and cl-opengl"
 			 (:file "scale-and-lighting")
 			 (:file "ambient-lighting")))
    (:module "10-chapter"
-	    :components ((:file "vertex-point-lighting")))))
+	    :components ((:file "vertex-point-lighting")
+			 (:file "fragment-point-lighting")))))
 
 ;;TODO: bad style?  
 (asdf:load-system :arcsynthesis)

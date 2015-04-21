@@ -1272,3 +1272,16 @@ the light source is represented by a position in the world, hence the light dire
 is not contant anymore but relative to this position and will be computed now for
 each point of interest.
 
+Gouroud shading and point light source,
+linear interpolation over the surface of a triangle when the lighting model is only
+applied to the normals, the corners of the triangle, is called gouroud shading. This
+approach is failling us when using point light sources. As can be seen in
+vertex-point-lighting.lisp when the light is close to the ground plane it isn't
+lit lineary intensive from the point of the light source to its corners because
+the corners of the ground plane apply the lighting model, AT A STEEP ANGLE, and
+then interpolate this value over the surface of the triangle. What we get
+is steep values from the gound plane corners interpolated => not very bright colors.
+
+To solve this problem we need:
+
+Fragment lighting,
