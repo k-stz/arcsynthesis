@@ -35,18 +35,16 @@
 ;;   light-intensity-unif
 ;;   ambient-intensity-unif
   
-;;   model-to-camera-matrix-unif
-;;   normal-model-to-camera-matrix-unif)
+;;   model-to-camera-matrix-unif)
 
 (defclass program-data ()
   ((the-program :accessor the-program)
 
-   (light-pos-unif :accessor light-pos-unif)
+   (model-space-light-pos-unif :accessor model-space-light-pos-unif)
    (light-intensity-unif :accessor light-intensity-unif)
    (ambient-intensity-unif :accessor ambient-intensity-unif)
   
-   (model-to-camera-matrix-unif :accessor model-to-camera-matrix-unif)
-   (normal-model-to-camera-matrix-unif :accessor normal-model-to-camera-matrix-unif)))
+   (model-to-camera-matrix-unif :accessor model-to-camera-matrix-unif)))
 
 ;; so that old code works again:
 (defun make-program-data ()
@@ -107,10 +105,8 @@
     (setf (the-program data) (arc:create-program shader-list))
     (setf (model-to-camera-matrix-unif data)
 	  (gl:get-uniform-location (the-program data) "modelToCameraMatrix"))
-    (setf (normal-model-to-camera-matrix-unif data)
-	  (gl:get-uniform-location (the-program data) "normalModelToCameraMatrix"))
-    (setf (light-pos-unif data)
-	  (gl:get-uniform-location (the-program data) "lightPos"))
+    (setf (model-space-light-pos-unif data)
+	  (gl:get-uniform-location (the-program data) "modelSpaceLightPos"))
     (setf (light-intensity-unif data)
 	  (gl:get-uniform-location (the-program data) "lightIntensity"))
     ;; note how some shaders don't even have this uniform, but it doesn't bother OpenGL!
@@ -128,13 +124,20 @@
 
 (defvar *white-diffuse-color*)
 (defvar *vertex-diffuse-color*)
+(defvar *frag-white-diffuse-color*)
+(defvar *frag-vertex-diffuse-color*)
+
 (defvar *unlit*)
 
 (defun initialize-program ()
   (setf *white-diffuse-color*
-	(load-lit-program "PosVertexLighting_PN.vert" "ColorPassthrough.frag"))
+	(load-lit-program "ModelPosVertexLighting_PN.vert" "ColorPassthrough.frag"))
   (setf *vertex-diffuse-color*
-	(load-lit-program "PosVertexLighting_PCN.vert" "ColorPassthrough.frag"))
+	(load-lit-program "ModelPosVertexLighting_PCN.vert" "ColorPassthrough.frag"))
+  (setf *frag-white-diffuse-color*
+	(load-lit-program "FragmentLighting_PN.vert" "ColorPassthrough.frag"))
+(setf *frag-vertex-diffuse-color*
+	(load-lit-program "FragmentLighting_PCN.vert" "ColorPassthrough.frag"))
   (setf *unlit*
 	(load-unlit-program "PosTransform.vert" "UniformColor.frag")))
 
@@ -204,6 +207,8 @@
 
 (defparameter *rotate-light-p* t)
 (defparameter *world-light-pos-save* (glm:vec4 0.0 0.0 0.0 1.0))
+(defparameter *use-fragment-lighting* t)
+(defparameter *scale-cyl* NIL)
 
 
 (defun calc-light-position ()
@@ -224,30 +229,36 @@
 
 (defun draw ()
   (let* ((model-matrix (make-instance 'glutil:matrix-stack))
-
 	 (world-light-pos (calc-light-position))
+	 (light-pos-camera-space)
 
-	 (light-pos-camera-space))
+	 (p-white-program)
+	 (p-vert-color-program))
     
 
     (glutil:set-matrix model-matrix (glutil:calc-matrix *view-pole*))
 	  ;; TODO: make mat*vec smarter so we don't need to cast so much in code?
     (setf light-pos-camera-space
-	  (glm:vec4->vec3 (glm:mat*vec (glutil:top-ms model-matrix)
-				       world-light-pos)))
+	  (glm:mat*vec (glutil:top-ms model-matrix)
+		       world-light-pos))
 
-    (gl:use-program (the-program *white-diffuse-color*))
-    (gl:uniformfv (light-pos-unif *white-diffuse-color*) light-pos-camera-space)
-    (gl:uniformfv (light-intensity-unif *white-diffuse-color*)
+    (if *use-fragment-lighting*
+	(progn (setf p-white-program *frag-white-diffuse-color*)
+	       (setf p-vert-color-program *frag-vertex-diffuse-color*))
+	;;else
+	(progn
+	  (setf p-white-program *white-diffuse-color*)
+	  (setf p-vert-color-program *vertex-diffuse-color*)))
+
+    (gl:use-program (the-program p-white-program))
+    (gl:uniformfv (light-intensity-unif p-white-program)
 		  (glm:vec4 0.8 0.8 0.8 1.0))
-    (gl:uniformfv (ambient-intensity-unif *white-diffuse-color*)
+    (gl:uniformfv (ambient-intensity-unif p-white-program)
 		  (glm:vec4 0.2 0.2 0.2 1.0))
-    
-    (gl:use-program (the-program *vertex-diffuse-color*))
-    (gl:uniformfv (light-pos-unif *vertex-diffuse-color*) light-pos-camera-space)
-    (gl:uniformfv (light-intensity-unif *vertex-diffuse-color*)
+    (gl:use-program (the-program p-vert-color-program))
+    (gl:uniformfv (light-intensity-unif p-vert-color-program)
 		  (glm:vec4 0.8 0.8 0.8 1.0))
-    (gl:uniformfv (ambient-intensity-unif *vertex-diffuse-color*)
+    (gl:uniformfv (ambient-intensity-unif p-vert-color-program)
 		  (glm:vec4 0.2 0.2 0.2 1.0))
     (gl:use-program 0)
     
@@ -256,50 +267,59 @@
 	
 	;; Render the ground plane
 	(glutil:with-transform (model-matrix)
-	    (gl:use-program (the-program *white-diffuse-color*))
+	    (gl:use-program (the-program p-white-program))
 	  ;;note how model-to-camera-matrix is mat4 and normal-model-to-camera-matrix is
 	  ;;mat3!
-	  (gl:uniform-matrix (model-to-camera-matrix-unif *white-diffuse-color*) 4
+	  (gl:uniform-matrix (model-to-camera-matrix-unif p-white-program) 4
 			     (vector (glutil:top-ms model-matrix)) NIL)
 
-	  (gl:uniform-matrix (normal-model-to-camera-matrix-unif *white-diffuse-color*) 3
-			     (vector (glm:mat4->mat3 (glutil:top-ms model-matrix))) NIL)
+	  (let* ((inv-transform (sb-cga:inverse-matrix (glutil:top-ms model-matrix)))
+		 (light-pos-model-space
+		  (glm:mat*vec inv-transform light-pos-camera-space)))
+	    (gl:uniformfv (model-space-light-pos-unif p-white-program)
+			  (glm:vec4->vec3 light-pos-model-space)))
 
 	  (framework:render *plane-mesh*)
 	  (gl:use-program 0))
 
 
       (glutil:apply-matrix model-matrix (glutil:calc-matrix *objt-pole*))
-      ;; Render the Cylinder
-      (if *draw-colored-cyl*
-      	  (glutil:with-transform (model-matrix)
-      	      (gl:use-program (the-program *vertex-diffuse-color*))
 
-      	    (gl:uniform-matrix (model-to-camera-matrix-unif *vertex-diffuse-color*) 4
-      			       (vector (glutil:top-ms model-matrix)) NIL)
 
-      	    (let ((norm-matrix (glutil:top-ms model-matrix)))
-      	      (gl:uniform-matrix
-      	       (normal-model-to-camera-matrix-unif *vertex-diffuse-color*) 3
-      	       (vector (glm:mat4->mat3 norm-matrix)) NIL))
+      (glutil:with-transform (model-matrix)
+	  (when *scale-cyl*
+	    (glutil::scale model-matrix (glm:vec3 1.0 1.0 0.2)))
 
-      	    (framework:render-mode *cylinder-mesh* "lit-color")
-      	    (gl:use-program 0))
+	(let* ((inv-transform (sb-cga:inverse-matrix (glutil:top-ms model-matrix)))
+	       (light-pos-model-space
+		(glm:mat*vec inv-transform light-pos-camera-space)))
 	  
-      	  ;;else
-      	  (glutil:with-transform (model-matrix)
-      	      (gl:use-program (the-program *white-diffuse-color*))
+	  ;; Render the Cylinder
+	  (if *draw-colored-cyl*
+	      (glutil:with-transform (model-matrix)
+		  (gl:use-program (the-program p-vert-color-program))
 
-      	    (gl:uniform-matrix (model-to-camera-matrix-unif *white-diffuse-color*) 4
-      			       (vector (glutil:top-ms model-matrix)) NIL)
+		(gl:uniform-matrix (model-to-camera-matrix-unif p-vert-color-program) 4
+				   (vector (glutil:top-ms model-matrix)) NIL)
 
-      	    (let ((norm-matrix (glutil:top-ms model-matrix)))
-      	      (gl:uniform-matrix
-      	       (normal-model-to-camera-matrix-unif *white-diffuse-color* ) 3
-      	       (vector (glm:mat4->mat3 norm-matrix)) NIL))
-	    
-      	    (framework:render-mode *cylinder-mesh* "lit")
-      	    (gl:use-program 0)))
+		(gl:uniformfv (model-space-light-pos-unif p-vert-color-program)
+			      (glm:vec4->vec3 light-pos-model-space))
+
+		(framework:render-mode *cylinder-mesh* "lit-color")
+		(gl:use-program 0))
+	      
+	      ;;else
+	      (glutil:with-transform (model-matrix)
+		  (gl:use-program (the-program p-white-program))
+
+		(gl:uniform-matrix (model-to-camera-matrix-unif p-white-program) 4
+				   (vector (glutil:top-ms model-matrix)) NIL)
+
+		(gl:uniformfv (model-space-light-pos-unif p-white-program)
+			      (glm:vec4->vec3 light-pos-model-space))
+		
+		(framework:render-mode *cylinder-mesh* "lit")
+		(gl:use-program 0)))))
       ;; Render the light
       (when *draw-light*
 	(glutil:with-transform (model-matrix)
@@ -313,13 +333,13 @@
 			     (vector (glutil:top-ms model-matrix)) NIL)
 	  (gl:uniformfv (object-color-unif *unlit*)
 			(glm:vec4 0.8078 0.8706 0.9922 1.0))
-	  (framework:render-mode *cube-mesh* "flat"))))))
+	  (framework:render-mode *cube-mesh* "flat")))))
 
   (defun display ()
     (gl:clear-color 0.0 0.0 0.2 1)
     (gl:clear-depth 1.0)
     (gl:clear :color-buffer-bit :depth-buffer-bit)
-    (draw))
+    (draw)))
 
 (defparameter *fz-near* 1.0)
 (defparameter *fz-far* 1000.0)
@@ -404,7 +424,13 @@
 
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-b)
 	       ;; break rotation
-	       (setf *rotate-light-p* (not *rotate-light-p*)))	     
+	       (setf *rotate-light-p* (not *rotate-light-p*)))
+
+     	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-t)
+	       (setf *use-fragment-lighting* (not *use-fragment-lighting*)))	     
+
+	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-h)
+	       (setf *scale-cyl* (not *scale-cyl*)))	     
 
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-space)
 	       ;; toggle color on cylinder
