@@ -333,13 +333,13 @@
 			     (vector (glutil:top-ms model-matrix)) NIL)
 	  (gl:uniformfv (object-color-unif *unlit*)
 			(glm:vec4 0.8078 0.8706 0.9922 1.0))
-	  (framework:render-mode *cube-mesh* "flat")))))
+	  (framework:render-mode *cube-mesh* "flat"))))))
 
-  (defun display ()
-    (gl:clear-color 0.0 0.0 0.2 1)
-    (gl:clear-depth 1.0)
-    (gl:clear :color-buffer-bit :depth-buffer-bit)
-    (draw)))
+(defun display ()
+  (gl:clear-color 0.0 0.0 0.2 1)
+  (gl:clear-depth 1.0)
+  (gl:clear :color-buffer-bit :depth-buffer-bit)
+  (draw))
 
 (defparameter *fz-near* 1.0)
 (defparameter *fz-far* 1000.0)
@@ -426,10 +426,10 @@
 	       ;; break rotation
 	       (setf *rotate-light-p* (not *rotate-light-p*)))
 
-     	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-t)
+     	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-h)
 	       (setf *use-fragment-lighting* (not *use-fragment-lighting*)))	     
 
-	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-h)
+	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-t)
 	       (setf *scale-cyl* (not *scale-cyl*)))	     
 
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-space)
