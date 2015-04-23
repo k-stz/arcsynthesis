@@ -1285,3 +1285,72 @@ is steep values from the gound plane corners interpolated => not very bright col
 To solve this problem we need:
 
 Fragment lighting,
+Here we simple apply the lighting model to each fragment of a triangle. Instead
+of interpolating the result of the model from the three vertices of a triangle we
+apply it to every single fragment by simply putting the formula into the fragment
+shader. The fragment shaders' modus operadi is to be executed for each fragment
+withing a given triangle as input, interpolating all the position, color and normals
+for each fragment.
+These values can be placed into the lighting model formula directly but the
+light direction must be computed:
+light-source-position - fragment-direction = direction-from-fragment-to-light
+
+Now the angle of incidence can be computed, maried with cosine, clamped etc. and
+we get a more photorealistic behaving lighting model!
+
+
+--------------------------------------------------------------------------------
+Light Attenuation,
+light intensity on a surface ought to weaken with the distance to the light source.
+
+Light attenuation is a well-understood phenonmenon: "light intensity weakens with the
+inverse square of the distance between light source and surface of interest"
+
+The corresponding formula is:          I           <- (light) intensity
+                               ------------------
+                                (1.0 + k * r^2)    <- r = distance: light to surface
+
+Where 'k' is a special constant that must be precomputed for this formula to be used.
+The meaning of 'k' shall be this:
+
+k = 1 / hd^2      where hd is the "half-distance" or the distance at which the light
+                  intensity shall be cut in two.
+
+example: We want light to be half as strong at a distance to the surface of 4.0
+k = 1 / 4.0^2
+k = 1 / 16
+--> put k into above formula:
+        I                       I               
+------------------  =>	------------------   now taking an actuall distance of r = 4.0:
+ (1.0 + k * r^2)  	 (1.0 + 1/16 * r^2)
+
+        I                      I                   I            I
+------------------  => -----------------  =>  ----------- =>  ----   indeed, light intensity
+ (1.0 + 1/16 * 4^2)     (1.0 + 1/16 * 16)      (1.0 + 1)       2.0   is cut in half at a distance
+                                                                     of r = 4.0 !
+
+
+Below is a cl function that takes a, scalar, half-distance, plugs it into the "k = 1/hd^2"
+equation and returns an attentuation light computing function. Use this function to get
+a feeling of how a "inverse square" distance influences light intensity
+
+
+(defun al (k)
+  "take the 'half-intensity-distance':k and return a function
+that will take the actual distance and compute the intensity. Where if r = half-intensity-distance then r->0.5!"
+  (lambda (r)
+    (/ 1.0
+       (+ 1.0 (* (/ 1 (expt k 2)) (* r r))))))
+
+> (funcall (al 4.0) 0.0) ==> 1.0
+> (funcall (al 4.0) 1.0) ==> 0.9411765
+> (funcall (al 4.0) 2.0) ==> 0.8
+> (funcall (al 4.0) 3.0) ==> 0.64
+> (funcall (al 4.0) 4.0) ==> 0.5
+
+TODO: IIRC Newtons law of motion also dictates such a distance relation between bodies
+but in its case concerning the gravitational pull on each other "increasing with the
+inverse square" of the distance between them -- explaining the planets ellipse
+trajectories around the sun.
+
+
