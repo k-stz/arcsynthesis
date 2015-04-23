@@ -247,7 +247,7 @@
 
     (setf world-light-pos (calc-light-position))
     
-	  ;; TODO: make mat*vec smarter so we don't need to cast so much in code?
+    ;; TODO: make mat*vec smarter so we don't need to cast so much in code?
     (setf light-pos-camera-space
 	  ;; No.. something must be inherently wrong with the camera representation for this madness
 	  ;; to be necessary (inverse+transpose).. TODO: for another time..
@@ -285,7 +285,8 @@
 	  (gl:uniform-matrix (model-to-camera-matrix-unif p-white-program) 4
 			     (vector (glutil:top-ms model-matrix)) NIL)
 
-	  (let* ((inv-transform (sb-cga:inverse-matrix (glutil:top-ms model-matrix)))
+	  ;; change:::
+	  (let* ((inv-transform (sb-cga:transpose-matrix (glutil:top-ms model-matrix)))
 		 (light-pos-model-space
 		  (glm:mat*vec inv-transform light-pos-camera-space)))
 	    (gl:uniformfv (model-space-light-pos-unif p-white-program)
@@ -294,14 +295,11 @@
 	  (framework:render *plane-mesh*)
 	  (gl:use-program 0))
 
-
+      (glutil:apply-matrix model-matrix (glutil:calc-matrix *objt-pole*))
       ;; Render the Cylinder
       (glutil:with-transform (model-matrix)
-
-	  (glutil:apply-matrix model-matrix (glutil:calc-matrix *objt-pole*))
-
-	(when *scale-cyl*
-	  (glutil::scale model-matrix (glm:vec3 1.0 1.0 0.2)))
+	  (when *scale-cyl*
+	    (glutil::scale model-matrix (glm:vec3 1.0 1.0 0.2)))
 
 	(let* ((inv-transform (sb-cga:inverse-matrix (glutil:top-ms model-matrix)))
 	       (light-pos-model-space
