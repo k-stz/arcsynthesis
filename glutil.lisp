@@ -325,6 +325,8 @@ view-pole. Can be used to perform pole-relative transformations"
 (defgeneric calc-matrix (pole-object))
 (defmethod calc-matrix ((vp view-pole))
   ;; TODO (for another time): why does it need to be transposed?
+  ;; UPDATE: might the mat4-cast function return a matrix that just needs to be
+  ;;         transposed? Try: (glm:mat4-cast (glm:conjugate-quat (quat vp)))
   (let ((mat (glm:mat4-cast (quat vp)))
 	(cam-pos-mat (sb-cga:translate (glm:vec- (cam-pos vp)))))
     ;;updating look-dir TODO: make this more central somewhere more upstream?
