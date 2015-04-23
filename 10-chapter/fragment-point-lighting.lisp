@@ -24,7 +24,7 @@
 ;; representation by default.  hmmm TODO: (class-of <program-data-obj>) ==>
 ;; #<STRUCTURE-CLASS TEST>
 ;;
-;; UPDATE: well it useful until we need to dispatch the accessor function over one more
+;; UPDATE: well it was useful until we need to dispatch the accessor function over one more
 ;; struct that uses the same accessor name e.g. "the-program" to get at the program data,
 ;; like in this tutorial. Hence we will implement program-data and unlitprogdata as
 ;; classes so (the-program <obj>) dispatches appropriately depending on the object class
@@ -135,9 +135,9 @@
   (setf *vertex-diffuse-color*
 	(load-lit-program "ModelPosVertexLighting_PCN.vert" "ColorPassthrough.frag"))
   (setf *frag-white-diffuse-color*
-	(load-lit-program "FragmentLighting_PN.vert" "ColorPassthrough.frag"))
+	(load-lit-program "FragmentLighting_PN.vert" "FragmentLighting.frag"))
 (setf *frag-vertex-diffuse-color*
-	(load-lit-program "FragmentLighting_PCN.vert" "ColorPassthrough.frag"))
+	(load-lit-program "FragmentLighting_PCN.vert" "FragmentLighting.frag"))
   (setf *unlit*
 	(load-unlit-program "PosTransform.vert" "UniformColor.frag")))
 
@@ -229,7 +229,7 @@
 
 (defun draw ()
   (let* ((model-matrix (make-instance 'glutil:matrix-stack))
-	 (world-light-pos (calc-light-position))
+	 (world-light-pos)
 	 (light-pos-camera-space)
 
 	 (p-white-program)
@@ -237,9 +237,14 @@
     
 
     (glutil:set-matrix model-matrix (glutil:calc-matrix *view-pole*))
+
+    (setf world-light-pos (calc-light-position))
+    
 	  ;; TODO: make mat*vec smarter so we don't need to cast so much in code?
     (setf light-pos-camera-space
-	  (glm:mat*vec (glutil:top-ms model-matrix)
+	  ;; No.. something must be inherently wrong with the camera representation for this madness
+	  ;; to be necessary (inverse+transpose).. TODO: for another time..
+	  (glm:mat*vec (sb-cga:inverse-matrix (sb-cga:transpose-matrix (glutil:top-ms model-matrix)))
 		       world-light-pos))
 
     (if *use-fragment-lighting*
@@ -283,18 +288,18 @@
 	  (gl:use-program 0))
 
 
-      (glutil:apply-matrix model-matrix (glutil:calc-matrix *objt-pole*))
-
-
+      ;; Render the Cylinder
       (glutil:with-transform (model-matrix)
-	  (when *scale-cyl*
-	    (glutil::scale model-matrix (glm:vec3 1.0 1.0 0.2)))
+
+	  (glutil:apply-matrix model-matrix (glutil:calc-matrix *objt-pole*))
+
+	(when *scale-cyl*
+	  (glutil::scale model-matrix (glm:vec3 1.0 1.0 0.2)))
 
 	(let* ((inv-transform (sb-cga:inverse-matrix (glutil:top-ms model-matrix)))
 	       (light-pos-model-space
 		(glm:mat*vec inv-transform light-pos-camera-space)))
-	  
-	  ;; Render the Cylinder
+
 	  (if *draw-colored-cyl*
 	      (glutil:with-transform (model-matrix)
 		  (gl:use-program (the-program p-vert-color-program))
