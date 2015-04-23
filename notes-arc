@@ -1308,7 +1308,7 @@ inverse square of the distance between light source and surface of interest"
 
 The corresponding formula is:          I           <- (light) intensity
                                ------------------
-                                (1.0 + k * r^2)    <- r = distance: light to surface
+                                (1.0 + k * r^2)    <- r = distance: from light to surface
 
 Where 'k' is a special constant that must be precomputed for this formula to be used.
 The meaning of 'k' shall be this:
@@ -1337,7 +1337,8 @@ a feeling of how a "inverse square" distance influences light intensity
 
 (defun al (k)
   "take the 'half-intensity-distance':k and return a function
-that will take the actual distance and compute the intensity. Where if r = half-intensity-distance then r->0.5!"
+that will take the actual distance and compute the intensity.
+Where if r = half-intensity-distance then r->0.5!"
   (lambda (r)
     (/ 1.0
        (+ 1.0 (* (/ 1 (expt k 2)) (* r r))))))
@@ -1348,9 +1349,9 @@ that will take the actual distance and compute the intensity. Where if r = half-
 > (funcall (al 4.0) 3.0) ==> 0.64
 > (funcall (al 4.0) 4.0) ==> 0.5
 
-TODO: IIRC Newtons law of motion also dictates such a distance relation between bodies
-but in its case concerning the gravitational pull on each other "increasing with the
-inverse square" of the distance between them -- explaining the planets ellipse
+Newtons law of universal gravitation motion also dictates such a distance relation between
+bodies but in its case concerning the gravitational pull on each other "increasing with
+the inverse square" of the distance between them -- explaining the planets ellipse
 trajectories around the sun.
-
-
+Indeed the inverse square distance relation is recurring among various phenomena of:
+electric, magnetic, light, sound, and radiation (wikipedia: "inverse-square law").

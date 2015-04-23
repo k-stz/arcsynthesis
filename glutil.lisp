@@ -338,8 +338,7 @@ view-pole. Can be used to perform pole-relative transformations"
       (:free-camera (sb-cga:matrix* (sb-cga:transpose-matrix mat) cam-pos-mat))
       (:camera-relative ;; this will provide the behaviour wanted by arc where we transform
                ;; the object relative to our camera
-       (sb-cga:matrix* cam-pos-mat mat)
-       ))))
+       (sb-cga:matrix* cam-pos-mat mat)))))
 
 ;; Object-Pole bare minimal implementation:
 (defclass object-pole ()
