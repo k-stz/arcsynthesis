@@ -1,3 +1,10 @@
+;;;; About: Fragment lighting is used, and we can change to vertex lighting interactively
+;;;; by pushing the 'h' key. Toggle Light rendering with the 'z'/'y' key and move the
+;;;; light using j,k,l and the i keys.  Try to move the light horizontally away from the
+;;;; cylinder, to the halfway point of the plane, for a remarkable effect difference in
+;;;; fragment and vertex lighting.
+
+
 ;; tell the compiler to not care about speed, use maximum type saftey and
 ;; give us maximum debug information
 ;; TODO: sbcl specifics?
