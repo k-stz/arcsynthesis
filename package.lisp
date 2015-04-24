@@ -254,3 +254,8 @@
   (:documentation "Lights On - Fragment Lighting")
   (:use :cl)
   (:export #:main))
+
+(defpackage #:arc-10.2
+  (:documentation "Lights On - Distant Points of Light")
+  (:use :cl)
+  (:export #:main))
