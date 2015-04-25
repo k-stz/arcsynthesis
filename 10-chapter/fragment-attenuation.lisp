@@ -50,7 +50,7 @@
    (camera-space-light-pos-unif :accessor camera-space-light-pos-unif)
    (window-size-unif :accessor window-size-unif)
    (light-attenuation-unif :accessor light-attenuation-unif)
-   (use-r-square-unif :accessor use-r-square-unif)))
+   (use-r-square-p-unif :accessor use-r-square-p-unif)))
 
 ;; so that old code works again:
 (defun make-program-data ()
@@ -100,7 +100,8 @@
   "Create program-data object from shader strings. Hardcoded uniform reference."
   (let ((shader-list (list))
 	(data (make-program-data))
-	(projection-block))
+	(projection-block)
+	(unprojection-block))
     (push (arc:create-shader
 	   :vertex-shader
 	   (arc:file-to-string (merge-pathnames str-vertex-shader *data-directory*)))
@@ -113,20 +114,28 @@
     (setf (the-program data) (arc:create-program shader-list))
     (setf (model-to-camera-matrix-unif data)
 	  (gl:get-uniform-location (the-program data) "modelToCameraMatrix"))
-    (setf (normal-model-to-camera-matrix-unif data)
-	  (gl:get-uniform-location (the-program data) "normalModelToCameraMatrix"))
-    (setf (light-pos-unif data)
-	  (gl:get-uniform-location (the-program data) "lightPos"))
     (setf (light-intensity-unif data)
 	  (gl:get-uniform-location (the-program data) "lightIntensity"))
-    ;; note how some shaders don't even have this uniform, but it doesn't bother OpenGL!
     (setf (ambient-intensity-unif data)
 	  (gl:get-uniform-location (the-program data) "ambientIntensity"))
-    
+    (setf (normal-model-to-camera-matrix-unif data)
+	  (gl:get-uniform-location (the-program data) "normalModelToCameraMatrix"))
+    (setf (camera-space-light-pos-unif data)
+	  (gl:get-uniform-location (the-program data) "cameraSpaceLightPos"))
+    (setf (window-size-unif data)
+	  (gl:get-uniform-location (the-program data) "windowSize"))
+    (setf (light-attenuation-unif data)
+	  (gl:get-uniform-location (the-program data) "lightAttenuation"))
+    (setf (use-r-square-p-unif data)
+	  (gl:get-uniform-location (the-program data) "bUseRSquare"))
+
     (setf projection-block
 	  ;; TODO: get cl-opengl version containing this version
 	  ;;(gl:get-uniform-block-index (the-program data) "Projection")
 	  (cffi:with-foreign-string (s "Projection")
+	    (%gl:get-uniform-block-index (the-program data) s)))
+    (setf unprojection-block
+	  (cffi:with-foreign-string (s "UnProjection")
 	    (%gl:get-uniform-block-index (the-program data) s)))
     (%gl:uniform-block-binding
      (the-program data) projection-block +projection-block-index+)
@@ -238,90 +247,89 @@
 	 (light-pos-camera-space))
     
 
-    (glutil:set-matrix model-matrix (glutil:calc-matrix *view-pole*))
-	  ;; TODO: make mat*vec smarter so we don't need to cast so much in code?
-    (setf light-pos-camera-space
-	  (glm:vec4->vec3 (glm:mat*vec (glutil:top-ms model-matrix)
-				       world-light-pos)))
+    ;; (glutil:set-matrix model-matrix (glutil:calc-matrix *view-pole*))
+    ;; 	  ;; TODO: make mat*vec smarter so we don't need to cast so much in code?
+    ;; (setf light-pos-camera-space
+    ;; 	  (glm:vec4->vec3 (glm:mat*vec (glutil:top-ms model-matrix)
+    ;; 				       world-light-pos)))
 
-    (gl:use-program (the-program *white-diffuse-color*))
-    (gl:uniformfv (light-pos-unif *white-diffuse-color*) light-pos-camera-space)
-    (gl:uniformfv (light-intensity-unif *white-diffuse-color*)
-		  (glm:vec4 0.8 0.8 0.8 1.0))
-    (gl:uniformfv (ambient-intensity-unif *white-diffuse-color*)
-		  (glm:vec4 0.2 0.2 0.2 1.0))
+    ;; (gl:use-program (the-program *white-diffuse-color*))
+    ;; (gl:uniformfv (light-intensity-unif *white-diffuse-color*)
+    ;; 		  (glm:vec4 0.8 0.8 0.8 1.0))
+    ;; (gl:uniformfv (ambient-intensity-unif *white-diffuse-color*)
+    ;; 		  (glm:vec4 0.2 0.2 0.2 1.0))
     
-    (gl:use-program (the-program *vertex-diffuse-color*))
-    (gl:uniformfv (light-pos-unif *vertex-diffuse-color*) light-pos-camera-space)
-    (gl:uniformfv (light-intensity-unif *vertex-diffuse-color*)
-		  (glm:vec4 0.8 0.8 0.8 1.0))
-    (gl:uniformfv (ambient-intensity-unif *vertex-diffuse-color*)
-		  (glm:vec4 0.2 0.2 0.2 1.0))
-    (gl:use-program 0)
+    ;; (gl:use-program (the-program *vertex-diffuse-color*))
+    ;; (gl:uniformfv (light-intensity-unif *vertex-diffuse-color*)
+    ;; 		  (glm:vec4 0.8 0.8 0.8 1.0))
+    ;; (gl:uniformfv (ambient-intensity-unif *vertex-diffuse-color*)
+    ;; 		  (glm:vec4 0.2 0.2 0.2 1.0))
+    ;; (gl:use-program 0)
     
 
-    (glutil:with-transform (model-matrix)
+    ;; (glutil:with-transform (model-matrix)
 	
-	;; Render the ground plane
-	(glutil:with-transform (model-matrix)
-	    (gl:use-program (the-program *white-diffuse-color*))
-	  ;;note how model-to-camera-matrix is mat4 and normal-model-to-camera-matrix is
-	  ;;mat3!
-	  (gl:uniform-matrix (model-to-camera-matrix-unif *white-diffuse-color*) 4
-			     (vector (glutil:top-ms model-matrix)) NIL)
+    ;; 	;; Render the ground plane
+    ;; 	(glutil:with-transform (model-matrix)
+    ;; 	    (gl:use-program (the-program *white-diffuse-color*))
+    ;; 	  ;;note how model-to-camera-matrix is mat4 and normal-model-to-camera-matrix is
+    ;; 	  ;;mat3!
+    ;; 	  (gl:uniform-matrix (model-to-camera-matrix-unif *white-diffuse-color*) 4
+    ;; 			     (vector (glutil:top-ms model-matrix)) NIL)
 
-	  (gl:uniform-matrix (normal-model-to-camera-matrix-unif *white-diffuse-color*) 3
-			     (vector (glm:mat4->mat3 (glutil:top-ms model-matrix))) NIL)
+    ;; 	  (gl:uniform-matrix (normal-model-to-camera-matrix-unif *white-diffuse-color*) 3
+    ;; 			     (vector (glm:mat4->mat3 (glutil:top-ms model-matrix))) NIL)
 
-	  (framework:render *plane-mesh*)
-	  (gl:use-program 0))
+    ;; 	  (framework:render *plane-mesh*)
+    ;; 	  (gl:use-program 0))
 
 
-      (glutil:apply-matrix model-matrix (glutil:calc-matrix *objt-pole*))
-      ;; Render the Cylinder
-      (if *draw-colored-cyl*
-      	  (glutil:with-transform (model-matrix)
-      	      (gl:use-program (the-program *vertex-diffuse-color*))
+    ;;   (glutil:apply-matrix model-matrix (glutil:calc-matrix *objt-pole*))
+    ;;   ;; Render the Cylinder
+    ;;   (if *draw-colored-cyl*
+    ;;   	  (glutil:with-transform (model-matrix)
+    ;;   	      (gl:use-program (the-program *vertex-diffuse-color*))
 
-      	    (gl:uniform-matrix (model-to-camera-matrix-unif *vertex-diffuse-color*) 4
-      			       (vector (glutil:top-ms model-matrix)) NIL)
+    ;;   	    (gl:uniform-matrix (model-to-camera-matrix-unif *vertex-diffuse-color*) 4
+    ;;   			       (vector (glutil:top-ms model-matrix)) NIL)
 
-      	    (let ((norm-matrix (glutil:top-ms model-matrix)))
-      	      (gl:uniform-matrix
-      	       (normal-model-to-camera-matrix-unif *vertex-diffuse-color*) 3
-      	       (vector (glm:mat4->mat3 norm-matrix)) NIL))
+    ;;   	    (let ((norm-matrix (glutil:top-ms model-matrix)))
+    ;;   	      (gl:uniform-matrix
+    ;;   	       (normal-model-to-camera-matrix-unif *vertex-diffuse-color*) 3
+    ;;   	       (vector (glm:mat4->mat3 norm-matrix)) NIL))
 
-      	    (framework:render-mode *cylinder-mesh* "lit-color")
-      	    (gl:use-program 0))
+    ;;   	    (framework:render-mode *cylinder-mesh* "lit-color")
+    ;;   	    (gl:use-program 0))
 	  
-      	  ;;else
-      	  (glutil:with-transform (model-matrix)
-      	      (gl:use-program (the-program *white-diffuse-color*))
+    ;;   	  ;;else
+    ;;   	  (glutil:with-transform (model-matrix)
+    ;;   	      (gl:use-program (the-program *white-diffuse-color*))
 
-      	    (gl:uniform-matrix (model-to-camera-matrix-unif *white-diffuse-color*) 4
-      			       (vector (glutil:top-ms model-matrix)) NIL)
+    ;;   	    (gl:uniform-matrix (model-to-camera-matrix-unif *white-diffuse-color*) 4
+    ;;   			       (vector (glutil:top-ms model-matrix)) NIL)
 
-      	    (let ((norm-matrix (glutil:top-ms model-matrix)))
-      	      (gl:uniform-matrix
-      	       (normal-model-to-camera-matrix-unif *white-diffuse-color* ) 3
-      	       (vector (glm:mat4->mat3 norm-matrix)) NIL))
+    ;;   	    (let ((norm-matrix (glutil:top-ms model-matrix)))
+    ;;   	      (gl:uniform-matrix
+    ;;   	       (normal-model-to-camera-matrix-unif *white-diffuse-color* ) 3
+    ;;   	       (vector (glm:mat4->mat3 norm-matrix)) NIL))
 	    
-      	    (framework:render-mode *cylinder-mesh* "lit")
-      	    (gl:use-program 0)))
-      ;; Render the light
-      (when *draw-light*
-	(glutil:with-transform (model-matrix)
-	    ;; TODO: another weakness of WITH-TRANSFORM can't accept
-	    ;;       objects evaluating to vectors as input
-	    (glutil::translate model-matrix world-light-pos)
-	  :scale 0.1 0.1 0.1
+    ;;   	    (framework:render-mode *cylinder-mesh* "lit")
+    ;;   	    (gl:use-program 0)))
+    ;;   ;; Render the light
+    ;;   (when *draw-light*
+    ;; 	(glutil:with-transform (model-matrix)
+    ;; 	    ;; TODO: another weakness of WITH-TRANSFORM can't accept
+    ;; 	    ;;       objects evaluating to vectors as input
+    ;; 	    (glutil::translate model-matrix world-light-pos)
+    ;; 	  :scale 0.1 0.1 0.1
 
-	  (gl:use-program (the-program *unlit*))
-	  (gl:uniform-matrix (model-to-camera-matrix-unif *unlit*) 4
-			     (vector (glutil:top-ms model-matrix)) NIL)
-	  (gl:uniformfv (object-color-unif *unlit*)
-			(glm:vec4 0.8078 0.8706 0.9922 1.0))
-	  (framework:render-mode *cube-mesh* "flat"))))))
+    ;; 	  (gl:use-program (the-program *unlit*))
+    ;; 	  (gl:uniform-matrix (model-to-camera-matrix-unif *unlit*) 4
+    ;; 			     (vector (glutil:top-ms model-matrix)) NIL)
+    ;; 	  (gl:uniformfv (object-color-unif *unlit*)
+    ;; 			(glm:vec4 0.8078 0.8706 0.9922 1.0))
+    ;; 	  (framework:render-mode *cube-mesh* "flat"))))
+    ))
 
   (defun display ()
     (gl:clear-color 0.0 0.0 0.2 1)
