@@ -12,7 +12,7 @@
    #p "10-chapter/data/" (asdf/system:system-source-directory :arcsynthesis)))
 
 ;;todo: fix this output to slime-repl solution
-(defvar out *standard-output*)  (defvar dbg *debug-io*) (defvar err *error-output*)
+(defvar out *standard-output*) (defvar dbg *debug-io*) (defvar err *error-output*)
 
 
 ;; now acts a lot like a C++-struct, (:conc-name NIL) ensures that the automatically
@@ -41,12 +41,16 @@
 (defclass program-data ()
   ((the-program :accessor the-program)
 
-   (light-pos-unif :accessor light-pos-unif)
+   (model-to-camera-matrix-unif :accessor model-to-camera-matrix-unif)
+
    (light-intensity-unif :accessor light-intensity-unif)
    (ambient-intensity-unif :accessor ambient-intensity-unif)
-  
-   (model-to-camera-matrix-unif :accessor model-to-camera-matrix-unif)
-   (normal-model-to-camera-matrix-unif :accessor normal-model-to-camera-matrix-unif)))
+
+   (normal-model-to-camera-matrix-unif :accessor normal-model-to-camera-matrix-unif)
+   (camera-space-light-pos-unif :accessor camera-space-light-pos-unif)
+   (window-size-unif :accessor window-size-unif)
+   (light-attenuation-unif :accessor light-attenuation-unif)
+   (use-r-square-unif :accessor use-r-square-unif)))
 
 ;; so that old code works again:
 (defun make-program-data ()
@@ -60,6 +64,8 @@
 
 
 (defconstant +projection-block-index+ 2)
+(defconstant +unprojection-block-index+ 1)
+
 
 (defun load-unlit-program (str-vertex-shader str-fragment-shader)
   "Create unlit-prog-data object from shader strings."
@@ -126,15 +132,17 @@
      (the-program data) projection-block +projection-block-index+)
     data))
 
-(defvar *white-diffuse-color*)
-(defvar *vertex-diffuse-color*)
+
+(defvar *frag-white-diffuse-color*)
+(defvar *frag-vertex-diffuse-color*)
 (defvar *unlit*)
 
+
 (defun initialize-program ()
-  (setf *white-diffuse-color*
-	(load-lit-program "PosVertexLighting_PN.vert" "ColorPassthrough.frag"))
-  (setf *vertex-diffuse-color*
-	(load-lit-program "PosVertexLighting_PCN.vert" "ColorPassthrough.frag"))
+  (setf *frag-white-diffuse-color*
+	(load-lit-program "FragLightAtten_PN.vert" "FragLightAtten.frag"))
+  (setf *frag-vertex-diffuse-color*
+	(load-lit-program "FragLightAtten_PCN.vert" "FragLightAtten.frag"))
   (setf *unlit*
 	(load-unlit-program "PosTransform.vert" "UniformColor.frag")))
 
