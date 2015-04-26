@@ -17,8 +17,8 @@ uniform bool bUseRSquare;
 
 uniform UnProjection
 {
-	mat4 clipToCameraMatrix;
-	ivec2 windowSize;
+    mat4 clipToCameraMatrix;
+    ivec2 windowSize;
 };
 
 vec3 CalcCameraSpacePosition()

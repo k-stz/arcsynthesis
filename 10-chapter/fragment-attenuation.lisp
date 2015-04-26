@@ -425,27 +425,49 @@
     			(arc:create-gl-array-from-vector
     			 (camera-to-clip-matrix proj-data)))
 
+    ;;set unprojection uniform block
+
     (gl:bind-buffer :uniform-buffer *unprojection-uniform-buffer*)
     ;; mat4 clipToCameraMatrix;
     ;; ivec2 windowSize;
     (let* ((unproj-block-gl-array
     	    (arc:create-gl-array-from-vector
     	     (clip-to-camera-matrix unproj-data)))
-    	   ;; TODO: or is it gl-array-byte-size??
     	   (ub-size (gl::gl-array-byte-size unproj-block-gl-array)))
       (gl:buffer-sub-data :uniform-buffer unproj-block-gl-array)
-      ;; TODO: offset -1? 
+
       (let* ((window-size (window-size unproj-data))
-    	     (window-size-gl-array
-    	      (arc::create-gl-array-of-type-from-vector
-    	       window-size
-    	       :int)))
-    	(print (list ub-size window-size-gl-array))
-    	(setf foo window-size-gl-array)
-    	(gl:buffer-sub-data :uniform-buffer window-size-gl-array :offset ub-size)))
+      	     (window-size-gl-array
+      	      (arc::create-gl-array-of-type-from-vector
+      	       window-size
+      	       :int)))
+      	(setf foo window-size-gl-array)
+      	(gl:buffer-sub-data :uniform-buffer window-size-gl-array :offset ub-size)))
+
+    ;; TESTing putting both widow-size and mat4 in one gl-array, making window-size float
+    ;; in the process: NEXT-TODO
+    ;; (let* ((unproj-block-gl-array
+    ;; 	    (arc:create-gl-array-from-vector
+    ;; 	     (clip-to-camera-matrix unproj-data)))
+    ;; 	   (ub-size (gl::gl-array-byte-size unproj-block-gl-array)))
+    ;;   (gl:buffer-sub-data :uniform-buffer unproj-block-gl-array)
+
+    ;;   (let* ((window-size (window-size unproj-data))
+    ;;   	     (window-size-gl-array
+    ;;   	      (arc::create-gl-array-of-type-from-vector
+    ;;   	       window-size
+    ;;   	       :int)))
+    ;; 	(print ub-size)
+    ;;   	(gl:buffer-sub-data :uniform-buffer window-size-gl-array :offset ub-size)))
 
 
-    
+    ;; (let* ((unproj-block-data (concatenate 'vector
+    ;; 					  (clip-to-camera-matrix unproj-data)
+    ;; 					  (window-size unproj-data)))
+    ;; 	   (unproj-gl-array (arc:create-gl-array-from-vector
+    ;; 			     unproj-block-data)))
+    ;;   (gl:buffer-sub-data :uniform-buffer unproj-gl-array))
+
     (gl:bind-buffer :uniform-buffer 0))
   (%gl:viewport 0 0 w h))
 
@@ -501,6 +523,9 @@
 	    
 	    (:keydown
 	     (:keysym keysym)
+	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-t)
+	       (reshape 500.0 500.0))
+	     
      	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-i)
 	       (incf *light-height* 0.2))
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-k)
