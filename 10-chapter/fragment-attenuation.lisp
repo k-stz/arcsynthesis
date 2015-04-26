@@ -150,6 +150,8 @@
 	    (%gl:get-uniform-block-index (the-program data) s)))
     (%gl:uniform-block-binding
      (the-program data) projection-block +projection-block-index+)
+    (%gl:uniform-block-binding
+     (the-program data) unprojection-block +unprojection-block-index+)
     data))
 
 
@@ -201,14 +203,17 @@
   (%gl:buffer-data :uniform-buffer #|sizeof(mat4):|# 64 (cffi:null-pointer) :dynamic-draw)
 
   (gl:bind-buffer :uniform-buffer *unprojection-uniform-buffer*)
-  (%gl:buffer-data :uniform-buffer #|sizeof(mat4):|# 64 (cffi:null-pointer) :dynamic-draw)
+  (%gl:buffer-data :uniform-buffer #|sizeof(mat4+ivec2):|# 72
+		   (cffi:null-pointer) :dynamic-draw)
 
   ;;TODO: "bind the static buffer"
   (%gl:bind-buffer-range :uniform-buffer +projection-block-index+
 			 *projection-uniform-buffer* 0 #|sizeof(mat4):|# 64)
 
+  ;; must be bigger as it contains the matrix: of 64 bytes AND the window-size ivec2
+  ;; int = 32bit = 4bytes, ivec2 has two of 'em: 8bytes total -> 64+8 = 72
   (%gl:bind-buffer-range :uniform-buffer +unprojection-block-index+
-			 *unprojection-uniform-buffer* 0 #|sizeof(mat4):|# 64)
+			 *unprojection-uniform-buffer* 0 #|sizeof(mat4+ivec2):|# 72)
 
   (gl:bind-buffer :uniform-buffer 0))
 
@@ -417,26 +422,27 @@
 
     (gl:bind-buffer :uniform-buffer *projection-uniform-buffer*)
     (gl:buffer-sub-data :uniform-buffer
-			(arc:create-gl-array-from-vector
-			 (camera-to-clip-matrix proj-data)))
+    			(arc:create-gl-array-from-vector
+    			 (camera-to-clip-matrix proj-data)))
+
     (gl:bind-buffer :uniform-buffer *unprojection-uniform-buffer*)
-    	;; mat4 clipToCameraMatrix;
-	;; ivec2 windowSize;
+    ;; mat4 clipToCameraMatrix;
+    ;; ivec2 windowSize;
     (let* ((unproj-block-gl-array
-	    (arc:create-gl-array-from-vector
-	     (clip-to-camera-matrix unproj-data)))
-	   ;; TODO: or is it gl-array-byte-size??
-	   (ub-size (gl::gl-array-byte-size unproj-block-gl-array)))
+    	    (arc:create-gl-array-from-vector
+    	     (clip-to-camera-matrix unproj-data)))
+    	   ;; TODO: or is it gl-array-byte-size??
+    	   (ub-size (gl::gl-array-byte-size unproj-block-gl-array)))
       (gl:buffer-sub-data :uniform-buffer unproj-block-gl-array)
       ;; TODO: offset -1? 
       (let* ((window-size (window-size unproj-data))
-	     (window-size-gl-array
-	      (arc::create-gl-array-of-type-from-vector
-	       window-size
-	       :int)))
-	(print (list ub-size window-size-gl-array))
-	(gl:buffer-sub-data :uniform-buffer window-size-gl-array :offset ub-size)
-	))
+    	     (window-size-gl-array
+    	      (arc::create-gl-array-of-type-from-vector
+    	       window-size
+    	       :int)))
+    	(print (list ub-size window-size-gl-array))
+    	(setf foo window-size-gl-array)
+    	(gl:buffer-sub-data :uniform-buffer window-size-gl-array :offset ub-size)))
 
 
     
