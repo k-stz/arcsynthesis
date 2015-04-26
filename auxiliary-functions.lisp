@@ -56,15 +56,27 @@ will be COERCEd to SINGLE-FLOAT"
     (fill-gl-array gl-array vector-of-floats)
     gl-array))
 
-;;not fully implemented
+;; TODO: needs some more tests
 (defun create-gl-array-of-type-from-vector (v type)
-  (flet ((fill-gl-array ()
-           ;; TODO: how to fill it with arbitrary type?
-	   )))
-  (let* ((array-length (length v))
-	 (gl-array (gl:alloc-gl-array type array-length)))
-    (fill-gl-array gl-array v)
-    gl-array))
+  "Possible types are the cffi build-in types: 
+    :char
+    — Foreign Type: :unsigned-char
+    — Foreign Type: :short
+    — Foreign Type: :unsigned-short
+    — Foreign Type: :int
+    — Foreign Type: :unsigned-int
+    — Foreign Type: :long
+    — Foreign Type: :unsigned-long
+    — Foreign Type: :long-long
+    — Foreign Type: :unsigned-long-long"
+  (flet ((fill-gl-array (gl-array)
+	   (dotimes (i (length v))
+	     (setf
+	      (gl:glaref gl-array i) (aref v i)))))
+    (let* ((array-length (length v))
+	   (gl-array (gl:alloc-gl-array type array-length)))
+      (fill-gl-array gl-array)
+      gl-array)))
 
 ;;TODO: replace this function by a general purpose one:
 (defun create-gl-array-of-short-from-vector (vector-of-shorts)

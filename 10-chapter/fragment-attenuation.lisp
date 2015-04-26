@@ -47,6 +47,8 @@
 
    (normal-model-to-camera-matrix-unif :accessor normal-model-to-camera-matrix-unif)
    (camera-space-light-pos-unif :accessor camera-space-light-pos-unif)
+   ;; TODO: why isn't it set, it is needed in the unprojection-block
+   ;;       this might be a an error in the arc code
    (window-size-unif :accessor window-size-unif)
    (light-attenuation-unif :accessor light-attenuation-unif)
    (use-r-square-p-unif :accessor use-r-square-p-unif)))
@@ -128,6 +130,16 @@
     (setf (use-r-square-p-unif data)
 	  (gl:get-uniform-location (the-program data) "bUseRSquare"))
 
+    ;; TODO: remove
+    (print (list (use-r-square-p-unif data)
+		 (light-attenuation-unif data)
+		 (window-size-unif data)
+		 (camera-space-light-pos-unif data)
+		 (normal-model-to-camera-matrix-unif data)
+		 (ambient-intensity-unif data)
+		 (light-intensity-unif data)
+		 (model-to-camera-matrix-unif data)
+		 (the-program data)))
     (setf projection-block
 	  ;; TODO: get cl-opengl version containing this version
 	  ;;(gl:get-uniform-block-index (the-program data) "Projection")
@@ -380,13 +392,54 @@
 (defparameter *fz-near* 1.0)
 (defparameter *fz-far* 1000.0)
 
+(defclass projection-block ()
+  ((camera-to-clip-matrix :accessor camera-to-clip-matrix)))
+
+(defclass un-projection-block ()
+  ((clip-to-camera-matrix :accessor clip-to-camera-matrix)
+   (window-size :accessor window-size)))
+
 (defun reshape (w h)
-  (let ((pers-matrix (make-instance 'glutil:matrix-stack)))
+  (let* ((pers-matrix (make-instance 'glutil:matrix-stack))
+	 (proj-data (make-instance 'projection-block))
+	 (unproj-data (make-instance 'un-projection-block)))
+    
     (glutil:perspective pers-matrix 45.0 (/ w h) *fz-near* *fz-far*)
+
+    (setf (camera-to-clip-matrix proj-data) (glutil:top-ms pers-matrix))
+
+    (setf (clip-to-camera-matrix unproj-data)
+	  (sb-cga:inverse-matrix (glutil:top-ms pers-matrix)))
+    (setf (window-size unproj-data)
+	  ;; TODO: works? Or have to add glm:vec2 = 2d vector of single-floats?
+	  (make-array 2 :element-type 'integer :initial-contents
+		      (list (round w) (round h))))
 
     (gl:bind-buffer :uniform-buffer *projection-uniform-buffer*)
     (gl:buffer-sub-data :uniform-buffer
-		      (arc:create-gl-array-from-vector (glutil:top-ms pers-matrix)))
+			(arc:create-gl-array-from-vector
+			 (camera-to-clip-matrix proj-data)))
+    (gl:bind-buffer :uniform-buffer *unprojection-uniform-buffer*)
+    	;; mat4 clipToCameraMatrix;
+	;; ivec2 windowSize;
+    (let* ((unproj-block-gl-array
+	    (arc:create-gl-array-from-vector
+	     (clip-to-camera-matrix unproj-data)))
+	   ;; TODO: or is it gl-array-byte-size??
+	   (ub-size (gl::gl-array-byte-size unproj-block-gl-array)))
+      (gl:buffer-sub-data :uniform-buffer unproj-block-gl-array)
+      ;; TODO: offset -1? 
+      (let* ((window-size (window-size unproj-data))
+	     (window-size-gl-array
+	      (arc::create-gl-array-of-type-from-vector
+	       window-size
+	       :int)))
+	(print (list ub-size window-size-gl-array))
+	(gl:buffer-sub-data :uniform-buffer window-size-gl-array :offset ub-size)
+	))
+
+
+    
     (gl:bind-buffer :uniform-buffer 0))
   (%gl:viewport 0 0 w h))
 
