@@ -234,7 +234,9 @@ it will be returned to its former state"
 	  (case (trans-relative-to view-pole)
 	    (:1st-person (glm:quat* vp-quat (glm:conjugate-quat trans-quat)))	    
 	    (:free-camera (glm:quat* vp-quat (glm:conjugate-quat trans-quat)))
-	    (:camera-relative (glm:quat* trans-quat vp-quat))))))
+	    (:camera-relative (glm:quat* trans-quat vp-quat))
+	    ;;TODO: 
+	    (:test  (glm:quat* trans-quat vp-quat))))))
 
 
 (defun 1st-person-rotate (trans-quat view-pole)
@@ -340,7 +342,9 @@ view-pole. Can be used to perform pole-relative transformations"
       (:free-camera (sb-cga:matrix* (sb-cga:transpose-matrix mat) cam-pos-mat))
       (:camera-relative ;; this will provide the behaviour wanted by arc where we transform
                ;; the object relative to our camera
-       (sb-cga:matrix* cam-pos-mat mat)))))
+       (sb-cga:matrix* cam-pos-mat mat))
+      ;;TODO:
+      (:test (sb-cga:matrix* mat cam-pos-mat)))))
 
 ;; Object-Pole bare minimal implementation:
 (defclass object-pole ()

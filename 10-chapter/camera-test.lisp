@@ -199,7 +199,7 @@
   (make-instance 'glutil:view-pole :cam-pos (glm:vec3 0.0 0.8 8.0)
 		 ;; calculate trasformation relative to the look-pt
 		 ;; for now changes calc-matrix behaviour
-		 :trans-mode :camera-relative))
+		 :trans-mode :test))
 
 
 
@@ -407,6 +407,7 @@
 	  (sdl2:with-event-loop (:method :poll)
 	    (:mousewheel
 	     (:y y)			; stores the vertical mousewheel motion
+	     (print (glutil::trans-relative-to *view-pole*))
 
 	     ;; zoom in/out
 	     (when (= y 1)
