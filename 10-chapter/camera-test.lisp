@@ -255,20 +255,20 @@
     
 ;;;; OLD:
     ;; TODO: make mat*vec smarter so we don't need to cast so much in code?
-    (setf light-pos-camera-space
-    	  ;; No.. something must be inherently wrong with the camera representation for this madness
-    	  ;; to be necessary (inverse+transpose).. TODO: for another time..
-    	  (glm:mat*vec
-    	   (sb-cga:inverse-matrix
-    	    (sb-cga:transpose-matrix
-    	     (glutil:top-ms model-matrix)))
-	   world-light-pos)) 
-;;;; NEW:
     ;; (setf light-pos-camera-space
+    ;; 	  ;; No.. something must be inherently wrong with the camera representation for this madness
+    ;; 	  ;; to be necessary (inverse+transpose).. TODO: for another time..
     ;; 	  (glm:mat*vec
-    ;; 	   ;; the order of transpose-matrix(inverse and inverse(transpose both work!
-    ;; 	   (glutil:top-ms
-    ;; 	    model-matrix) world-light-pos))
+    ;; 	   (sb-cga:inverse-matrix
+    ;; 	    (sb-cga:transpose-matrix
+    ;; 	     (glutil:top-ms model-matrix)))
+    ;; 	   world-light-pos)) 
+;;;; NEW:
+    (setf light-pos-camera-space
+    	  (glm:mat*vec
+    	   ;; the order of transpose-matrix(inverse and inverse(transpose both work!
+    	   (glutil:top-ms
+    	    model-matrix) world-light-pos))
 
     
     (if *use-fragment-lighting*

@@ -345,14 +345,28 @@ view-pole. Can be used to perform pole-relative transformations"
        (sb-cga:matrix* cam-pos-mat mat))
       ;;TODO:
       (:test ;; (sb-cga:matrix* mat cam-pos-mat)
-       ;;; translating arcs viewpole::calcmatrix():
-
+       ;; translating arcs viewpole::calcmatrix():
+       ;; TODO: if this works, fetch the following values from the view-pole object
        (let ((the-mat (glm:make-mat4 1.0))
+	     (full-rotation)
 	     (target-pos (glm:vec3 0.0 0.5 0.0))
 	     (orient (glm:quaternion 0.92387953 0.3826834 0.0 0.0))
-	     (radius 5.0)
+	     (radius 5.0)		;move back and forth
 	     (deg-spin-rotation 0.0))
-	 (sb-cga:translate (glm:vec3 0.0 0.0 radius))
+	 ;; it still doesn't work...
+	 (setf the-mat
+	       (sb-cga:matrix* the-mat (sb-cga:translate (glm:vec3 0.0 0.0 (- radius)))))
+	 ;; "glm::angleAxis" builds a quaternion from an angle and an axis
+	 ;;  ergo anglAxis = make-quat
+	 (setf full-rotation
+	       (glm:quat* (glm:make-quat deg-spin-rotation (0.0 0.0 1.0))
+			  orient))
+
+	 (setf the-mat (sb-cga:matrix* the-mat
+				       (glm:mat4-cast full-rotation)))
+
+	 (setf the-mat (sb-cga:matrix* the-mat (sb-cga:translate target-pos)))
+	 
 	 the-mat)))))
 
 ;; Object-Pole bare minimal implementation:
