@@ -344,7 +344,16 @@ view-pole. Can be used to perform pole-relative transformations"
                ;; the object relative to our camera
        (sb-cga:matrix* cam-pos-mat mat))
       ;;TODO:
-      (:test (sb-cga:matrix* mat cam-pos-mat)))))
+      (:test ;; (sb-cga:matrix* mat cam-pos-mat)
+       ;;; translating arcs viewpole::calcmatrix():
+
+       (let ((the-mat (glm:make-mat4 1.0))
+	     (target-pos (glm:vec3 0.0 0.5 0.0))
+	     (orient (glm:quaternion 0.92387953 0.3826834 0.0 0.0))
+	     (radius 5.0)
+	     (deg-spin-rotation 0.0))
+	 (sb-cga:translate (glm:vec3 0.0 0.0 radius))
+	 the-mat)))))
 
 ;; Object-Pole bare minimal implementation:
 (defclass object-pole ()

@@ -255,14 +255,20 @@
     
 ;;;; OLD:
     ;; TODO: make mat*vec smarter so we don't need to cast so much in code?
-    ;; (setf light-pos-camera-space
-    ;; 	  ;; No.. something must be inherently wrong with the camera representation for this madness
-    ;; 	  ;; to be necessary (inverse+transpose).. TODO: for another time..
-    ;; 	  (glm:mat*vec (sb-cga:inverse-matrix (sb-cga:transpose-matrix (glutil:top-ms model-matrix)))
-    ;; 		       world-light-pos)) 
-;;;; NEW:
     (setf light-pos-camera-space
-    	  (glm:mat*vec (glutil:top-ms model-matrix) world-light-pos)) 
+    	  ;; No.. something must be inherently wrong with the camera representation for this madness
+    	  ;; to be necessary (inverse+transpose).. TODO: for another time..
+    	  (glm:mat*vec
+    	   (sb-cga:inverse-matrix
+    	    (sb-cga:transpose-matrix
+    	     (glutil:top-ms model-matrix)))
+	   world-light-pos)) 
+;;;; NEW:
+    ;; (setf light-pos-camera-space
+    ;; 	  (glm:mat*vec
+    ;; 	   ;; the order of transpose-matrix(inverse and inverse(transpose both work!
+    ;; 	   (glutil:top-ms
+    ;; 	    model-matrix) world-light-pos))
 
     
     (if *use-fragment-lighting*
@@ -286,6 +292,7 @@
     (gl:use-program 0)
     
 
+    
     (glutil:with-transform (model-matrix)
 	
 	;; Render the ground plane
@@ -295,7 +302,6 @@
 	  ;;mat3!
 	  (gl:uniform-matrix (model-to-camera-matrix-unif p-white-program) 4
 			     (vector (glutil:top-ms model-matrix)) NIL)
-
 
 ;;;;OLD	  
 	  ;; ;; change:::
@@ -311,19 +317,29 @@
 	    (gl:uniformfv (model-space-light-pos-unif p-white-program)
 	  		  (glm:vec4->vec3 light-pos-model-space)))
 
-
 	  (framework:render *plane-mesh*)
 	  (gl:use-program 0))
 
+
       (glutil:apply-matrix model-matrix (glutil:calc-matrix *objt-pole*)) ;; TODO: move inside the following with-transform?
+      
       ;; Render the Cylinder
       (glutil:with-transform (model-matrix)
+
 	  (when *scale-cyl*
 	    (glutil::scale model-matrix (glm:vec3 1.0 1.0 0.2)))
 
-	(let* ((inv-transform (sb-cga:inverse-matrix (glutil:top-ms model-matrix)))
-	       (light-pos-model-space
-		(glm:mat*vec inv-transform light-pos-camera-space)))
+	
+	(let*
+;;;;OLD
+	    ;; ((inv-transform (sb-cga:inverse-matrix (glutil:top-ms model-matrix)))
+	    ;;  (light-pos-model-space
+	    ;; 	(glm:mat*vec inv-transform light-pos-camera-space)))
+;;;;NEW:
+	    ((inv-transform (sb-cga:inverse-matrix (glutil:top-ms model-matrix)))
+	     (light-pos-model-space
+	      (glm:mat*vec inv-transform light-pos-camera-space)))
+
 
 	  (if *draw-colored-cyl*
 	      (glutil:with-transform (model-matrix)
@@ -335,8 +351,7 @@
 		(gl:uniformfv (model-space-light-pos-unif p-vert-color-program)
 			      (glm:vec4->vec3 light-pos-model-space))
 
-		(framework:render-mode *cylinder-mesh* "lit-color")
-		(gl:use-program 0))
+		(framework:render-mode *cylinder-mesh* "lit-color"))
 	      
 	      ;;else
 	      (glutil:with-transform (model-matrix)
@@ -348,8 +363,8 @@
 		(gl:uniformfv (model-space-light-pos-unif p-white-program)
 			      (glm:vec4->vec3 light-pos-model-space))
 		
-		(framework:render-mode *cylinder-mesh* "lit")
-		(gl:use-program 0)))))
+		(framework:render-mode *cylinder-mesh* "lit")))
+	  (gl:use-program 0)))
       ;; Render the light
       (when *draw-light*
 	(glutil:with-transform (model-matrix)
