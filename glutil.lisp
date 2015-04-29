@@ -12,6 +12,7 @@
 ;; the programmer of this burden. How to even force object deletion? Probably
 ;; inefficient to force destruction of object or..??
 
+;;TODO: defgeneric can create methods in its body via its sublists
 (defgeneric set-matrix (matrix-stack mat4))
 (defmethod set-matrix ((ms matrix-stack) (mat4 simple-array))
   "Set the current (top) matrix of the matrix-stack to the given mat4"

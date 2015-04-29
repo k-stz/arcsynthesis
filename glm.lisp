@@ -88,7 +88,9 @@
 	      (aref vec4 2)
 	      (aref vec4 3))
     (macrolet ((m (col row)
-		 `(aref mat4 ,(+ row (* 4 col)))))
+		 ;;; Noooo, it was wrong again -.- TODO: rewrite this so we
+		 ;;; don't need to transpose
+		 `(aref (sb-cga:transpose-matrix mat4) ,(+ row (* 4 col)))))
       (let ((x-col 
 	     (mapcar (lambda (n) (* n x))
 		     (list (m 0 0) (m 0 1) (m 0 2) (m 0 3))))

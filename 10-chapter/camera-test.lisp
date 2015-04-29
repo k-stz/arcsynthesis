@@ -199,7 +199,7 @@
   (make-instance 'glutil:view-pole :cam-pos (glm:vec3 0.0 0.8 8.0)
 		 ;; calculate trasformation relative to the look-pt
 		 ;; for now changes calc-matrix behaviour
-		 :trans-mode :test))
+		 :trans-mode :camera-relative))
 
 
 
@@ -267,8 +267,8 @@
     (setf light-pos-camera-space
     	  (glm:mat*vec
     	   ;; the order of transpose-matrix(inverse and inverse(transpose both work!
-    	   (glutil:top-ms
-    	    model-matrix) world-light-pos))
+    	   (glutil:top-ms model-matrix)
+	   world-light-pos))
 
     
     (if *use-fragment-lighting*
