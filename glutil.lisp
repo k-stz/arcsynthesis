@@ -344,9 +344,10 @@ view-pole. Can be used to perform pole-relative transformations"
       (:camera-relative ;; this will provide the behaviour wanted by arc where we transform
                ;; the object relative to our camera
        (sb-cga:matrix* cam-pos-mat mat))
-      ;;TODO:
+      ;; The following is a test translation of arc's viewpole::calcmatrix():
+      ;;TODO: UPDATE: should be useless now, tests show that the :camera-relative
+      ;;              transmode is just a straight transformation of this.
       (:test ;; (sb-cga:matrix* mat cam-pos-mat)
-       ;; translating arcs viewpole::calcmatrix():
        ;; TODO: if this works, fetch the following values from the view-pole object
        (let ((the-mat (glm:make-mat4 1.0))
 	     (full-rotation)

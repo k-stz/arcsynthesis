@@ -310,7 +310,6 @@
     
 
     (glutil:with-transform (model-matrix)
-	
     	;; Render the ground plane
     	(glutil:with-transform (model-matrix)
 	    
@@ -334,11 +333,13 @@
 	      (gl:use-program 0)))
 
 
-      (glutil:apply-matrix model-matrix (glutil:calc-matrix *objt-pole*))
+
       ;; Render the Cylinder
       (glutil:with-transform (model-matrix)
-	  (when *scale-cyl*
-	    (glutil::scale model-matrix (glm:vec3 1.0 1.0 0.2)))
+	  (glutil:apply-matrix model-matrix (glutil:calc-matrix *objt-pole*))
+
+	(when *scale-cyl*
+	  (glutil::scale model-matrix (glm:vec3 1.0 1.0 0.2)))
 
 	(let* ((norm-matrix (glutil:top-ms model-matrix))
 	       ;; NEXT-TODO: test
