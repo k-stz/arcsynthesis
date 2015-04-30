@@ -105,7 +105,7 @@
 	    (result (glm:vec4 0.0)))
 	;; iterate through the rows of the columns to add each together to
 	;; finally yield the target vectors components
-	(loop for i below 4 do
+	(loop for i to 3 do
 	     (setf (aref result i)
 		   (+ (nth i x-col)
 		      (nth i y-col)
