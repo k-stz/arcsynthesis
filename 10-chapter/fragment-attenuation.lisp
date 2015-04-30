@@ -441,7 +441,6 @@
       	      (arc::create-gl-array-of-type-from-vector
       	       window-size
       	       :int)))
-      	(setf foo window-size-gl-array)
       	(gl:buffer-sub-data :uniform-buffer window-size-gl-array :offset ub-size)))
 
     ;; TESTing putting both widow-size and mat4 in one gl-array, making window-size float

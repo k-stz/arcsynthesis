@@ -228,10 +228,10 @@
 	 (world-light-pos (calc-light-position))
 
 	 (light-pos-camera-space))
-    
 
     (glutil:set-matrix model-matrix (glutil:calc-matrix *view-pole*))
-	  ;; TODO: make mat*vec smarter so we don't need to cast so much in code?
+
+ 	  ;; TODO: make mat*vec smarter so we don't need to cast so much in code?
     (setf light-pos-camera-space
 	  (glm:vec4->vec3 (glm:mat*vec (glutil:top-ms model-matrix)
 				       world-light-pos)))
@@ -295,7 +295,7 @@
 
       	    (let ((norm-matrix (glutil:top-ms model-matrix)))
       	      (gl:uniform-matrix
-      	       (normal-model-to-camera-matrix-unif *white-diffuse-color* ) 3
+      	       (normal-model-to-camera-matrix-unif *white-diffuse-color*) 3
       	       (vector (glm:mat4->mat3 norm-matrix)) NIL))
 	    
       	    (framework:render-mode *cylinder-mesh* "lit")

@@ -88,9 +88,8 @@
 	      (aref vec4 2)
 	      (aref vec4 3))
     (macrolet ((m (col row)
-		 ;;; Noooo, it was wrong again -.- TODO: rewrite this so we
-		 ;;; don't need to transpose
-		 `(aref (sb-cga:transpose-matrix mat4) ,(+ row (* 4 col)))))
+		 ;; TODO: transpose or not??
+		 `(aref mat4 ,(+ row (* 4 col)))))
       (let ((x-col 
 	     (mapcar (lambda (n) (* n x))
 		     (list (m 0 0) (m 0 1) (m 0 2) (m 0 3))))
@@ -106,7 +105,7 @@
 	    (result (glm:vec4 0.0)))
 	;; iterate through the rows of the columns to add each together to
 	;; finally yield the target vectors components
-	(loop for i below 3 do
+	(loop for i below 4 do
 	     (setf (aref result i)
 		   (+ (nth i x-col)
 		      (nth i y-col)
