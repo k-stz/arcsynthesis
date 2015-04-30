@@ -1325,9 +1325,9 @@ k = 1 / 16
  (1.0 + k * r^2)  	 (1.0 + 1/16 * r^2)
 
         I                      I                   I            I
-------------------  => -----------------  =>  ----------- =>  ----   indeed, light intensity
- (1.0 + 1/16 * 4^2)     (1.0 + 1/16 * 16)      (1.0 + 1)       2.0   is cut in half at a distance
-                                                                     of r = 4.0 !
+------------------  =>  ------------------ =>  ---------  =>  -----  indeed, light intensity
+ (1.0 + 1/16 * 4^2)     (1.0 + 1/16 * 16)      (1.0 + 1)       2.0   is cut in half at a
+                                                                     distance of r = 4.0 !
 
 
 Below is a cl function that takes a, scalar, half-distance, plugs it into the "k = 1/hd^2"
@@ -1349,9 +1349,9 @@ Where if r = half-intensity-distance then r->0.5!"
 > (funcall (al 4.0) 3.0) ==> 0.64
 > (funcall (al 4.0) 4.0) ==> 0.5
 
-Newtons law of universal gravitation motion also dictates such a distance relation between
-bodies but in its case concerning the gravitational pull on each other "increasing with
-the inverse square" of the distance between them -- explaining the planets ellipse
+Newtons law of universal gravitation also dictates such a distance relation between
+bodies, but, in its case concerning the gravitational pull on each other "increasing with
+the inverse square" of the distance between them -- explaining the planets ellipsoid
 trajectories around the sun.
-Indeed the inverse square distance relation is recurring among various phenomena of:
+Indeed the inverse square distance relation is recurring among various phenomena:
 electric, magnetic, light, sound, and radiation (wikipedia: "inverse-square law").

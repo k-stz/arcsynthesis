@@ -276,7 +276,7 @@
 	 (light-pos-camera-space))
 
     (glutil:set-matrix model-matrix (glutil:calc-matrix *view-pole*))
-    	  ;; TODO: make mat*vec smarter so we don't need to cast so much in code?
+    ;; TODO: make mat*vec smarter so we don't need to cast so much in code?
     (setf light-pos-camera-space
     	  (glm:vec4->vec3 (glm:mat*vec (glutil:top-ms model-matrix)
     				       world-light-pos)))
@@ -292,7 +292,7 @@
     (gl:uniformf (light-attenuation-unif *frag-white-diffuse-color*)
 		 *light-attenuation*)
     (gl:uniformf (use-r-square-p-unif *frag-white-diffuse-color*)
-    		  (if *use-r-square-p* 1 0))
+		 (if *use-r-square-p* 1 0))
     
     (gl:use-program (the-program *frag-vertex-diffuse-color*))
     (gl:uniformfv (light-intensity-unif *frag-vertex-diffuse-color*)
@@ -305,7 +305,7 @@
     (gl:uniformf (light-attenuation-unif *frag-vertex-diffuse-color*)
 		 *light-attenuation*)
     (gl:uniformf (use-r-square-p-unif *frag-vertex-diffuse-color*)
-    		  (if *use-r-square-p* 1 0))
+		 (if *use-r-square-p* 1 0))
     (gl:use-program 0)
     
 
@@ -314,7 +314,6 @@
     	(glutil:with-transform (model-matrix)
 	    
 	    (let* ((norm-matrix (glutil:top-ms model-matrix))
-		   ;; NEXT-TODO: test
 		   (norm-matrix (sb-cga:transpose-matrix
 				 (sb-cga:inverse-matrix norm-matrix))))
 	      
@@ -332,17 +331,14 @@
 	      (framework:render *plane-mesh*)
 	      (gl:use-program 0)))
 
-
-
+      
       ;; Render the Cylinder
       (glutil:with-transform (model-matrix)
 	  (glutil:apply-matrix model-matrix (glutil:calc-matrix *objt-pole*))
-
 	(when *scale-cyl*
 	  (glutil::scale model-matrix (glm:vec3 1.0 1.0 0.2)))
 
 	(let* ((norm-matrix (glutil:top-ms model-matrix))
-	       ;; NEXT-TODO: test
 	       (norm-matrix (sb-cga:transpose-matrix
 			     (sb-cga:inverse-matrix norm-matrix))))
 
@@ -362,7 +358,7 @@
 	      
 	      ;;else
 	      (glutil:with-transform (model-matrix)
-	      	  (gl:use-program (the-program *frag-white-diffuse-color*))
+		  (gl:use-program (the-program *frag-white-diffuse-color*))
 
 		(gl:uniform-matrix 
 		 (model-to-camera-matrix-unif *frag-white-diffuse-color*) 4
@@ -372,22 +368,23 @@
 		 (normal-model-to-camera-matrix-unif *frag-white-diffuse-color*) 3
 		 (vector (glm:mat4->mat3 norm-matrix)) NIL)
 		
-	      	(framework:render-mode *cylinder-mesh* "lit")))
-	  (gl:use-program 0))
-	;; ;; Render the light
-	(when *draw-light*
-	  (glutil:with-transform (model-matrix)
-	      ;; TODO: another weakness of WITH-TRANSFORM can't accept
-	      ;;       objects evaluating to vectors as input
-	      (glutil::translate model-matrix world-light-pos)
-	    :scale 0.1 0.1 0.1
+		(framework:render-mode *cylinder-mesh* "lit")))
+	  (gl:use-program 0)))
+      
+      ;; Render the light
+      (when *draw-light*
+	(glutil:with-transform (model-matrix)
+	    ;; TODO: another weakness of WITH-TRANSFORM can't accept
+	    ;;       objects evaluating to vectors as input
+	    (glutil::translate model-matrix world-light-pos)
+	  :scale 0.1 0.1 0.1
 
-	    (gl:use-program (the-program *unlit*))
-	    (gl:uniform-matrix (model-to-camera-matrix-unif *unlit*) 4
-			       (vector (glutil:top-ms model-matrix)) NIL)
-	    (gl:uniformfv (object-color-unif *unlit*)
-			  (glm:vec4 0.8078 0.8706 0.9922 1.0))
-	    (framework:render-mode *cube-mesh* "flat")))))))
+	  (gl:use-program (the-program *unlit*))
+	  (gl:uniform-matrix (model-to-camera-matrix-unif *unlit*) 4
+			     (vector (glutil:top-ms model-matrix)) NIL)
+	  (gl:uniformfv (object-color-unif *unlit*)
+			(glm:vec4 0.8078 0.8706 0.9922 1.0))
+	  (framework:render-mode *cube-mesh* "flat"))))))
 
 (defun display ()
   (gl:clear-color 0.0 0.0 0.2 1)
@@ -409,13 +406,15 @@
   (let* ((pers-matrix (make-instance 'glutil:matrix-stack))
 	 (proj-data (make-instance 'projection-block))
 	 (unproj-data (make-instance 'un-projection-block)))
-    
+
     (glutil:perspective pers-matrix 45.0 (/ w h) *fz-near* *fz-far*)
 
     (setf (camera-to-clip-matrix proj-data) (glutil:top-ms pers-matrix))
 
     (setf (clip-to-camera-matrix unproj-data)
 	  (sb-cga:inverse-matrix (glutil:top-ms pers-matrix)))
+
+    ;; TODO: rewritte for simplicity; experiments are over
     (setf (window-size unproj-data)
 	  ;; TODO: works? Or have to add glm:vec2 = 2d vector of single-floats?
 	  (make-array 2 :element-type 'integer :initial-contents
@@ -510,17 +509,30 @@
 	       (incf *light-radius* 0.2))
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-j)
 	       (decf *light-radius* 0.2))
+
+	     ;; modifies the distance at which the light intensity will be
+	     ;; half as strong
+    	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-o)
+	       (setf *light-attenuation* (* 1.1 *light-attenuation*)))
+    	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-u)
+	       ;; increase by a factor; this is how you decrease by a factor
+	       (setf *light-attenuation* (/ *light-attenuation* 1.1)))
 	     
+	     ;; toggle light rendering
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-y)
-	       ;; toggle light rendering
 	       (setf *draw-light* (not *draw-light*)))
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-z)
-	       ;; toggle light rendering
 	       (setf *draw-light* (not *draw-light*)))
 
+	     ;; break rotation
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-b)
-	       ;; break rotation
-	       (setf *rotate-light-p* (not *rotate-light-p*)))	     
+	       (setf *rotate-light-p* (not *rotate-light-p*)))
+
+     	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-h)
+	       (setf *use-r-square-p* (not *use-r-square-p*))
+	       (if *use-r-square-p*
+		   (print "Inverse Squared Attenuation")
+		   (print "Plain Inverse Attenuation")))	     
 
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-space)
 	       ;; toggle color on cylinder
@@ -531,6 +543,9 @@
 	    (:quit () t)
 	    (:idle ()
 		   ;; MAIN LOOP:
+		   ;; clamping
+		   (when (< *light-attenuation* 0.1)
+		     (setf *light-attenuation* 0.1))
 
 		   ;;rendering code:
 		   (display)

@@ -9,9 +9,9 @@
 (in-package :asdf-user)
 
 (defsystem #:arcsynthesis
-  :description "Modern OpenGL example code from the book 'Learning Modern 3D Graphics Programming'
-by Jason L. McKesson (website:'www.arcsynthesis.org/gltut')
-written in Common Lisp (SBCL) using cl-sdl2 and cl-opengl"
+  :description "Modern OpenGL example code from the book 'Learning Modern 3D Graphics
+Programming' by Jason L. McKesson (website:'www.arcsynthesis.org/gltut') ported to Common
+Lisp (SBCL) using cl-sdl2 and cl-opengl"
   :version "0.0.1"
   :author "k-stz"
   ;; :licence  TODO
