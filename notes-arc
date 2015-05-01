@@ -1355,3 +1355,63 @@ the inverse square" of the distance between them -- explaining the planets ellip
 trajectories around the sun.
 Indeed the inverse square distance relation is recurring among various phenomena:
 electric, magnetic, light, sound, and radiation (wikipedia: "inverse-square law").
+
+--------------------------------------------------------------------------------
+The diffuse lighting model holds true for very smooth surfaces, but only a few
+materials in reality have this property. We need a refined model that includes
+
+specular reflection,
+were shiny surfaces will reflect light more strongly in the opposite direction from the
+angle of incidence! Which is the angle between the surface normal and the incoming
+light directoin.
+A mirror has perfect specular reflection!
+
+specular highlights,
+though light bounces all over the place and refracts in the air we will only model
+specular reflection from direct illumination --the light that was received
+directly from the light source (not indirectly from a reflecting surface). An
+area on the surface that is bright due to this direct illumination is a specular
+highlight. We won't care about indirect light because in reality it also only
+negligibly contributes to the overall illumination.
+
+Microfacets,
+this is a model of for surfaces that basically says that a surface roughness is explained
+by it having tiny mirrors that point in different direction. The rougher the surface
+the more they point in different direction.
+
+This explains why a rough surface may reflect light more broadly (more different
+direction) but also (!) less intensely because the light can't focus well in a particular
+direction.
+
+Conversely, a smoother surface reflects the light less broadly (microfacets point
+more in the same direction) but therefore at least more strongly.
+
+Analogy: a perfectly smooth suface is a mirror, in which you can see the sun reflected
+perfectly. Whilst on say a stone wall, an intrinsically rough surface, you just see
+a bright overall surface and note how the sun can be glaring indirectly through a mirror
+but it is not glaring when you look at a wall with the sun in your back.
+
+angle of view, or, viewing angle, 
+this is the angle at which we look at a particular point on a surface. If it is the same
+as the anlge of incidence then we should witness the strongest specular highlight at it:
+This is the angle at which the light would reflect into our eye "directly" from the
+surface -- the shortest distance.
+I guess for now we will model specular highlights lesser the more the surface view angle
+and angle of incidence deviate plus some factor for smooth surface (sharp decrease) and
+for rough surfaces (slow decrease but overall weaker factor)!
+
+microfacets distribution,
+while we say the rougher the surface the more perfect little mirrors, the microfacets,
+point in more different direction it is up to the specular illumination model how
+to model this distribution of microfacets on a surface and how they may contribute
+to the _average surface normal_ down to the pixel level!
+
+It is important to remember that while the average surface normal may not reflect light
+directly into the eye (angle of incidence != viewing angle) some microfacets at the point
+of interest may still reflect some light into the eye.
+
+--------------------------------------------------------------------------------
+Phong model,
+like Lambertian reflactance is the simplest model of diffuse lighting, Phong model
+is the simplest model of specular illumination!
+
