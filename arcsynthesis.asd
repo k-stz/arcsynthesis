@@ -65,7 +65,9 @@ Lisp (SBCL) using cl-sdl2 and cl-opengl"
    (:module "10-chapter"
 	    :components ((:file "vertex-point-lighting")
 			 (:file "fragment-point-lighting")
-			 (:file "fragment-attenuation")))))
+			 (:file "fragment-attenuation")))
+   (:module "11-chapter"
+	    :components ((:file "phong-lighting")))))
 
 ;;TODO: bad style?  
 (asdf:load-system :arcsynthesis)

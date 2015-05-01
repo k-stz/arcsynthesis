@@ -246,16 +246,21 @@
   (:export #:main))
 
 (defpackage #:arc-10
-  (:documentation "Lights On - Plane Lights")
+  (:documentation "Plane Lights - Plane Lights")
   (:use :cl)
   (:export #:main))
 
 (defpackage #:arc-10.1
-  (:documentation "Lights On - Fragment Lighting")
+  (:documentation "Plane Lights - Fragment Lighting")
   (:use :cl)
   (:export #:main))
 
 (defpackage #:arc-10.2
-  (:documentation "Lights On - Distant Points of Light")
+  (:documentation "Plane Lights - Distant Points of Light")
+  (:use :cl)
+  (:export #:main))
+
+(defpackage #:arc-11
+  (:documentation "Shinies - Phong Model")
   (:use :cl)
   (:export #:main))
