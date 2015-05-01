@@ -1412,6 +1412,28 @@ of interest may still reflect some light into the eye.
 
 --------------------------------------------------------------------------------
 Phong model,
-like Lambertian reflactance is the simplest model of diffuse lighting, Phong model
-is the simplest model of specular illumination!
+just like Lambertian reflactance is the simplest model of diffuse lighting, the
+Phong model is the simplest model of specular illumination!
 
+Like anticipated, we take the deviation between the perfect reflection angle and
+the viewing angle: (V*R) <- this will get us the cos(theta) angle between the two
+if they're identical cos(0)=1.0. But we're not done yet:
+
+(V*R)^s         (This term will be multiplied with the intensity in our lighting
+                 model equation!)
+
+V= view direction; R = perfect reflection vector and finally s
+S will be a value between [0, infinity) and will be our roughness/smoothness factor
+and could thus be attached to the fragment of interesst as an intrinsic value, a
+property of the material if you like.
+
+Note that the angle between V*R, theta can due to clamped cos() only be between
+0 and 1, thus raising it to the s-power will mean a sharper decrease in brightness.
+Hence the higher S, the more a deviation will be punished with less brightness.
+This is the property we want to attribute to smooth surfaces.
+
+high S = smooth surface, lower S = rough surface
+
+Finally raising a value to a power makes for an exponential curve, hence we
+get a nice non-linear decrease in brightness which is handy for faking the
+smooth/rough surface illumination.
