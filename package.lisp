@@ -101,7 +101,7 @@
   (:documentation "1. tutorial")
   (:use #:cl #:arcsynthesis)
   (:export #:main))
-  
+
 
 (defpackage #:arc-2
   (:use :cl)
@@ -125,7 +125,6 @@
 (defpackage #:arc-3.2
   (:use :cl)
   (:export #:main))
-
 
 (defpackage #:arc-3.3
   (:documentation "fragChangeColor.cpp") ;;TODO: good organizational idea?
@@ -151,8 +150,6 @@
   (:documentation "Aspect of the World")
   (:use :cl)
   (:export #:main))
-
-;; chapter 5
 
 (defpackage #:arc-5
   (:documentation "Objects in Depth")

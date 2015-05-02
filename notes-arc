@@ -115,8 +115,8 @@ the first parameter to glGen* is the number of objects to create! and the second
 GLuint* array that receives the newly created object names.
 
 modify Objects:
-first they need to be bound to different a location in the context (targets!) all objects
-have a _list of valid targets_
+first they need to be bound to a specific location in the context (called: targets) all
+objects have a _list of valid targets_
 
 fields in the Object:
 enumerators GL_OBJECT_* all name fields in the object that can be set!!
