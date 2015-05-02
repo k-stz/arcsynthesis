@@ -1437,3 +1437,44 @@ high S = smooth surface, lower S = rough surface
 Finally raising a value to a power makes for an exponential curve, hence we
 get a nice non-linear decrease in brightness which is handy for faking the
 smooth/rough surface illumination.
+
+The Phong model has two major drawbacks: it doesn't take the statistical overall
+distribution and orientations of microfacets into account, as it only derives
+its values from the view-direciton and the reflection-direction. But even worse
+is that because this value is dirived from these two direction it completely
+hits a brick wall when the angle between the two exceeds 90-degree, as can
+be seen in the phong-lighting.lisp tutorial forming a clear cut fringe around
+the specular hightlight when the surface roughness high.
+
+The following model can solve this problem:
+
+--------------------------------------------------------------------------------
+Blinn-Phong specular model or just Blinn specular model,
+The problem, again, is that at if the reflection and view direction vector exceed
+90-degree's the phong model breaks down, so we will, speaking at a high level, simply map
+the whole range of possible degres 180 to 90.
+
+Why 180 degree? The extreme case is that we view the scene with the sun in our back down a
+flat surface. Here the reflection will point ideally exactly away from us: 180-degrees.
+
+This mapping will be accomplished using the:
+
+half-angle vector,
+This is just the direction vector between two vectors that cuts them angle-wise directly
+in the middle. So two vectors with a 90-degree angle have a half-angle vector between them
+at 45-degrees.
+
+Or: if we add two vectors together we get their half-angle vector!
+
+Now it should be possible to imagine that if the light and reflection vector perfectly
+allign that the half-angle between the light-source and them will be also perfectly
+alligned with the surface-normal.
+
+And this will be the allignment we will be testing for with the Blinn-Phong specular
+model: the deviation from the half-angle vector of the light source and the view-direction
+to the surface-normal. Yes, we don't need the reflection-direction anymore. This deviation
+will then be raised by our surface roughness/smoothness factor, s:
+
+         H=light-directon+view-direction
+(H*N)^s  H=half-vector N=surface-normal s=surface-roughness
+
