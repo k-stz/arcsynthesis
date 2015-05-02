@@ -234,6 +234,8 @@
 
 (defparameter *dark-color* (glm:vec4 0.2 0.2 0.2 1.0))
 (defparameter *light-color* (glm:vec4 1.0))
+(defparameter *draw-dark-p* NIL)
+
 
 
 (defun draw ()
@@ -254,8 +256,12 @@
       (:lm-pure-diffuse
        (setf p-white-prog *white-no-phong*)
        (setf p-color-prog *color-no-phong*))
-      ;;TODO MOAR
-      )
+      (:lm-diffuse-and-specular
+       (setf p-white-prog *white-phong*)
+       (setf p-color-prog *color-phong*))      
+      (:lm-specular-only
+       (setf p-white-prog *white-phong-only*)
+       (setf p-color-prog *color-phong-only*)))
     
 
     (gl:use-program (the-program p-white-prog))
@@ -264,6 +270,10 @@
     (gl:uniformfv (camera-space-light-pos-unif p-white-prog) light-pos-camera-space)
     (gl:uniformf (light-attenuation-unif p-white-prog) *light-attenuation*)
     (gl:uniformf (shininess-factor-unif p-white-prog) *shininess-factor*)
+    (gl:uniformfv (base-diffuse-color-unif p-white-prog)
+		  (if *draw-dark-p* *dark-color* *light-color*))
+
+
     
     (gl:use-program (the-program p-color-prog))
     (gl:uniformfv (light-intensity-unif p-color-prog) (glm:vec4 0.8 0.8 0.8 1.0))
@@ -276,20 +286,24 @@
     
 
     (glutil:with-transform (model-matrix)
-	
+
 	;; Render the ground plane
 	(glutil:with-transform (model-matrix)
 	    (gl:use-program (the-program p-white-prog))
-	  ;;note how model-to-camera-matrix is mat4 and normal-model-to-camera-matrix is
-	  ;;mat3!
-	  (gl:uniform-matrix (model-to-camera-matrix-unif p-white-prog) 4
-			     (vector (glutil:top-ms model-matrix)) NIL)
 
-	  (gl:uniform-matrix (normal-model-to-camera-matrix-unif p-white-prog) 3
-			     (vector (glm:mat4->mat3 (glutil:top-ms model-matrix))) NIL)
+	  (let ((norm-matrix
+		 (sb-cga:transpose-matrix
+		  (sb-cga:inverse-matrix
+		   (glutil:top-ms model-matrix)))))
 
-	  (framework:render *plane-mesh*)
-	  (gl:use-program 0))
+	    (gl:uniform-matrix (model-to-camera-matrix-unif p-white-prog) 4
+			       (vector (glutil:top-ms model-matrix)) NIL)
+
+	    (gl:uniform-matrix (normal-model-to-camera-matrix-unif p-white-prog) 3
+			       (vector (glm:mat4->mat3 norm-matrix)) NIL)
+
+	    (framework:render *plane-mesh*)
+	    (gl:use-program 0)))
 
 
       (glutil:apply-matrix model-matrix (glutil:calc-matrix *objt-pole*))
@@ -427,7 +441,19 @@
 
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-b)
 	       ;; break rotation
-	       (setf *rotate-light-p* (not *rotate-light-p*)))	     
+	       (setf *rotate-light-p* (not *rotate-light-p*)))
+
+	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-g)
+	       ;; doggle dark/light plane
+	       (setf *draw-dark-p* (not *draw-dark-p*)))
+	     
+	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-h)
+	       ;; cycle through lighting-models
+	       (case *light-model*
+		 (:lm-pure-diffuse (setf *light-model* :lm-diffuse-and-specular))
+		 (:lm-diffuse-and-specular (setf *light-model* :lm-specular-only))
+		 (:lm-specular-only (setf *light-model* :lm-pure-diffuse)))
+	       (format t "Lighting Model used: ~a~%" *light-model*))	     
 
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-space)
 	       ;; toggle color on cylinder
