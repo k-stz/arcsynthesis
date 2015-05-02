@@ -229,6 +229,13 @@
 
 (defparameter *light-model* :lm-pure-diffuse)
 
+(defparameter *light-attenuation* 1.2)
+(defparameter *shininess-factor* 4.0)
+
+(defparameter *dark-color* (glm:vec4 0.2 0.2 0.2 1.0))
+(defparameter *light-color* (glm:vec4 1.0))
+
+
 (defun draw ()
   (let* ((model-matrix (make-instance 'glutil:matrix-stack))
 	 (world-light-pos (calc-light-position))
@@ -252,18 +259,19 @@
     
 
     (gl:use-program (the-program p-white-prog))
-    (gl:uniformfv (light-pos-unif p-white-prog) light-pos-camera-space)
-    (gl:uniformfv (light-intensity-unif p-white-prog)
-		  (glm:vec4 0.8 0.8 0.8 1.0))
-    (gl:uniformfv (ambient-intensity-unif p-white-prog)
-		  (glm:vec4 0.2 0.2 0.2 1.0))
+    (gl:uniformfv (light-intensity-unif p-white-prog) (glm:vec4 0.8 0.8 0.8 1.0))
+    (gl:uniformfv (ambient-intensity-unif p-white-prog) (glm:vec4 0.2 0.2 0.2 1.0))
+    (gl:uniformfv (camera-space-light-pos-unif p-white-prog) light-pos-camera-space)
+    (gl:uniformf (light-attenuation-unif p-white-prog) *light-attenuation*)
+    (gl:uniformf (shininess-factor-unif p-white-prog) *shininess-factor*)
     
     (gl:use-program (the-program p-color-prog))
-    (gl:uniformfv (light-pos-unif p-color-prog) light-pos-camera-space)
-    (gl:uniformfv (light-intensity-unif p-color-prog)
-		  (glm:vec4 0.8 0.8 0.8 1.0))
-    (gl:uniformfv (ambient-intensity-unif p-color-prog)
-		  (glm:vec4 0.2 0.2 0.2 1.0))
+    (gl:uniformfv (light-intensity-unif p-color-prog) (glm:vec4 0.8 0.8 0.8 1.0))
+    (gl:uniformfv (ambient-intensity-unif p-color-prog) (glm:vec4 0.2 0.2 0.2 1.0))
+    (gl:uniformfv (camera-space-light-pos-unif p-color-prog) light-pos-camera-space)
+    (gl:uniformf (light-attenuation-unif p-color-prog) *light-attenuation*)
+    (gl:uniformf (shininess-factor-unif p-color-prog) *shininess-factor*)
+    
     (gl:use-program 0)
     
 
