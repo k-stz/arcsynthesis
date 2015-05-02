@@ -31,13 +31,17 @@ float CalcAttenuation(in vec3 cameraSpacePosition, out vec3 lightDirection)
 void main()
 {
 	vec3 lightDir = vec3(0.0);
+	//lightDir is implicitly set in call to CalcAttenuation!
 	float atten = CalcAttenuation(cameraSpacePosition, lightDir);
 	vec4 attenIntensity = atten * lightIntensity;
 	
 	vec3 surfaceNormal = normalize(vertexNormal);
 	float cosAngIncidence = dot(surfaceNormal, lightDir);
 	cosAngIncidence = clamp(cosAngIncidence, 0, 1);
-	
+
+	// because we're in camera space negating the current fragments
+	// direction will get us the direction from the camera (0,0,0)
+	// to the fragment: C - Frag_pos where C= (0,0,0) hence just -Frag_pos
 	vec3 viewDirection = normalize(-cameraSpacePosition);
 	vec3 reflectDir = reflect(-lightDir, surfaceNormal);
 	float phongTerm = dot(viewDirection, reflectDir);

@@ -236,7 +236,7 @@
 (defparameter *light-color* (glm:vec4 1.0))
 (defparameter *draw-dark-p* NIL)
 
-
+(defparameter *scale-cyl-p* NIL)
 
 (defun draw ()
   (let* ((model-matrix (make-instance 'glutil:matrix-stack))
@@ -273,8 +273,6 @@
     (gl:uniformfv (base-diffuse-color-unif p-white-prog)
 		  (if *draw-dark-p* *dark-color* *light-color*))
 
-
-    
     (gl:use-program (the-program p-color-prog))
     (gl:uniformfv (light-intensity-unif p-color-prog) (glm:vec4 0.8 0.8 0.8 1.0))
     (gl:uniformfv (ambient-intensity-unif p-color-prog) (glm:vec4 0.2 0.2 0.2 1.0))
@@ -305,38 +303,30 @@
 	    (framework:render *plane-mesh*)
 	    (gl:use-program 0)))
 
-
-      (glutil:apply-matrix model-matrix (glutil:calc-matrix *objt-pole*))
       ;; Render the Cylinder
-      (if *draw-colored-cyl*
-      	  (glutil:with-transform (model-matrix)
-      	      (gl:use-program (the-program p-color-prog))
+      (glutil:with-transform (model-matrix)
+	  (glutil:apply-matrix model-matrix (glutil:calc-matrix *objt-pole*))
+	(when *scale-cyl-p*
+	  (glutil::scale model-matrix (glm:vec3 1.0 1.0 0.2)))
 
-      	    (gl:uniform-matrix (model-to-camera-matrix-unif p-color-prog) 4
-      			       (vector (glutil:top-ms model-matrix)) NIL)
+	(let ((norm-matrix
+	       (sb-cga:transpose-matrix
+		(sb-cga:inverse-matrix
+		 (glutil:top-ms model-matrix))))
+	      (p-prog (if *draw-colored-cyl* p-color-prog p-white-prog)))
 
-      	    (let ((norm-matrix (glutil:top-ms model-matrix)))
-      	      (gl:uniform-matrix
-      	       (normal-model-to-camera-matrix-unif p-color-prog) 3
-      	       (vector (glm:mat4->mat3 norm-matrix)) NIL))
+	  (gl:use-program (the-program p-prog))
+	  (gl:uniform-matrix (model-to-camera-matrix-unif p-prog) 4
+			     (vector (glutil:top-ms model-matrix)) NIL)
+	  (gl:uniform-matrix
+	   (normal-model-to-camera-matrix-unif p-prog) 3
+	   (vector (glm:mat4->mat3 norm-matrix)) NIL)
 
-      	    (framework:render-mode *cylinder-mesh* "lit-color")
-      	    (gl:use-program 0))
-	  
-      	  ;;else
-      	  (glutil:with-transform (model-matrix)
-      	      (gl:use-program (the-program p-white-prog))
-
-      	    (gl:uniform-matrix (model-to-camera-matrix-unif p-white-prog) 4
-      			       (vector (glutil:top-ms model-matrix)) NIL)
-
-      	    (let ((norm-matrix (glutil:top-ms model-matrix)))
-      	      (gl:uniform-matrix
-      	       (normal-model-to-camera-matrix-unif p-white-prog) 3
-      	       (vector (glm:mat4->mat3 norm-matrix)) NIL))
-	    
-      	    (framework:render-mode *cylinder-mesh* "lit")
-      	    (gl:use-program 0)))
+	  (if *draw-colored-cyl*
+	      (framework:render-mode *cylinder-mesh* "lit-color")
+	      ;;else
+	      (framework:render-mode *cylinder-mesh* "lit")))
+	(gl:use-program 0))
       ;; Render the light
       (when *draw-light*
 	(glutil:with-transform (model-matrix)
@@ -431,6 +421,15 @@
 	       (incf *light-radius* 0.2))
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-j)
 	       (decf *light-radius* 0.2))
+
+     	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-o)
+	       ;; make the surface smoother
+	       (incf *shininess-factor* 0.5)
+	       (format t "Shiny: ~a~%" *shininess-factor*))
+     	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-u)
+	       ;; make the surface rougher
+	       (decf *shininess-factor* 0.5)
+	       (format t "Shiny: ~a~%" *shininess-factor*))
 	     
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-y)
 	       ;; toggle light rendering
@@ -438,6 +437,9 @@
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-z)
 	       ;; toggle light rendering
 	       (setf *draw-light* (not *draw-light*)))
+     	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-t)
+	       ;; toggle cylinder scaling
+	       (setf *scale-cyl-p* (not *scale-cyl-p*)))
 
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-b)
 	       ;; break rotation
@@ -464,6 +466,9 @@
 	    (:quit () t)
 	    (:idle ()
 		   ;; MAIN LOOP:
+		   ;; clamping: (remove it and witness a nice eye-candy effect)
+		   (when (<= *shininess-factor* 0.0)
+		     (setf *shininess-factor* 0.0001))
 
 		   ;;rendering code:
 		   (display)
