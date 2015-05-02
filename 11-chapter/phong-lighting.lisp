@@ -103,17 +103,29 @@
      (the-program data) projection-block +projection-block-index+)
     data))
 
-(defvar *white-diffuse-color*)
-(defvar *vertex-diffuse-color*)
+(defvar *white-no-phong*)
+(defvar *white-phong*)
+(defvar *white-phong-only*)
+
+(defvar *color-no-phong*)
+(defvar *color-phong*)
+(defvar *color-phong-only*)
+
+
 (defvar *unlit*)
 
 (defun initialize-program ()
-  (setf *white-diffuse-color*
-	(load-lit-program "PosVertexLighting_PN.vert" "ColorPassthrough.frag"))
-  (setf *vertex-diffuse-color*
-	(load-lit-program "PosVertexLighting_PCN.vert" "ColorPassthrough.frag"))
-  (setf *unlit*
-	(load-unlit-program "PosTransform.vert" "UniformColor.frag")))
+
+  (setf *white-no-phong* (load-lit-program "PN.vert" "NoPhong.frag"))
+  (setf *color-no-phong* (load-lit-program "PCN.vert" "NoPhong.frag"))
+
+  (setf *white-phong* (load-lit-program "PN.vert" "PhongLighting.frag"))
+  (setf *white-phong* (load-lit-program "PCN.vert" "PhongLighting.frag"))
+
+  (setf *white-phong* (load-lit-program "PN.vert" "PhongOnly.frag"))
+  (setf *white-phong* (load-lit-program "PCN.vert" "PhongOnly.frag"))
+  
+  (setf *unlit* (load-unlit-program "PosTransform.vert" "UniformColor.frag")))
 
 
 (defvar *plane-mesh*)
@@ -394,7 +406,7 @@
 		   ;; MAIN LOOP:
 
 		   ;;rendering code:
-		   (display)
+;		   (display)
 
 		   ;;live editing enabled:
 		   (arc:update-swank)
