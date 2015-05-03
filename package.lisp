@@ -261,3 +261,8 @@
   (:documentation "Shinies - Phong Model")
   (:use :cl)
   (:export #:main))
+
+(defpackage #:arc-11.1
+  (:documentation "Shinies - Blinn-Phong Model")
+  (:use :cl)
+  (:export #:main))
