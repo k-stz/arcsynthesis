@@ -201,7 +201,7 @@
   (gl:bind-buffer :uniform-buffer *projection-uniform-buffer*)
   (%gl:buffer-data :uniform-buffer #|sizeof(mat4):|# 64 (cffi:null-pointer) :dynamic-draw)
 
-  ;;TODO: "bind the static buffer"
+  ;;"bind the static buffer"
   (%gl:bind-buffer-range :uniform-buffer +projection-block-index+
 			 *projection-uniform-buffer* 0 #|sizeof(mat4):|# 64)
 
@@ -398,7 +398,7 @@
   (arc:with-main
     (sdl2:with-init (:everything)
       (progn (setf *standard-output* out) (setf *debug-io* dbg) (setf *error-output* err))
-      (sdl2:with-window (win :w 500 :h 500 :flags '(:shown :opengl))
+      (sdl2:with-window (win :w 500 :h 500 :flags '(:shown :opengl :resizable))
 	(sdl2:with-gl-context (gl-context win)
 	  ;; INIT code:
 	  (init)
@@ -433,7 +433,18 @@
 	     ;; x y xrel yrel state (glutil:trans-relative-to *view-pole*))
 	     (when (lmb-pressed-p state)
 	       (mouse-rel-transform xrel yrel)))
-	    
+
+	    ;; resizable ?
+	    (:windowevent
+	     (:type type :timestamp ts :window-id wi :event ev :padding1 p1
+		    :padding2 p2 :padding3 p3 :data1 d1 :data2 d2)
+	     ;; according to the output gathered:
+	     ;; :event ev either 6 or 5 seems to indicate resizing taking place
+	     ;; at which time data1 and data2 hold the new dimension of window
+	     ;; while resizing takes place event 6 and 5 both have the same
+	     ;; data1 data2 entries
+	     (format t "type:~a ts:~a wi:~a ev:~a p1:~a p2:~a p3:~a d1:~a d2:~a~%"
+		     type ts wi ev p1 p2 p3 d1 d2))
 	    (:keydown
 	     (:keysym keysym)
      	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-i)
@@ -494,9 +505,12 @@
 		     (setf *shininess-factor* 0.0001))
 
 		   ;;rendering code:
-		   (display)
+;		   (display)
+		   (setf foo win)
 
 		   ;;live editing enabled:
 		   (arc:update-swank)
 		   (sdl2:gl-swap-window win))))))))
 
+;; TODO: to solve window-resize event " sdl2kit allows you to do (defmethod some-event ()
+;;       some-code) check out input.lisp of tradewarz to see my usage"
