@@ -128,14 +128,15 @@
     data))
 
 
-;; LightingModel enums
-(defconstant +lm-phong-specular+ 0)
-(defconstant +lm-phong-only+ 1)
-(defconstant +lm-blinn-specular+ 2)
-(defconstant +lm-blinn-only+ 3)
 
+(defun lm-index (light-model)
+  "Return the index corresponding to the input light-model"
+  (ecase light-model
+    (:lm-phong-specular 0)
+    (:lm-phong-only 1)
+    (:lm-blinn-specular 2)
+    (:lm-blinn-only 3)))
 
-;; vector of program-pairs
 (defparameter *programs*
   (make-array 4 :initial-element (make-instance 'program-pairs)))
 
@@ -151,22 +152,13 @@
 (defun initialize-program ()
   ;; initialize the *program* program-pairs array with gl white/color gl programs
   (loop for i-prog below (length *programs*) do
-	(setf (white-prog (aref *programs* i-prog))
-	      (load-lit-program (getf (aref *shader-files* i-prog) :white)
-				(getf (aref *shader-files* i-prog) :frag)))
-	(setf (color-prog (aref *programs* i-prog))
-	      (load-lit-program (getf (aref *shader-files* i-prog) :color)
-				(getf (aref *shader-files* i-prog) :frag))))
+       (setf (white-prog (aref *programs* i-prog))
+	     (load-lit-program (getf (aref *shader-files* i-prog) :white)
+			       (getf (aref *shader-files* i-prog) :frag)))
+       (setf (color-prog (aref *programs* i-prog))
+	     (load-lit-program (getf (aref *shader-files* i-prog) :color)
+			       (getf (aref *shader-files* i-prog) :frag))))
 
-  ;; (setf *white-no-phong* (load-lit-program "PN.vert" "NoPhong.frag"))
-  ;; (setf *color-no-phong* (load-lit-program "PCN.vert" "NoPhong.frag"))
-
-  ;; (setf *white-phong* (load-lit-program "PN.vert" "PhongLighting.frag"))
-  ;; (setf *color-phong* (load-lit-program "PCN.vert" "PhongLighting.frag"))
-
-  ;; (setf *white-phong-only* (load-lit-program "PN.vert" "PhongOnly.frag"))
-  ;; (setf *color-phong-only* (load-lit-program "PCN.vert" "PhongOnly.frag"))
-  
   (setf *unlit* (load-unlit-program "PosTransform.vert" "UniformColor.frag")))
 
 
@@ -250,7 +242,7 @@
 	*world-light-pos-save*)))
 
 
-(defparameter *light-model* :lm-pure-diffuse)
+(defparameter *light-model* :lm-blinn-specular)
 
 (defparameter *light-attenuation* 1.2)
 (defparameter *shininess-factor* 4.0)
@@ -275,16 +267,6 @@
 	  (glm:vec4->vec3 (glm:mat*vec (glutil:top-ms model-matrix)
 				       world-light-pos)))
 
-    (case *light-model*
-      (:lm-pure-diffuse
-       (setf p-white-prog *white-no-phong*)
-       (setf p-color-prog *color-no-phong*))
-      (:lm-diffuse-and-specular
-       (setf p-white-prog *white-phong*)
-       (setf p-color-prog *color-phong*))      
-      (:lm-specular-only
-       (setf p-white-prog *white-phong-only*)
-       (setf p-color-prog *color-phong-only*)))
     
 
     (gl:use-program (the-program p-white-prog))
@@ -486,9 +468,10 @@
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-h)
 	       ;; cycle through lighting-models
 	       (case *light-model*
-		 (:lm-pure-diffuse (setf *light-model* :lm-diffuse-and-specular))
-		 (:lm-diffuse-and-specular (setf *light-model* :lm-specular-only))
-		 (:lm-specular-only (setf *light-model* :lm-pure-diffuse)))
+		 (:lm-phong-specular (setf *light-model* :lm-diffuse-and-specular))
+		 (:lm-phonog-only (setf *light-model* :lm-specular-only))
+		 (:lm-specular-only (setf *light-model* :lm-pure-diffuse))
+		 (:lm-blinn-only (setf *light-model* :lm-pure-diffuse)))
 	       (format t "Lighting Model used: ~a~%" *light-model*))	     
 
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-space)
@@ -506,7 +489,6 @@
 
 		   ;;rendering code:
 ;		   (display)
-		   (setf foo win)
 
 		   ;;live editing enabled:
 		   (arc:update-swank)
