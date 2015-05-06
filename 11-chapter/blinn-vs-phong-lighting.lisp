@@ -138,7 +138,8 @@
     (:lm-blinn-only 3)))
 
 (defparameter *programs*
-  (make-array 4 :initial-element (make-instance 'program-pairs)))
+  (make-array 4 :initial-contents
+	      (loop for i below 4 collect (make-instance 'program-pairs))))
 
 (defparameter *shader-files*
   ;; (getf (aref *shader-list* 0) :white) ==> "PN.vert"
@@ -260,14 +261,18 @@
 	 (p-white-prog)
 	 (p-color-prog))
 
-    (glutil:set-matrix model-matrix (glutil:calc-matrix *view-pole*))
-
     ;; TODO: make mat*vec smarter so we don't need to cast so much in code?
     (setf light-pos-camera-space
 	  (glm:vec4->vec3 (glm:mat*vec (glutil:top-ms model-matrix)
 				       world-light-pos)))
 
-    
+    (glutil:set-matrix model-matrix (glutil:calc-matrix *view-pole*))
+
+
+    (setf p-white-prog (white-prog (aref *programs* (lm-index *light-model*))))
+    (setf p-color-prog (color-prog (aref *programs* (lm-index *light-model*))))
+
+    (print (list p-white-prog (lm-index *light-model*)))
 
     (gl:use-program (the-program p-white-prog))
     (gl:uniformfv (light-intensity-unif p-white-prog) (glm:vec4 0.8 0.8 0.8 1.0))
@@ -380,7 +385,7 @@
   (arc:with-main
     (sdl2:with-init (:everything)
       (progn (setf *standard-output* out) (setf *debug-io* dbg) (setf *error-output* err))
-      (sdl2:with-window (win :w 500 :h 500 :flags '(:shown :opengl :resizable))
+      (sdl2:with-window (win :w 500 :h 500 :flags '(:shown :opengl #|:resizable|#))
 	(sdl2:with-gl-context (gl-context win)
 	  ;; INIT code:
 	  (init)
@@ -468,10 +473,10 @@
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-h)
 	       ;; cycle through lighting-models
 	       (case *light-model*
-		 (:lm-phong-specular (setf *light-model* :lm-diffuse-and-specular))
-		 (:lm-phonog-only (setf *light-model* :lm-specular-only))
-		 (:lm-specular-only (setf *light-model* :lm-pure-diffuse))
-		 (:lm-blinn-only (setf *light-model* :lm-pure-diffuse)))
+		 (:lm-phong-specular (setf *light-model* :lm-phong-only))
+		 (:lm-phong-only (setf *light-model* :lm-blinn-specular))
+		 (:lm-blinn-specular (setf *light-model* :lm-blinn-only))
+		 (:lm-blinn-only (setf *light-model* :lm-phong-specular)))
 	       (format t "Lighting Model used: ~a~%" *light-model*))	     
 
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-space)
@@ -488,11 +493,8 @@
 		     (setf *shininess-factor* 0.0001))
 
 		   ;;rendering code:
-;		   (display)
+		   (display)
 
 		   ;;live editing enabled:
 		   (arc:update-swank)
 		   (sdl2:gl-swap-window win))))))))
-
-;; TODO: to solve window-resize event " sdl2kit allows you to do (defmethod some-event ()
-;;       some-code) check out input.lisp of tradewarz to see my usage"

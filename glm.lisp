@@ -345,6 +345,11 @@ This can be for example a vector or a matrix"
 
 ;;Quaternions-------------------------------------------------------------------
 
+;; TODO: currently (make-instance 'quat) ==> #<QT:[0.0 1.0 0.0 0.0]>
+;; returns an unreadable object, but why not make it readable? Like the standard
+;; (complex 1 2) ==> #C(1 2) returns a readable object, when is it reasonable
+;; to make an object also readable?
+
 ;; note this quaternion representation is not accurate in mathematics quaternions
 ;; seem to be represented by imaginary numbers. This representation, however, not
 ;; only suffices, it also provides a very simple model of a quaternion: a 4D vector
