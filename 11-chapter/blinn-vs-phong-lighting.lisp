@@ -261,24 +261,24 @@
 	 (p-white-prog)
 	 (p-color-prog))
 
+    (glutil:set-matrix model-matrix (glutil:calc-matrix *view-pole*))
+
     ;; TODO: make mat*vec smarter so we don't need to cast so much in code?
     (setf light-pos-camera-space
 	  (glm:vec4->vec3 (glm:mat*vec (glutil:top-ms model-matrix)
 				       world-light-pos)))
 
-    (glutil:set-matrix model-matrix (glutil:calc-matrix *view-pole*))
-
 
     (setf p-white-prog (white-prog (aref *programs* (lm-index *light-model*))))
     (setf p-color-prog (color-prog (aref *programs* (lm-index *light-model*))))
-
-    (print (list p-white-prog (lm-index *light-model*)))
 
     (gl:use-program (the-program p-white-prog))
     (gl:uniformfv (light-intensity-unif p-white-prog) (glm:vec4 0.8 0.8 0.8 1.0))
     (gl:uniformfv (ambient-intensity-unif p-white-prog) (glm:vec4 0.2 0.2 0.2 1.0))
     (gl:uniformfv (camera-space-light-pos-unif p-white-prog) light-pos-camera-space)
     (gl:uniformf (light-attenuation-unif p-white-prog) *light-attenuation*)
+    ;; *shininess-factor* kept, this way we only miss a visual comparison between
+    ;; varying phong/blinn exponents to jump between
     (gl:uniformf (shininess-factor-unif p-white-prog) *shininess-factor*)
     (gl:uniformfv (base-diffuse-color-unif p-white-prog)
 		  (if *draw-dark-p* *dark-color* *light-color*))
@@ -385,7 +385,7 @@
   (arc:with-main
     (sdl2:with-init (:everything)
       (progn (setf *standard-output* out) (setf *debug-io* dbg) (setf *error-output* err))
-      (sdl2:with-window (win :w 500 :h 500 :flags '(:shown :opengl #|:resizable|#))
+      (sdl2:with-window (win :w 500 :h 500 :flags '(:shown :opengl :resizable))
 	(sdl2:with-gl-context (gl-context win)
 	  ;; INIT code:
 	  (init)
@@ -421,7 +421,7 @@
 	     (when (lmb-pressed-p state)
 	       (mouse-rel-transform xrel yrel)))
 
-	    ;; resizable ?
+	    ;; resizing logic:
 	    (:windowevent
 	     (:type type :timestamp ts :window-id wi :event ev :padding1 p1
 		    :padding2 p2 :padding3 p3 :data1 d1 :data2 d2)
@@ -430,8 +430,11 @@
 	     ;; at which time data1 and data2 hold the new dimension of window
 	     ;; while resizing takes place event 6 and 5 both have the same
 	     ;; data1 data2 entries
-	     (format t "type:~a ts:~a wi:~a ev:~a p1:~a p2:~a p3:~a d1:~a d2:~a~%"
-		     type ts wi ev p1 p2 p3 d1 d2))
+	     ;; (format t "type:~a ts:~a wi:~a ev:~a p1:~a p2:~a p3:~a d1:~a d2:~a~%"
+	     ;; 	     type ts wi ev p1 p2 p3 d1 d2)
+	     (list type ts wi ev p1 p2 p3 d1 d2)
+	     (when (= ev 6) ;; magic number 6 is the signal of the resizing event
+	       (reshape (float d1) (float d2))))
 	    (:keydown
 	     (:keysym keysym)
      	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-i)
