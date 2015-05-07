@@ -1,9 +1,14 @@
+;;;; About: shows all the three specular lighting models at once! Starring the new
+;;;; Gaussian specular model! Check out its distinct sharp specular highlight for
+;;;; *shininess-factor* between 0 and 1.0!
+
+
 ;; tell the compiler to not care about speed, use maximum type saftey and
 ;; give us maximum debug information
 ;; TODO: sbcl specifics?
 (declaim (optimize (speed 0) (safety 3) (debug 3)))
 
-(in-package #:arc-11.1)
+(in-package #:arc-11.2)
 
 ;; TODO: this might solve the problem:
 ;; (print (uiop/lisp-build:current-lisp-file-pathname)) ?
@@ -135,18 +140,24 @@
     (:lm-phong-specular 0)
     (:lm-phong-only 1)
     (:lm-blinn-specular 2)
-    (:lm-blinn-only 3)))
+    (:lm-blinn-only 3)
+    (:lm-gaussian-specular 4)
+    (:lm-gaussian-only 5)))
 
-(defparameter *programs*
-  (make-array 4 :initial-contents
-	      (loop for i below 4 collect (make-instance 'program-pairs))))
 
-(defparameter *shader-files*
+(defvar *shader-files*
   ;; (getf (aref *shader-list* 0) :white) ==> "PN.vert"
   #((:white "PN.vert" :color "PCN.vert" :frag "PhongLighting.frag")  
     (:white "PN.vert" :color "PCN.vert" :frag "PhongOnly.frag")  
     (:white "PN.vert" :color "PCN.vert" :frag "BlinnLighting.frag")  
-    (:white "PN.vert" :color "PCN.vert" :frag "BlinnOnly.frag")))
+    (:white "PN.vert" :color "PCN.vert" :frag "BlinnOnly.frag")
+    (:white "PN.vert" :color "PCN.vert" :frag "GaussianLighting.frag")
+    (:white "PN.vert" :color "PCN.vert" :frag "GaussianOnly.frag")))
+
+(defparameter *programs*
+  (make-array (length *shader-files*) :initial-contents
+	      (loop for i below (length *shader-files*)
+		 collect (make-instance 'program-pairs))))
 
 (defvar *unlit*)
 
@@ -246,7 +257,12 @@
 (defparameter *light-model* :lm-blinn-specular)
 
 (defparameter *light-attenuation* 1.2)
-(defparameter *shininess-factor* 4.0)
+;; TODO: add jumping between gaussian-specular (0,1] and other
+;; lighting models [0,infinity) shininess-factor. solved by
+;; arc using the MaterialParams class changing its operator
+;; (decides what the instanciated object will evaluate to)
+;; based on the *light-model* used.
+(defparameter *shininess-factor* 0.5) ;; was 4.0 by default
 
 (defparameter *dark-color* (glm:vec4 0.2 0.2 0.2 1.0))
 (defparameter *light-color* (glm:vec4 1.0))
@@ -448,11 +464,11 @@
 
      	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-o)
 	       ;; make the surface smoother
-	       (incf *shininess-factor* 0.5)
+	       (incf *shininess-factor* 0.1)
 	       (format t "Shiny: ~a~%" *shininess-factor*))
      	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-u)
 	       ;; make the surface rougher
-	       (decf *shininess-factor* 0.5)
+	       (decf *shininess-factor* 0.1)
 	       (format t "Shiny: ~a~%" *shininess-factor*))
 	     
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-y)
@@ -479,7 +495,9 @@
 		 (:lm-phong-specular (setf *light-model* :lm-phong-only))
 		 (:lm-phong-only (setf *light-model* :lm-blinn-specular))
 		 (:lm-blinn-specular (setf *light-model* :lm-blinn-only))
-		 (:lm-blinn-only (setf *light-model* :lm-phong-specular)))
+		 (:lm-blinn-only (setf *light-model* :lm-gaussian-specular))
+		 (:lm-gaussian-specular (setf *light-model* :lm-gaussian-only))
+		 (:lm-gaussian-only (setf *light-model* :lm-phong-specular)))
 	       (format t "Lighting Model used: ~a~%" *light-model*))	     
 
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-space)

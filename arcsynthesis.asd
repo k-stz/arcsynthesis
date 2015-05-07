@@ -68,7 +68,8 @@ Lisp (SBCL) using cl-sdl2 and cl-opengl"
 			 (:file "fragment-attenuation")))
    (:module "11-chapter"
 	    :components ((:file "phong-lighting")
-			 (:file "blinn-vs-phong-lighting")))))
+			 (:file "blinn-vs-phong-lighting")
+			 (:file "gaussian-specular-lighting")))))
 
 ;;TODO: bad style?  
 (asdf:load-system :arcsynthesis)

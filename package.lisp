@@ -266,3 +266,8 @@
   (:documentation "Shinies - Blinn-Phong Model")
   (:use :cl)
   (:export #:main))
+
+(defpackage #:arc-11.2
+  (:documentation "Shinies - Gaussian")
+  (:use :cl)
+  (:export #:main))

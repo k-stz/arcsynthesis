@@ -388,16 +388,16 @@
 	     ;; zoom in/out
 	     (when (= y 1)
 	       (glutil:move-camera *view-pole*
-				    (glutil:pole-direction
-				     *view-pole*
-				     (glm:vec3 0.0 0.0 -1.0)))
+				   (glutil:pole-direction
+				    *view-pole*
+				    (glm:vec3 0.0 0.0 -1.0)))
 	       (format t "pos:~a~%~%"
 		       (glm:round-obj (glutil:cam-pos *view-pole*) 0.001)))
 	     (when (= y -1)
 	       (glutil:move-camera *view-pole*
-				    (glutil:pole-direction
-				     *view-pole*
-				     (glm:vec3 0.0 0.0 1.0)))
+				   (glutil:pole-direction
+				    *view-pole*
+				    (glm:vec3 0.0 0.0 1.0)))
 	       (format t "pos:~a~%~%"
 		       (glm:round-obj (glutil:cam-pos *view-pole*) 0.001))))
 	    
