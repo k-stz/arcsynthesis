@@ -1498,3 +1498,20 @@ and 'm' again just the surface smoothness/roughness factor, this time though, th
 higher the value the rougher the surface (the flatter the bell shaped curve). Note
 how 'm' is 
 Also, m, may only range from (0, 1] for the model to not break.
+
+--------------------------------------------------------------------------------
+Specular model performance,
+while Phong needs to compute the reflection direction and Blinn only needs the
+half-vector, it is negligible performance-wise.
+The more interesting fact is that graphics hardware can perform the inversqrt,
+nowadays (!), about as fast as the dot-product itself.
+
+Both these operations, by the way, are always used in normalization (!!):
+1. first we dot-product with the vector itself
+2. then we inverse-sqrt multiply with it!
+(no component-wise Pythagoras school-algebra)
+
+But if we look at the Gaussian specular model we find ACOS in the algorithm,
+the inverse cosine, which is a notorious performance killer.
+
+--------------------------------------------------------------------------------
