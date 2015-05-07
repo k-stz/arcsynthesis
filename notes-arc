@@ -1478,3 +1478,23 @@ will then be raised by our surface roughness/smoothness factor, s:
          H=light-directon+view-direction
 (H*N)^s  H=half-vector N=surface-normal s=surface-roughness
 
+--------------------------------------------------------------------------------
+Gaussian specular model,
+finally we will actually try to model the distribution of microfacets over a surface.
+We try to model realistic specular lighting by deriving the dozens of microfacets
+orientation on the surface through the powerful tool of statistics.
+The method of statistics we will use is the most simple and eponymous /Gaussian
+distribution/ (also: "normal distribution) which in essence is a bell-shaped curve
+whose shape can be either flat and broad (roughness) or tall and thin (smooth)
+whith the added benefit of having the curve distribute values along normals. The
+following function is a simplified version of the Gaussian Term:
+
+e^-(a/m)^2   e = euler number; a = angle between the surface-normal and the half-angle
+                                   between the view-direction and the light direction
+				   but, this time not the cos, but the actuall radiant.
+				   yielded using acos(dot(half-angle,surface-normal))!
+				   
+and 'm' again just the surface smoothness/roughness factor, this time though, the
+higher the value the rougher the surface (the flatter the bell shaped curve). Note
+how 'm' is 
+Also, m, may only range from (0, 1] for the model to not break.

@@ -23,6 +23,10 @@ float CalcAttenuation(in vec3 cameraSpacePosition, out vec3 lightDirection)
 {
 	vec3 lightDifference =  cameraSpaceLightPos - cameraSpacePosition;
 	float lightDistanceSqr = dot(lightDifference, lightDifference);
+	// inversesqrt: 1. sqrt of lightDistanceSqr is the "lightDistance"
+	// 2. inversing this value so we can multiply it with itself
+	//    thereby getting its distance (the same as dividing the value
+	//    by itself)
 	lightDirection = lightDifference * inversesqrt(lightDistanceSqr);
 	
 	return (1 / ( 1.0 + lightAttenuation * sqrt(lightDistanceSqr)));
@@ -37,7 +41,8 @@ void main()
 	vec3 surfaceNormal = normalize(vertexNormal);
 	
 	vec3 viewDirection = normalize(-cameraSpacePosition);
-	
+
+	// simply adding the two and normalizing to get the half-angle!
 	vec3 halfAngle = normalize(lightDir + viewDirection);
 	float blinnTerm = dot(surfaceNormal, halfAngle);
 	blinnTerm = clamp(blinnTerm, 0, 1);
