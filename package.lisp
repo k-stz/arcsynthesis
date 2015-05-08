@@ -271,3 +271,8 @@
   (:documentation "Shinies - Gaussian")
   (:use :cl)
   (:export #:main))
+
+(defpackage #:arc-12
+  (:documentation "Dynamic Range")
+  (:use :cl)
+  (:export #:main))
