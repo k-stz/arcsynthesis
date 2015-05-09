@@ -1,3 +1,18 @@
+;;; this tutorial c++ code is spread over several files:
+;;; all share these files:
+;;; 1. Scene.h and Scene.cpp
+;;;    set up the objects in the scene and render them
+;;;    contains the surface properties (called _material propeties_)
+;;;    they are set in Scene.cpp's GetMaterials() function and include:
+;;;    diffuse-color, specular-color (remember metals reflect their own color, but
+;;;    most materials diffuse all the colors of the light-source) and
+;;;    specular-shininness
+
+;;; 2. Light.h and Light.cpp --
+
+
+
+
 ;; tell the compiler to not care about speed, use maximum type saftey and
 ;; give us maximum debug information
 ;; TODO: sbcl specifics?
