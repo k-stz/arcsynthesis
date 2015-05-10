@@ -38,7 +38,8 @@
    (object-color-unif :accessor object-color-unif)
    (model-to-camera-matrix-unif :accessor model-to-camera-matrix-unif)))
 
-
+(defconstant +material-block-index+ 0)
+(defconstant +light-block-index+ 1)
 (defconstant +projection-block-index+ 2)
 
 (defun load-unlit-program (str-vertex-shader str-fragment-shader)
@@ -74,6 +75,8 @@
   "Create program-data object from shader strings. Hardcoded uniform reference."
   (let ((shader-list (list))
 	(data (make-program-data))
+	(material-block)
+	(light-block)
 	(projection-block))
     (push (arc:create-shader
 	   :vertex-shader
@@ -83,46 +86,45 @@
 	   :fragment-shader
 	   (arc:file-to-string (merge-pathnames str-fragment-shader *data-directory*)))
     	  shader-list)
-    ;; settings slots of program-object:
+
     (setf (the-program data) (arc:create-program shader-list))
     (setf (model-to-camera-matrix-unif data)
 	  (gl:get-uniform-location (the-program data) "modelToCameraMatrix"))
-    (setf (light-intensity-unif data)
-	  (gl:get-uniform-location (the-program data) "lightIntensity"))
-    (setf (ambient-intensity-unif data)
-	  (gl:get-uniform-location (the-program data) "ambientIntensity"))
     (setf (normal-model-to-camera-matrix-unif data)
 	  (gl:get-uniform-location (the-program data) "normalModelToCameraMatrix"))
-    (setf (camera-space-light-pos-unif data)
-	  (gl:get-uniform-location (the-program data) "cameraSpaceLightPos"))
-    (setf (light-attenuation-unif data)
-	  (gl:get-uniform-location (the-program data) "lightAttenuation"))
-    (setf (shininess-factor-unif data)
-	  (gl:get-uniform-location (the-program data) "shininessFactor"))
-    (setf (base-diffuse-color-unif data)
-	  (gl:get-uniform-location (the-program data) "baseDiffuseColor"))
-    ;; TODO: remove
-    (print (list
-	    (the-program data) 
-	    (model-to-camera-matrix-unif data)
-	    (light-intensity-unif data)
-	    (ambient-intensity-unif data)
-	    (normal-model-to-camera-matrix-unif data)
-	    (camera-space-light-pos-unif data)
-	    (light-attenuation-unif data)
-	    (shininess-factor-unif data)
-	    (base-diffuse-color-unif data)))
+    
+    (setf material-block
+	  (cffi:with-foreign-string (s "Material")
+	    (%gl:get-uniform-block-index (the-program data) s)))    
+    (setf light-block
+	  (cffi:with-foreign-string (s "Light")
+	    (%gl:get-uniform-block-index (the-program data) s)))
     (setf projection-block
 	  ;; TODO: get cl-opengl version containing this version
 	  ;;(gl:get-uniform-block-index (the-program data) "Projection")
 	  (cffi:with-foreign-string (s "Projection")
 	    (%gl:get-uniform-block-index (the-program data) s)))
+
+    ;; TODO: remove
+    (print (list
+	    (the-program data) 
+	    (model-to-camera-matrix-unif data)
+	    (normal-model-to-camera-matrix-unif data)
+	    material-block light-block projection-block))
+
+    ;; TODO: if (materialBlock != GL_INVALID_INDEX) "Can be optomized out."
+    (%gl:uniform-block-binding
+     (the-program data) material-block +material-block-index+)
+    (%gl:uniform-block-binding
+     (the-program data) light-block +light-block-index+)
+    
     (%gl:uniform-block-binding
      (the-program data) projection-block +projection-block-index+)
     data))
 
 
 
+;; NEXT-TODO: getProgram solution
 (defun lm-index (light-model)
   "Return the index corresponding to the input light-model"
   (ecase light-model
