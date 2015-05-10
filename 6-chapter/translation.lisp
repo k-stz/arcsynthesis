@@ -241,25 +241,22 @@ the projection plane)"
 		   (list *stationary-offset*
 			 (oval-offset elapsed-time)
 			 (bottom-circle-offset elapsed-time)))))
-    (init-g-instance-list *elapsed-time*)
+    (init-g-instance-list *elapsed-time*))
 
-    )
   (let ((transform-matrix (glm:make-mat4 1.0)))
     ;; this is where we take the offset-vec3 and put them in the last row of
     ;; the identity matrix. So that the shader may use it (gl:uniform-matrix ..)
     ;; and internally multiply it with the position-vertices to plant a new origin
     ;; in clip-space to draw our object relative to it
     (loop for i from 0 below (length *g-instance-list*)
-	 do
+       do
 	 (progn
 	   (glm:set-mat4-col
 	    transform-matrix 3 (glm:vec4-from-vec3 (elt *g-instance-list* i)))
 	   (gl:uniform-matrix
 	    *model-to-camera-matrix-unif* 4 (vector transform-matrix) NIL)
 	   (%gl:draw-elements
-	    :triangles (gl::gl-array-size *index-data*) :unsigned-short 0))
-	 ))
-
+	    :points (gl::gl-array-size *index-data*) :unsigned-short 0))))
 
 
   (gl:bind-vertex-array 0)

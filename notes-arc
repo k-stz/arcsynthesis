@@ -36,7 +36,7 @@ Rasterization:
 1.triangle goes in
 2.is it even in "clip space"? (region of the world we want to render)
 3.It resides in "clip space" and has "clip coordinates" (always 4:x,y,z,w)
-  Each vertex of a triangle  in clip space has its own clip space cube of range [-w,w]
+  Each vertex of a triangle in clip space has its own clip space cube of range [-w,w]
 4.Triangles outside clip space aren't operated upon further on
   Triangles partially in clip space will be broken down into smaller triangles which
   are entirely within clip space. This process is called clipping, hence the name clip
@@ -1424,7 +1424,7 @@ if they're identical cos(0)=1.0. But we're not done yet:
 
 V= view direction; R = perfect reflection vector and finally s
 S will be a value between [0, infinity) and will be our roughness/smoothness factor
-and could thus be attached to the fragment of interesst as an intrinsic value, a
+and could thus be attached to the fragment of interest as an intrinsic value, a
 property of the material if you like.
 
 Note that the angle between V*R, theta can due to clamped cos() only be between
@@ -1475,8 +1475,8 @@ model: the deviation of the half-angle vector of the light source and the view-d
 from the surface-normal. Yes, we don't need the reflection-direction anymore. This deviation
 will then be raised by our surface roughness/smoothness factor, s:
 
-         H=light-directon+view-direction
-(H*N)^s  H=half-vector N=surface-normal s=surface-roughness
+         H=light-directon+view-direction aka _half-vector_
+(H*N)^s  N=surface-normal s=surface-roughness
 
 --------------------------------------------------------------------------------
 Gaussian specular model,

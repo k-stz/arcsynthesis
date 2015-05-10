@@ -13,7 +13,10 @@ uniform Material
 	vec4 diffuseColor;
 	vec4 specularColor;
 	float specularShininess;
-} Mtl;
+} Mtl; // this is the _instance name_ we can use it to access values
+       // in the UBO like so: Mtl.diffuseColor (see below) without this
+       // the contents would be global and we'd had problems with the
+       // "in vec4 diffuseColor" definition above!
 
 struct PerLight
 {

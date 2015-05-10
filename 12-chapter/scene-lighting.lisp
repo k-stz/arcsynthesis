@@ -11,8 +11,6 @@
 ;;; 2. Light.h and Light.cpp --
 
 
-
-
 ;; tell the compiler to not care about speed, use maximum type saftey and
 ;; give us maximum debug information
 ;; TODO: sbcl specifics?
@@ -29,20 +27,6 @@
 ;;todo: fix this output to slime-repl solution
 (defvar out *standard-output*)  (defvar dbg *debug-io*) (defvar err *error-output*)
 
-
-(defclass program-data ()
-  ((the-program :accessor the-program)
-
-   (model-to-camera-matrix-unif :accessor model-to-camera-matrix-unif)
-   
-   (light-intensity-unif :accessor light-intensity-unif)
-   (ambient-intensity-unif :accessor ambient-intensity-unif)
-
-   (normal-model-to-camera-matrix-unif :accessor normal-model-to-camera-matrix-unif)
-   (camera-space-light-pos-unif :accessor camera-space-light-pos-unif)
-   (light-attenuation-unif :accessor light-attenuation-unif)
-   (shininess-factor-unif :accessor shininess-factor-unif)
-   (base-diffuse-color-unif :accessor base-diffuse-color-unif)))
 
 ;; so that old code works again:
 (defun make-program-data ()
@@ -137,28 +121,45 @@
      (the-program data) projection-block +projection-block-index+)
     data))
 
-(defvar *white-no-phong*)
-(defvar *white-phong*)
-(defvar *white-phong-only*)
 
-(defvar *color-no-phong*)
-(defvar *color-phong*)
-(defvar *color-phong-only*)
 
+(defun lm-index (light-model)
+  "Return the index corresponding to the input light-model"
+  (ecase light-model
+    (:lm-phong-specular 0)
+    (:lm-phong-only 1)
+    (:lm-blinn-specular 2)
+    (:lm-blinn-only 3)
+    (:lm-gaussian-specular 4)
+    (:lm-gaussian-only 5)))
+
+
+(defvar *shader-files*
+  ;; (getf (aref *shader-list* 0) :white) ==> "PN.vert"
+  #((:white "PCN.vert" :color "PCN.vert" :frag "PhongLighting.frag")  
+    (:white "PN.vert" :color "PCN.vert" :frag "PhongOnly.frag")  
+    (:white "PN.vert" :color "PCN.vert" :frag "BlinnLighting.frag")  
+    (:white "PN.vert" :color "PCN.vert" :frag "BlinnOnly.frag")
+    (:white "PN.vert" :color "PCN.vert" :frag "GaussianLighting.frag")
+    (:white "PN.vert" :color "PCN.vert" :frag "GaussianOnly.frag")))
+
+(defparameter *programs*
+  (make-array (length *shader-files*) :initial-contents
+	      (loop for i below (length *shader-files*)
+		 collect (make-instance 'program-data))))
 
 (defvar *unlit*)
 
 (defun initialize-program ()
 
-  (setf *white-no-phong* (load-lit-program "PN.vert" "NoPhong.frag"))
-  (setf *color-no-phong* (load-lit-program "PCN.vert" "NoPhong.frag"))
+  (loop for i-prog below (length *programs*) do
+       (setf (white-prog (aref *programs* i-prog))
+	     (load-lit-program (getf (aref *shader-files* i-prog) :white)
+			       (getf (aref *shader-files* i-prog) :frag)))
+       (setf (color-prog (aref *programs* i-prog))
+	     (load-lit-program (getf (aref *shader-files* i-prog) :color)
+			       (getf (aref *shader-files* i-prog) :frag))))
 
-  (setf *white-phong* (load-lit-program "PN.vert" "PhongLighting.frag"))
-  (setf *color-phong* (load-lit-program "PCN.vert" "PhongLighting.frag"))
-
-  (setf *white-phong-only* (load-lit-program "PN.vert" "PhongOnly.frag"))
-  (setf *color-phong-only* (load-lit-program "PCN.vert" "PhongOnly.frag"))
-  
   (setf *unlit* (load-unlit-program "PosTransform.vert" "UniformColor.frag")))
 
 
@@ -193,7 +194,7 @@
   (gl:bind-buffer :uniform-buffer *projection-uniform-buffer*)
   (%gl:buffer-data :uniform-buffer #|sizeof(mat4):|# 64 (cffi:null-pointer) :dynamic-draw)
 
-  ;;TODO: "bind the static buffer"
+  ;;"bind the static buffer"
   (%gl:bind-buffer-range :uniform-buffer +projection-block-index+
 			 *projection-uniform-buffer* 0 #|sizeof(mat4):|# 64)
 
@@ -242,10 +243,15 @@
 	*world-light-pos-save*)))
 
 
-(defparameter *light-model* :lm-pure-diffuse)
+(defparameter *light-model* :lm-blinn-specular)
 
 (defparameter *light-attenuation* 1.2)
-(defparameter *shininess-factor* 4.0)
+;; TODO: add jumping between gaussian-specular (0,1] and other
+;; lighting models [0,infinity) shininess-factor. solved by
+;; arc using the MaterialParams class changing its operator
+;; (decides what the instanciated object will evaluate to)
+;; based on the *light-model* used.
+(defparameter *shininess-factor* 0.5) ;; was 4.0 by default
 
 (defparameter *dark-color* (glm:vec4 0.2 0.2 0.2 1.0))
 (defparameter *light-color* (glm:vec4 1.0))
@@ -267,23 +273,17 @@
 	  (glm:vec4->vec3 (glm:mat*vec (glutil:top-ms model-matrix)
 				       world-light-pos)))
 
-    (case *light-model*
-      (:lm-pure-diffuse
-       (setf p-white-prog *white-no-phong*)
-       (setf p-color-prog *color-no-phong*))
-      (:lm-diffuse-and-specular
-       (setf p-white-prog *white-phong*)
-       (setf p-color-prog *color-phong*))      
-      (:lm-specular-only
-       (setf p-white-prog *white-phong-only*)
-       (setf p-color-prog *color-phong-only*)))
-    
+
+    (setf p-white-prog (white-prog (aref *programs* (lm-index *light-model*))))
+    (setf p-color-prog (color-prog (aref *programs* (lm-index *light-model*))))
 
     (gl:use-program (the-program p-white-prog))
     (gl:uniformfv (light-intensity-unif p-white-prog) (glm:vec4 0.8 0.8 0.8 1.0))
     (gl:uniformfv (ambient-intensity-unif p-white-prog) (glm:vec4 0.2 0.2 0.2 1.0))
     (gl:uniformfv (camera-space-light-pos-unif p-white-prog) light-pos-camera-space)
     (gl:uniformf (light-attenuation-unif p-white-prog) *light-attenuation*)
+    ;; *shininess-factor* kept, this way we only miss a visual comparison between
+    ;; varying phong/blinn exponents to jump between
     (gl:uniformf (shininess-factor-unif p-white-prog) *shininess-factor*)
     (gl:uniformfv (base-diffuse-color-unif p-white-prog)
 		  (if *draw-dark-p* *dark-color* *light-color*))
@@ -390,7 +390,7 @@
   (arc:with-main
     (sdl2:with-init (:everything)
       (progn (setf *standard-output* out) (setf *debug-io* dbg) (setf *error-output* err))
-      (sdl2:with-window (win :w 500 :h 500 :flags '(:shown :opengl))
+      (sdl2:with-window (win :w 500 :h 500 :flags '(:shown :opengl :resizable))
 	(sdl2:with-gl-context (gl-context win)
 	  ;; INIT code:
 	  (init)
@@ -425,7 +425,21 @@
 	     ;; x y xrel yrel state (glutil:trans-relative-to *view-pole*))
 	     (when (lmb-pressed-p state)
 	       (mouse-rel-transform xrel yrel)))
-	    
+
+	    ;; resizing logic:
+	    (:windowevent
+	     (:type type :timestamp ts :window-id wi :event ev :padding1 p1
+		    :padding2 p2 :padding3 p3 :data1 d1 :data2 d2)
+	     ;; according to the output gathered:
+	     ;; :event ev either 6 or 5 seems to indicate resizing taking place
+	     ;; at which time data1 and data2 hold the new dimension of window
+	     ;; while resizing takes place event 6 and 5 both have the same
+	     ;; data1 data2 entries
+	     ;; (format t "type:~a ts:~a wi:~a ev:~a p1:~a p2:~a p3:~a d1:~a d2:~a~%"
+	     ;; 	     type ts wi ev p1 p2 p3 d1 d2)
+	     (list type ts wi ev p1 p2 p3 d1 d2)
+	     (when (= ev 6) ;; magic number 6 is the signal of the resizing event
+	       (reshape (float d1) (float d2))))
 	    (:keydown
 	     (:keysym keysym)
      	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-i)
@@ -439,11 +453,11 @@
 
      	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-o)
 	       ;; make the surface smoother
-	       (incf *shininess-factor* 0.5)
+	       (incf *shininess-factor* 0.1)
 	       (format t "Shiny: ~a~%" *shininess-factor*))
      	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-u)
 	       ;; make the surface rougher
-	       (decf *shininess-factor* 0.5)
+	       (decf *shininess-factor* 0.1)
 	       (format t "Shiny: ~a~%" *shininess-factor*))
 	     
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-y)
@@ -467,9 +481,12 @@
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-h)
 	       ;; cycle through lighting-models
 	       (case *light-model*
-		 (:lm-pure-diffuse (setf *light-model* :lm-diffuse-and-specular))
-		 (:lm-diffuse-and-specular (setf *light-model* :lm-specular-only))
-		 (:lm-specular-only (setf *light-model* :lm-pure-diffuse)))
+		 (:lm-phong-specular (setf *light-model* :lm-phong-only))
+		 (:lm-phong-only (setf *light-model* :lm-blinn-specular))
+		 (:lm-blinn-specular (setf *light-model* :lm-blinn-only))
+		 (:lm-blinn-only (setf *light-model* :lm-gaussian-specular))
+		 (:lm-gaussian-specular (setf *light-model* :lm-gaussian-only))
+		 (:lm-gaussian-only (setf *light-model* :lm-phong-specular)))
 	       (format t "Lighting Model used: ~a~%" *light-model*))	     
 
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-space)
@@ -491,4 +508,3 @@
 		   ;;live editing enabled:
 		   (arc:update-swank)
 		   (sdl2:gl-swap-window win))))))))
-

@@ -147,7 +147,7 @@
 
 (defvar *shader-files*
   ;; (getf (aref *shader-list* 0) :white) ==> "PN.vert"
-  #((:white "PN.vert" :color "PCN.vert" :frag "PhongLighting.frag")  
+  #((:white "PCN.vert" :color "PCN.vert" :frag "PhongLighting.frag")  
     (:white "PN.vert" :color "PCN.vert" :frag "PhongOnly.frag")  
     (:white "PN.vert" :color "PCN.vert" :frag "BlinnLighting.frag")  
     (:white "PN.vert" :color "PCN.vert" :frag "BlinnOnly.frag")
