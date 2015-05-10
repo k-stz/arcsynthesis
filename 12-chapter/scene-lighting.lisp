@@ -135,13 +135,11 @@
 
 
 (defvar *shader-files*
-  ;; (getf (aref *shader-list* 0) :white) ==> "PN.vert"
-  #((:white "PCN.vert" :color "PCN.vert" :frag "PhongLighting.frag")  
-    (:white "PN.vert" :color "PCN.vert" :frag "PhongOnly.frag")  
-    (:white "PN.vert" :color "PCN.vert" :frag "BlinnLighting.frag")  
-    (:white "PN.vert" :color "PCN.vert" :frag "BlinnOnly.frag")
-    (:white "PN.vert" :color "PCN.vert" :frag "GaussianLighting.frag")
-    (:white "PN.vert" :color "PCN.vert" :frag "GaussianOnly.frag")))
+  ;; (getf (aref *shader-list* 0) :file-vertex-shader) ==> "PCN.vert"
+  #((:file-vertex-shader "PCN.vert" :file-fragement-shader "DiffuseSpecular.frag")
+    (:file-vertex-shader "PCN.vert" :file-fragement-shader "DiffuseOnly.frag")
+    (:file-vertex-shader "PN.vert" :file-fragement-shader "DiffuseSpecularMtl.frag")  
+    (:file-vertex-shader "PN.vert" :file-fragement-shader "DiffuseOnlyMtl.frag")))
 
 (defparameter *programs*
   (make-array (length *shader-files*) :initial-contents
@@ -151,14 +149,10 @@
 (defvar *unlit*)
 
 (defun initialize-program ()
-
   (loop for i-prog below (length *programs*) do
-       (setf (white-prog (aref *programs* i-prog))
-	     (load-lit-program (getf (aref *shader-files* i-prog) :white)
-			       (getf (aref *shader-files* i-prog) :frag)))
-       (setf (color-prog (aref *programs* i-prog))
-	     (load-lit-program (getf (aref *shader-files* i-prog) :color)
-			       (getf (aref *shader-files* i-prog) :frag))))
+       (setf (aref *programs* i-prog)
+	     (load-lit-program (getf (aref *shader-files* i-prog) :file-vertex-shader)
+			       (getf (aref *shader-files* i-prog) :file-fragement-shader))))
 
   (setf *unlit* (load-unlit-program "PosTransform.vert" "UniformColor.frag")))
 
@@ -172,12 +166,13 @@
 (defun init ()
   (initialize-program)
 
-  (setf *plane-mesh*
-  	(framework:xml->mesh-obj (merge-pathnames *data-directory* "LargePlane.xml")))
-  (setf *cylinder-mesh*
-  	(framework:xml->mesh-obj (merge-pathnames *data-directory* "UnitCylinder.xml")))
-  (setf *cube-mesh*
-  	(framework:xml->mesh-obj (merge-pathnames *data-directory* "UnitCube.xml")))
+  ;; NEXT-TODO:
+  ;; (setf *plane-mesh*
+  ;; 	(framework:xml->mesh-obj (merge-pathnames *data-directory* "LargePlane.xml")))
+  ;; (setf *cylinder-mesh*
+  ;; 	(framework:xml->mesh-obj (merge-pathnames *data-directory* "UnitCylinder.xml")))
+  ;; (setf *cube-mesh*
+  ;; 	(framework:xml->mesh-obj (merge-pathnames *data-directory* "UnitCube.xml")))
 
   (gl:enable :cull-face)
   (%gl:cull-face :back)
@@ -503,7 +498,7 @@
 		     (setf *shininess-factor* 0.0001))
 
 		   ;;rendering code:
-		   (display)
+;		   (display)
 
 		   ;;live editing enabled:
 		   (arc:update-swank)
