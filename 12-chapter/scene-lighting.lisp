@@ -123,19 +123,6 @@
     data))
 
 
-
-;; NEXT-TODO: getProgram solution
-(defun lm-index (light-model)
-  "Return the index corresponding to the input light-model"
-  (ecase light-model
-    (:lm-phong-specular 0)
-    (:lm-phong-only 1)
-    (:lm-blinn-specular 2)
-    (:lm-blinn-only 3)
-    (:lm-gaussian-specular 4)
-    (:lm-gaussian-only 5)))
-
-
 (defvar *shader-files*
   ;; (getf (aref *shader-list* 0) :file-vertex-shader) ==> "PCN.vert"
   #((:file-vertex-shader "PCN.vert" :file-fragement-shader "DiffuseSpecular.frag")
@@ -147,6 +134,16 @@
   (make-array (length *shader-files*) :initial-contents
 	      (loop for i below (length *shader-files*)
 		 collect (make-instance 'program-data))))
+
+(defun get-program (lighting-type-key)
+  (let ((index
+	 (case lighting-type-key
+	   (:lp-vert-color-diffuse-specular 0)
+	   (:lp-vert-color-diffuse 1)
+
+	   (:lp-mtl-color-diffuse-specular 2)
+	   (:lp-mtl-color-diffuse 3))))
+    (aref *programs* index)))
 
 (defvar *unlit*)
 
@@ -165,8 +162,18 @@
 
 (defparameter *projection-uniform-buffer* 0)
 
+
+;;TODO: move to "scene.lisp"
+(defun scene ()
+  (let ((terrain-mesh (framework:xml->mesh-obj (merge-pathnames *data-directory* "Ground.xml"))))
+    terrain-mesh))
+
+(defvar *terrain-mesh* NIL)
+
 (defun init ()
   (initialize-program)
+
+  (setf *terrain-mesh* (scene))
 
   ;; NEXT-TODO:
   ;; (setf *plane-mesh*
@@ -259,9 +266,7 @@
 (defun draw ()
   (let* ((model-matrix (make-instance 'glutil:matrix-stack))
 	 (world-light-pos (calc-light-position))
-	 (light-pos-camera-space)
-	 (p-white-prog)
-	 (p-color-prog))
+	 (light-pos-camera-space))
 
     (glutil:set-matrix model-matrix (glutil:calc-matrix *view-pole*))
 
@@ -271,88 +276,85 @@
 				       world-light-pos)))
 
 
-    (setf p-white-prog (white-prog (aref *programs* (lm-index *light-model*))))
-    (setf p-color-prog (color-prog (aref *programs* (lm-index *light-model*))))
 
-    (gl:use-program (the-program p-white-prog))
-    (gl:uniformfv (light-intensity-unif p-white-prog) (glm:vec4 0.8 0.8 0.8 1.0))
-    (gl:uniformfv (ambient-intensity-unif p-white-prog) (glm:vec4 0.2 0.2 0.2 1.0))
-    (gl:uniformfv (camera-space-light-pos-unif p-white-prog) light-pos-camera-space)
-    (gl:uniformf (light-attenuation-unif p-white-prog) *light-attenuation*)
-    ;; *shininess-factor* kept, this way we only miss a visual comparison between
-    ;; varying phong/blinn exponents to jump between
-    (gl:uniformf (shininess-factor-unif p-white-prog) *shininess-factor*)
-    (gl:uniformfv (base-diffuse-color-unif p-white-prog)
-		  (if *draw-dark-p* *dark-color* *light-color*))
+    ;; attempt to render ground
+    ;; from drawobject:
 
-    (gl:use-program (the-program p-color-prog))
-    (gl:uniformfv (light-intensity-unif p-color-prog) (glm:vec4 0.8 0.8 0.8 1.0))
-    (gl:uniformfv (ambient-intensity-unif p-color-prog) (glm:vec4 0.2 0.2 0.2 1.0))
-    (gl:uniformfv (camera-space-light-pos-unif p-color-prog) light-pos-camera-space)
-    (gl:uniformf (light-attenuation-unif p-color-prog) *light-attenuation*)
-    (gl:uniformf (shininess-factor-unif p-color-prog) *shininess-factor*)
-    
-    (gl:use-program 0)
+    ;;(%gl:bind-buffer-range :uniform-buffer +material-block-index+ )
+
+
+    (let ((norm-matrix (sb-cga:transpose-matrix
+			(sb-cga:inverse-matrix
+			 (glutil:top-ms model-matrix)))))
+
+      ;; NEXT-TODO: continue drawobject/draw porting
+      (list norm-matrix)
+      ;; (gl:use-program )
+      )
     
 
-    (glutil:with-transform (model-matrix)
+    
 
-	;; Render the ground plane
-	(glutil:with-transform (model-matrix)
-	    (gl:use-program (the-program p-white-prog))
 
-	  (let ((norm-matrix
-		 (sb-cga:transpose-matrix
-		  (sb-cga:inverse-matrix
-		   (glutil:top-ms model-matrix)))))
+    ;; (glutil:with-transform (model-matrix)
 
-	    (gl:uniform-matrix (model-to-camera-matrix-unif p-white-prog) 4
-			       (vector (glutil:top-ms model-matrix)) NIL)
+    ;; 	;; Render the ground plane
+    ;; 	(glutil:with-transform (model-matrix)
+    ;; 	    (gl:use-program (the-program p-white-prog))
 
-	    (gl:uniform-matrix (normal-model-to-camera-matrix-unif p-white-prog) 3
-			       (vector (glm:mat4->mat3 norm-matrix)) NIL)
+    ;; 	  (let ((norm-matrix
+    ;; 		 (sb-cga:transpose-matrix
+    ;; 		  (sb-cga:inverse-matrix
+    ;; 		   (glutil:top-ms model-matrix)))))
 
-	    (framework:render *plane-mesh*)
-	    (gl:use-program 0)))
+    ;; 	    (gl:uniform-matrix (model-to-camera-matrix-unif p-white-prog) 4
+    ;; 			       (vector (glutil:top-ms model-matrix)) NIL)
 
-      ;; Render the Cylinder
-      (glutil:with-transform (model-matrix)
-	  (glutil:apply-matrix model-matrix (glutil:calc-matrix *objt-pole*))
-	(when *scale-cyl-p*
-	  (glutil::scale model-matrix (glm:vec3 1.0 1.0 0.2)))
+    ;; 	    (gl:uniform-matrix (normal-model-to-camera-matrix-unif p-white-prog) 3
+    ;; 			       (vector (glm:mat4->mat3 norm-matrix)) NIL)
 
-	(let ((norm-matrix
-	       (sb-cga:transpose-matrix
-		(sb-cga:inverse-matrix
-		 (glutil:top-ms model-matrix))))
-	      (p-prog (if *draw-colored-cyl* p-color-prog p-white-prog)))
+    ;; 	    (framework:render *plane-mesh*)
+    ;; 	    (gl:use-program 0)))
 
-	  (gl:use-program (the-program p-prog))
-	  (gl:uniform-matrix (model-to-camera-matrix-unif p-prog) 4
-			     (vector (glutil:top-ms model-matrix)) NIL)
-	  (gl:uniform-matrix
-	   (normal-model-to-camera-matrix-unif p-prog) 3
-	   (vector (glm:mat4->mat3 norm-matrix)) NIL)
+    ;;   ;; Render the Cylinder
+    ;;   (glutil:with-transform (model-matrix)
+    ;; 	  (glutil:apply-matrix model-matrix (glutil:calc-matrix *objt-pole*))
+    ;; 	(when *scale-cyl-p*
+    ;; 	  (glutil::scale model-matrix (glm:vec3 1.0 1.0 0.2)))
 
-	  (if *draw-colored-cyl*
-	      (framework:render-mode *cylinder-mesh* "lit-color")
-	      ;;else
-	      (framework:render-mode *cylinder-mesh* "lit")))
-	(gl:use-program 0))
-      ;; Render the light
-      (when *draw-light*
-	(glutil:with-transform (model-matrix)
-	    ;; TODO: another weakness of WITH-TRANSFORM can't accept
-	    ;;       objects evaluating to vectors as input
-	    (glutil::translate model-matrix world-light-pos)
-	  :scale 0.1 0.1 0.1
+    ;; 	(let ((norm-matrix
+    ;; 	       (sb-cga:transpose-matrix
+    ;; 		(sb-cga:inverse-matrix
+    ;; 		 (glutil:top-ms model-matrix))))
+    ;; 	      (p-prog (if *draw-colored-cyl* p-color-prog p-white-prog)))
 
-	  (gl:use-program (the-program *unlit*))
-	  (gl:uniform-matrix (model-to-camera-matrix-unif *unlit*) 4
-			     (vector (glutil:top-ms model-matrix)) NIL)
-	  (gl:uniformfv (object-color-unif *unlit*)
-			(glm:vec4 0.8078 0.8706 0.9922 1.0))
-	  (framework:render-mode *cube-mesh* "flat"))))))
+    ;; 	  (gl:use-program (the-program p-prog))
+    ;; 	  (gl:uniform-matrix (model-to-camera-matrix-unif p-prog) 4
+    ;; 			     (vector (glutil:top-ms model-matrix)) NIL)
+    ;; 	  (gl:uniform-matrix
+    ;; 	   (normal-model-to-camera-matrix-unif p-prog) 3
+    ;; 	   (vector (glm:mat4->mat3 norm-matrix)) NIL)
+
+    ;; 	  (if *draw-colored-cyl*
+    ;; 	      (framework:render-mode *cylinder-mesh* "lit-color")
+    ;; 	      ;;else
+    ;; 	      (framework:render-mode *cylinder-mesh* "lit")))
+    ;; 	(gl:use-program 0))
+    ;;   ;; Render the light
+    ;;   (when *draw-light*
+    ;; 	(glutil:with-transform (model-matrix)
+    ;; 	    ;; TODO: another weakness of WITH-TRANSFORM can't accept
+    ;; 	    ;;       objects evaluating to vectors as input
+    ;; 	    (glutil::translate model-matrix world-light-pos)
+    ;; 	  :scale 0.1 0.1 0.1
+
+    ;; 	  (gl:use-program (the-program *unlit*))
+    ;; 	  (gl:uniform-matrix (model-to-camera-matrix-unif *unlit*) 4
+    ;; 			     (vector (glutil:top-ms model-matrix)) NIL)
+    ;; 	  (gl:uniformfv (object-color-unif *unlit*)
+    ;; 			(glm:vec4 0.8078 0.8706 0.9922 1.0))
+    ;; 	  (framework:render-mode *cube-mesh* "flat"))))
+    ))
 
 (defun display ()
   (gl:clear-color 0.0 0.0 0.2 1)
@@ -500,7 +502,7 @@
 		     (setf *shininess-factor* 0.0001))
 
 		   ;;rendering code:
-;		   (display)
+		   (display)
 
 		   ;;live editing enabled:
 		   (arc:update-swank)

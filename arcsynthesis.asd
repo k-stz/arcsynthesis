@@ -71,7 +71,7 @@ Lisp (SBCL) using cl-sdl2 and cl-opengl"
 			 (:file "blinn-vs-phong-lighting")
 			 (:file "gaussian-specular-lighting")))
    (:module "12-chapter"
-	    :components ((:file "scene-header")
+	    :components ((:file "scene")
 			 (:file "scene-lighting")))))
 
 ;;TODO: bad style?  
