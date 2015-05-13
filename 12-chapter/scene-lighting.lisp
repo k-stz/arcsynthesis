@@ -166,6 +166,9 @@
 ;;TODO: move to "scene.lisp"
 (defun scene ()
   (let ((terrain-mesh (framework:xml->mesh-obj (merge-pathnames *data-directory* "Ground.xml"))))
+
+    ;; draw object
+    
     terrain-mesh))
 
 (defvar *terrain-mesh* NIL)
@@ -285,11 +288,20 @@
 
     (let ((norm-matrix (sb-cga:transpose-matrix
 			(sb-cga:inverse-matrix
-			 (glutil:top-ms model-matrix)))))
+			 (glutil:top-ms model-matrix))))
+	  (program (get-program :lp-vert-color-diffuse)))
 
       ;; NEXT-TODO: continue drawobject/draw porting
       (list norm-matrix)
-      ;; (gl:use-program )
+      (gl:use-program (the-program program))
+      (gl:uniform-matrix (model-to-camera-matrix-unif program) 4
+			 (vector (glutil:top-ms model-matrix)) NIL)
+      (gl:uniform-matrix (normal-model-to-camera-matrix-unif program) 3
+			 (vector (glm:mat4->mat3 norm-matrix)) NIL)
+
+      (framework:render *terrain-mesh*)
+      
+
       )
     
 
