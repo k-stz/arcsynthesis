@@ -313,7 +313,7 @@ view-pole. Can be used to perform pole-relative transformations"
 ;;            transformation-mode)!
 (defun move-camera (view-pole vec3-direction)
   (setf (cam-pos view-pole)
-	(sb-cga:vec+ (cam-pos view-pole) (sb-cga:normalize vec3-direction)))
+	(sb-cga:vec+ (cam-pos view-pole) vec3-direction))
   ;; (setf new-pos
   ;; 	  (sb-cga:vec+ pos (sb-cga:normalize vec3-direction)))
   ;; (glm:vec4->vec3

@@ -156,13 +156,6 @@
   (setf *unlit* (load-unlit-program "PosTransform.vert" "UniformColor.frag")))
 
 
-(defvar *plane-mesh*)
-(defvar *cylinder-mesh*)
-(defvar *cube-mesh*)
-
-(defparameter *projection-uniform-buffer* 0)
-
-
 ;;TODO: move to "scene.lisp"
 (defun scene ()
   (let ((terrain-mesh (framework:xml->mesh-obj (merge-pathnames *data-directory* "Ground.xml"))))
@@ -173,19 +166,17 @@
 
 (defvar *terrain-mesh* NIL)
 
+
+(defparameter *projection-uniform-buffer* 0)
+(defparameter *light-uniform-buffer* 0)
+
+
 (defun init ()
   (initialize-program)
 
   (setf *terrain-mesh* (scene))
 
-  ;; NEXT-TODO:
-  ;; (setf *plane-mesh*
-  ;; 	(framework:xml->mesh-obj (merge-pathnames *data-directory* "LargePlane.xml")))
-  ;; (setf *cylinder-mesh*
-  ;; 	(framework:xml->mesh-obj (merge-pathnames *data-directory* "UnitCylinder.xml")))
-  ;; (setf *cube-mesh*
-  ;; 	(framework:xml->mesh-obj (merge-pathnames *data-directory* "UnitCube.xml")))
-
+  
   (gl:enable :cull-face)
   (%gl:cull-face :back)
   (%gl:front-face :cw) 
@@ -197,14 +188,25 @@
   (gl:depth-range 0.0 1.0)
   (gl:enable :depth-clamp)
 
+  ;; setup our uniform buffers
   (setf *projection-uniform-buffer* (first (gl:gen-buffers 1)))
   (gl:bind-buffer :uniform-buffer *projection-uniform-buffer*)
   (%gl:buffer-data :uniform-buffer #|sizeof(mat4):|# 64 (cffi:null-pointer) :dynamic-draw)
+
+  (setf *light-uniform-buffer* (first (gl:gen-buffers 1)))
+  (gl:bind-buffer :uniform-buffer *light-uniform-buffer*)
+  (%gl:buffer-data :uniform-buffer #|sizeof(lightblock):|#
+		   64 (cffi:null-pointer) :dynamic-draw)
 
   ;;"bind the static buffer"
   (%gl:bind-buffer-range :uniform-buffer +projection-block-index+
 			 *projection-uniform-buffer* 0 #|sizeof(mat4):|# 64)
 
+  ;; TODO: is the size correct?
+  (%gl:bind-buffer-range :uniform-buffer +light-block-index+
+  			 *projection-uniform-buffer* 0 #|sizeof(lightblock):|# 64)
+
+  
   (gl:bind-buffer :uniform-buffer 0))
 
 
@@ -267,16 +269,10 @@
 (defparameter *scale-cyl-p* NIL)
 
 (defun draw ()
-  (let* ((model-matrix (make-instance 'glutil:matrix-stack))
-	 (world-light-pos (calc-light-position))
-	 (light-pos-camera-space))
+  (let* ((model-matrix (make-instance 'glutil:matrix-stack)))
 
     (glutil:set-matrix model-matrix (glutil:calc-matrix *view-pole*))
 
-    ;; TODO: make mat*vec smarter so we don't need to cast so much in code?
-    (setf light-pos-camera-space
-	  (glm:vec4->vec3 (glm:mat*vec (glutil:top-ms model-matrix)
-				       world-light-pos)))
 
 
 
@@ -286,23 +282,25 @@
     ;;(%gl:bind-buffer-range :uniform-buffer +material-block-index+ )
 
 
-    (let ((norm-matrix (sb-cga:transpose-matrix
-			(sb-cga:inverse-matrix
-			 (glutil:top-ms model-matrix))))
-	  (program (get-program :lp-vert-color-diffuse)))
+    (glutil:with-transform (model-matrix)
+	(let ((norm-matrix (sb-cga:transpose-matrix
+			    (sb-cga:inverse-matrix
+			     (glutil:top-ms model-matrix))))
+	      (program (get-program :lp-vert-color-diffuse)))
 
-      ;; NEXT-TODO: continue drawobject/draw porting
-      (list norm-matrix)
-      (gl:use-program (the-program program))
-      (gl:uniform-matrix (model-to-camera-matrix-unif program) 4
-			 (vector (glutil:top-ms model-matrix)) NIL)
-      (gl:uniform-matrix (normal-model-to-camera-matrix-unif program) 3
-			 (vector (glm:mat4->mat3 norm-matrix)) NIL)
+	  ;; NEXT-TODO: continue drawobject/draw porting
+	  (list norm-matrix)
+	  (gl:use-program (the-program program))
+	  :rotate 90.0
 
-      (framework:render *terrain-mesh*)
-      
+	  
+	  (gl:uniform-matrix (model-to-camera-matrix-unif program) 4
+	  		     (vector (glutil:top-ms model-matrix)) NIL)
+	  (gl:uniform-matrix (normal-model-to-camera-matrix-unif program) 3
+	  		     (vector (glm:mat4->mat3 norm-matrix)) NIL)
 
-      )
+	  (framework:render *terrain-mesh*)
+	  ))
     
 
     
@@ -369,6 +367,7 @@
     ))
 
 (defun display ()
+  ;; TODO: bkg to fake changing daytime sky color
   (gl:clear-color 0.0 0.0 0.2 1)
   (gl:clear-depth 1.0)
   (gl:clear :color-buffer-bit :depth-buffer-bit)
@@ -405,7 +404,6 @@
 	(sdl2:with-gl-context (gl-context win)
 	  ;; INIT code:
 	  (init)
-	  ;; TODO: callback for reshape; for now used to setup cam-to-clip-space matrix
 	  (reshape 500.0 500.0)
 	  (sdl2:with-event-loop (:method :poll)
 	    (:mousewheel
@@ -416,14 +414,14 @@
 	       (glutil:move-camera *view-pole*
 				   (glutil:pole-direction
 				    *view-pole*
-				    (glm:vec3 0.0 0.0 -1.0)))
+				    (glm:vec3 0.0 0.0 -5.0)))
 	       (format t "pos:~a~%~%"
 		       (glm:round-obj (glutil:cam-pos *view-pole*) 0.001)))
 	     (when (= y -1)
 	       (glutil:move-camera *view-pole*
 				   (glutil:pole-direction
 				    *view-pole*
-				    (glm:vec3 0.0 0.0 1.0)))
+				    (glm:vec3 0.0 0.0 5.0)))
 	       (format t "pos:~a~%~%"
 		       (glm:round-obj (glutil:cam-pos *view-pole*) 0.001))))
 	    
