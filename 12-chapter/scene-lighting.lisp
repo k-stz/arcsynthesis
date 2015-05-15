@@ -281,12 +281,24 @@
 
 (defparameter *scale-cyl-p* NIL)
 
+
+;; TODO: get it to change depending on sdl2:get-ticks
+(defparameter *sun-light-direction* (glm:vec3 0.0 -1.0 0.0))
+(defun get-light-information (world-to-camera-mat)
+
+  )
+
 (defun draw ()
-  (let* ((model-matrix (make-instance 'glutil:matrix-stack)))
+  (let* ((model-matrix (make-instance 'glutil:matrix-stack))
+	 (world-to-camera-mat))
 
     (glutil:set-matrix model-matrix (glutil:calc-matrix *view-pole*))
+    
+    (setf world-to-camera-mat (glutil:top-ms model-matrix))
 
-
+    ;; supply data to the Light uniform buffer. Since it is a uniform buffer
+    ;; object we're dealing with we don't care what gl:use-program is used!
+    
 
 
     ;; attempt to render ground
