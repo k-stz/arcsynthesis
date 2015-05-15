@@ -11,6 +11,9 @@
 ;;; 2. Light.h and Light.cpp --
 
 
+;;; Important c++ note: float padding[3] represent _3_ floats NOT 4 (we don't count
+;;; from 0 in this case)!!
+
 ;; tell the compiler to not care about speed, use maximum type saftey and
 ;; give us maximum debug information
 ;; TODO: sbcl specifics?
@@ -158,7 +161,11 @@
 
 ;;TODO: move to "scene.lisp"
 (defun scene ()
-  (let ((terrain-mesh (framework:xml->mesh-obj (merge-pathnames *data-directory* "Ground.xml"))))
+  (let ((terrain-mesh (framework:xml->mesh-obj (merge-pathnames *data-directory* "Ground.xml")))
+	(cube-mesh (framework:xml->mesh-obj (merge-pathnames *data-directory* "UnitCube.xml")))
+	(tetra-mesh (framework:xml->mesh-obj (merge-pathnames *data-directory* "UnitTetrahedron.xml")))
+	(cyl-mesh (framework:xml->mesh-obj (merge-pathnames *data-directory* "UnitCylinder.xml")))
+	(sphere-mesh (framework:xml->mesh-obj (merge-pathnames *data-directory* "UnitSphere.xml"))))
 
     ;; draw object
     
@@ -202,9 +209,15 @@
   (%gl:bind-buffer-range :uniform-buffer +projection-block-index+
 			 *projection-uniform-buffer* 0 #|sizeof(mat4):|# 64)
 
-  ;; TODO: is the size correct?
+  ;; The LightBlock:
+  ;; vec4 ambientIntensity  (+ (* 4 4)	 
+  ;; float lightAttenuation    4		 
+  ;; float padding[3]           (* 3 4)	 ;; just 3 float because we do not count from 0!!
+  ;; PerLight lights[4]         (* 4		 
+  ;; PerLights: 2xvec4            (* 2 4 4)))
+  ;; sizeof(lightblock) ==> 160
   (%gl:bind-buffer-range :uniform-buffer +light-block-index+
-  			 *projection-uniform-buffer* 0 #|sizeof(lightblock):|# 64)
+  			 *light-uniform-buffer* 0 #|sizeof(lightblock):|# 160)
 
   
   (gl:bind-buffer :uniform-buffer 0))

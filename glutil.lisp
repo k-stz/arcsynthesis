@@ -325,22 +325,15 @@ view-pole. Can be used to perform pole-relative transformations"
 ;;       the generic body!!!!!
 (defgeneric calc-matrix (pole-object))
 (defmethod calc-matrix ((vp view-pole))
-  ;; TODO (for another time): why does it need to be transposed?
-  ;; UPDATE: might the mat4-cast function return a matrix that just needs to be
-  ;;         transposed? Try: (glm:mat4-cast (glm:conjugate-quat (quat vp)))
   (let ((mat (glm:mat4-cast (quat vp)))
 	(cam-pos-mat (sb-cga:translate (glm:vec- (cam-pos vp)))))
-    ;;updating look-dir TODO: make this more central somewhere more upstream?
-    ; (update-look-dir vp)
-    ;; Reversing the order here allows for camera-relative, or model-relative
-    ;; transformation!
     (ecase (trans-relative-to vp)
       ;; tries to follow "egoshooter" rules
       (:1st-person (sb-cga:matrix* (sb-cga:transpose-matrix mat) cam-pos-mat))
       ;; camera can move 
       (:free-camera (sb-cga:matrix* (sb-cga:transpose-matrix mat) cam-pos-mat))
       (:camera-relative ;; this will provide the behaviour wanted by arc where we transform
-               ;; the object relative to our camera
+       ;; the object relative to our camera
        (sb-cga:matrix* cam-pos-mat mat))
       ;; The following is a test translation of arc's viewpole::calcmatrix():
       ;;TODO: UPDATE: should be useless now, tests show that the :camera-relative
