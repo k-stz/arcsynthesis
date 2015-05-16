@@ -203,7 +203,7 @@
   (setf *light-uniform-buffer* (first (gl:gen-buffers 1)))
   (gl:bind-buffer :uniform-buffer *light-uniform-buffer*)
   (%gl:buffer-data :uniform-buffer #|sizeof(lightblock):|#
-		   64 (cffi:null-pointer) :dynamic-draw)
+		   160 (cffi:null-pointer) :dynamic-draw)
 
   ;;"bind the static buffer"
   (%gl:bind-buffer-range :uniform-buffer +projection-block-index+
@@ -290,7 +290,9 @@
 
 (defun draw ()
   (let* ((model-matrix (make-instance 'glutil:matrix-stack))
-	 (world-to-camera-mat))
+	 (world-to-camera-mat)
+	 (light-data ;;for now the initform data shall suffice
+	  (make-instance 'light-block)))
 
     (glutil:set-matrix model-matrix (glutil:calc-matrix *view-pole*))
     
@@ -298,8 +300,10 @@
 
     ;; supply data to the Light uniform buffer. Since it is a uniform buffer
     ;; object we're dealing with we don't care what gl:use-program is used!
-    
 
+    (gl:bind-buffer :uniform-buffer *light-uniform-buffer*)
+    (gl:buffer-sub-data :uniform-buffer (as-glarr light-data))
+    (gl:bind-buffer :uniform-buffer 0)
 
     ;; attempt to render ground
     ;; from drawobject:

@@ -20,6 +20,7 @@
 	      :collect (make-instance 'per-light))
 	   :accessor lights)))
 
+;; use gl::array-byte-size for quick tests
 (defgeneric as-glarr (obj)
   (:documentation "Return a gl-array representation of the object."))
 
