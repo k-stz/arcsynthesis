@@ -12,7 +12,7 @@
 (defconstant +number-of-lights+ 4)
 
 (defclass light-block ()
-  ((ambient-intensity :initform (glm:vec4 0.0) :accessor ambient-intensity) ; vec4
+  ((ambient-intensity :initform (glm:vec4 .25) :accessor ambient-intensity) ; vec4
    (light-attenuation :initform 1.0 :accessor light-attenuation)	    ; float
    ;; "padding 3" is taken care of in the AS-GLARR method!
    (lights :initform
