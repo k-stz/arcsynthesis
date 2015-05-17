@@ -50,8 +50,34 @@
 ;; TODO: if heavy memory allocation consumes ram too fast then put a gl-array
 ;; slot into the light-block class and let AS-GLARR update and return it!
 (defun light-block-test-array ()
-  (cffi:with-foreign-object (array '%gl:float 40) ; 40 = floats in light-block
+  (cffi:with-foreign-object (array :float 40) ; 40 = floats in light-block
     (dotimes (i 40)
-      (setf (cffi:mem-aref array '%gl:float i)
+      (setf (cffi:mem-aref array :float i)
 	    0.5))
     array))
+
+
+;;------------------------------------------------------------------------------
+;;CFFI approach to light-block struct
+
+;; first we need the glm::vec4 which shall be just an array of floats
+(cffi:defcstruct per-light
+  (camera-space-light-pos :float :count 4)
+  (light-intensity :float :count 4))
+
+
+;; from cffi doc:
+(cffi:defcstruct light-block
+  (ambient-intensity :float :count 4)
+  (light-attenuation :float)
+  ;; TODO: use :offet?
+  (padding :float :count 3)
+  (x (:struct per-light)))
+
+;; (cffi:with-foreign-object (ptr '(:struct point))
+;;   ;; Initialize the slots
+;;   (setf (cffi:foreign-slot-value ptr '(:struct point) 'x) 42
+;; 	(cffi:foreign-slot-value ptr '(:struct point) 'y) 42)
+;;   ;; Return a list with the coordinates
+;;   (cffi:with-foreign-slots ((x y) ptr (:struct point))
+;;     (list x y)))

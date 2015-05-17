@@ -288,6 +288,8 @@
 
   )
 
+(defparameter *test-array* (light-block-test-array))
+
 (defun draw ()
   (let* ((model-matrix (make-instance 'glutil:matrix-stack))
 	 (world-to-camera-mat)
@@ -304,7 +306,7 @@
     (gl:bind-buffer :uniform-buffer *light-uniform-buffer*)
     ;; hm this is bad, AS-GLARR will alloocate a fresh array every time :I
     ;; (gl:buffer-sub-data :uniform-buffer (as-glarr light-data))
-    (%gl:buffer-sub-data :uniform-buffer 0 160 test-array)
+    (%gl:buffer-sub-data :uniform-buffer 0 160 *test-array*)
 
     (gl:bind-buffer :uniform-buffer 0)
 
