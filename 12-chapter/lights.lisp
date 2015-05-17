@@ -50,12 +50,25 @@
 ;; TODO: if heavy memory allocation consumes ram too fast then put a gl-array
 ;; slot into the light-block class and let AS-GLARR update and return it!
 (defun light-block-test-array ()
+  ;; NEXT-TODO: with-foreign-object automatically frees the pointer!
+  ;; look up its implementation and cffi:with-foreign-pointer also read up a bit
+  ;; on what freeing pointer can mean and especially how gl:array are allocated.
+  ;; The most convenient solution would be though to make defcstruct work
   (cffi:with-foreign-object (array :float 40) ; 40 = floats in light-block
     (dotimes (i 40)
       (setf (cffi:mem-aref array :float i)
 	    0.5))
     array))
 
+
+;; (gl:alloc-gl-array type count)
+;; (...) just makes a pointer to a array of uniform <type> of <count> size
+;; ahhh, at its core is just CFFI:FOREIGN-ALLOC and CFFI:FOREIN-FREE! example:
+;; (cffi:foreign-free (cffi:foreign-alloc :float :initial-element 0.5 :count 40))
+
+
+
+;;NEXT-TODO: comment by ogmo!
 
 ;;------------------------------------------------------------------------------
 ;;CFFI approach to light-block struct
@@ -72,7 +85,19 @@
   (light-attenuation :float)
   ;; TODO: use :offet?
   (padding :float :count 3)
-  (x (:struct per-light)))
+  ;; TODO: :count doesn't accept a +constant+ value, cffi bug?
+  (lights (:struct per-light) :count 4))
+
+;; TODO: pass it a object as light-block argument?
+(defun make-light-block-c-struct ()
+  (cffi:with-foreign-object (ptr '(:struct light-block))
+    ;; 'vars' need to be the full name of the actuall slots
+    (cffi:with-foreign-slots ((ambient-intensity) ptr (:struct light-block))
+      (dotimes (i 4)
+	;; NEXT-TODO. can't set values using with-foregin-slotS ?
+	(setf (cffi:mem-aref ambient-intensity :float i) 0.5))
+      (print (cffi:mem-aref ambient-intensity :float 0)))
+    ptr))
 
 ;; (cffi:with-foreign-object (ptr '(:struct point))
 ;;   ;; Initialize the slots
@@ -81,3 +106,24 @@
 ;;   ;; Return a list with the coordinates
 ;;   (cffi:with-foreign-slots ((x y) ptr (:struct point))
 ;;     (list x y)))
+
+;;memory layout tests
+(cffi:defcstruct test
+  (x :int)
+  (y :int))
+
+(defparameter *t1*
+  (cffi:with-foreign-object (ptr '(:struct test))
+    (setf (cffi:foreign-slot-value ptr '(:struct test) 'x) 42
+	  (cffi:foreign-slot-value ptr '(:struct test) 'y) 99)
+    ptr))
+
+;; cffi doc example
+;; (cffi:with-foreign-object (ptr '(:struct test))
+;;   (setf (cffi:foreign-slot-value ptr '(:struct test) 'x) 42
+;; 	(cffi:foreign-slot-value ptr '(:struct test) 'y) 99)
+;;   (cffi:with-foreign-slots ((x y) ptr (:struct test))
+;;     (list x y)))
+
+(cffi:defcstruct gibberish
+  (ixu :int))

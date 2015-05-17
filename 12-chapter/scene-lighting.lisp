@@ -288,7 +288,8 @@
 
   )
 
-(defparameter *test-array* (light-block-test-array))
+;; TODO: just test value
+(defvar *test-array* (cffi:foreign-alloc :float :initial-element 0.5 :count 40))
 
 (defun draw ()
   (let* ((model-matrix (make-instance 'glutil:matrix-stack))
@@ -306,7 +307,7 @@
     (gl:bind-buffer :uniform-buffer *light-uniform-buffer*)
     ;; hm this is bad, AS-GLARR will alloocate a fresh array every time :I
     ;; (gl:buffer-sub-data :uniform-buffer (as-glarr light-data))
-    (%gl:buffer-sub-data :uniform-buffer 0 160 *test-array*)
+    (%gl:buffer-sub-data :uniform-buffer 0 160 (light-block-test-array))
 
     (gl:bind-buffer :uniform-buffer 0)
 
