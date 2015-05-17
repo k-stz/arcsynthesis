@@ -12,8 +12,8 @@
 (defconstant +number-of-lights+ 4)
 
 (defclass light-block ()
-  ((ambient-intensity :initform (glm:vec4 .25) :accessor ambient-intensity) ; vec4
-   (light-attenuation :initform 1.0 :accessor light-attenuation)	    ; float
+  ((ambient-intensity :initform (glm:vec4 .5) :accessor ambient-intensity) ; vec4
+   (light-attenuation :initform 1.0 :accessor light-attenuation)	   ; float
    ;; "padding 3" is taken care of in the AS-GLARR method!
    (lights :initform
 	   (loop for i below +number-of-lights+
@@ -44,3 +44,14 @@
     ;; data stored. building the gl-array:
     (arc:create-gl-array-from-vector data)))
 
+
+
+;;; new approach to (gl:buffer-sub-data 
+;; TODO: if heavy memory allocation consumes ram too fast then put a gl-array
+;; slot into the light-block class and let AS-GLARR update and return it!
+(defun light-block-test-array ()
+  (cffi:with-foreign-object (array '%gl:float 40) ; 40 = floats in light-block
+    (dotimes (i 40)
+      (setf (cffi:mem-aref array '%gl:float i)
+	    0.5))
+    array))

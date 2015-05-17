@@ -302,7 +302,10 @@
     ;; object we're dealing with we don't care what gl:use-program is used!
 
     (gl:bind-buffer :uniform-buffer *light-uniform-buffer*)
-    (gl:buffer-sub-data :uniform-buffer (as-glarr light-data))
+    ;; hm this is bad, AS-GLARR will alloocate a fresh array every time :I
+    ;; (gl:buffer-sub-data :uniform-buffer (as-glarr light-data))
+    (%gl:buffer-sub-data :uniform-buffer 0 160 test-array)
+
     (gl:bind-buffer :uniform-buffer 0)
 
     ;; attempt to render ground
@@ -321,7 +324,6 @@
 	  (list norm-matrix)
 	  (gl:use-program (the-program program))
 	  :rotate 90.0
-
 	  
 	  (gl:uniform-matrix (model-to-camera-matrix-unif program) 4
 	  		     (vector (glutil:top-ms model-matrix)) NIL)
