@@ -125,5 +125,47 @@
 ;;   (cffi:with-foreign-slots ((x y) ptr (:struct test))
 ;;     (list x y)))
 
-(cffi:defcstruct gibberish
-  (ixu :int))
+;;(cffi:foreign-alloc '(:struct light-block) :initial-element 0.5)
+;;==> error no method for CFFI:TRANSLATE-INTO-FOREIGN-MEMORY when
+;;    called with argument:#<LIGHT-BLOCK-TCLASS LIGHT-BLOCK>
+;; So we just need to implement the translate-into-foreign-memory class?
+
+;;yeah, well just remove the :initial-element and it seems to work:
+
+(defparameter *lb*
+  (cffi:foreign-alloc '(:struct light-block)))
+
+;; since *lb* memory layout is practically a float array of 40 indices this
+;; oughta work:
+(dotimes (i 40)
+  (setf
+   (cffi:mem-aref *lb* :float i) 0.5)) ; yep, totally works!!
+
+
+
+
+;; new approach, remove FOREIGN-FREE from WITH-FOREIGN-OBJECT macro expansion:
+;; TODO: _remove_ these functions!
+(defmacro w-f-p ((var size &optional size-var) &body body)
+  "Bind VAR to SIZE bytes of foreign memory during BODY.  The
+pointer in VAR is invalid beyond the dynamic extent of BODY, and
+may be stack-allocated if supported by the implementation.  If
+SIZE-VAR is supplied, it will be bound to SIZE during BODY."
+  (unless size-var
+    (setf size-var (gensym "SIZE")))
+
+  (let ((alien-var (gensym "ALIEN")))
+    `(cffi-sys::with-alien ((,alien-var (array (cffi-sys::unsigned 8) ,(eval size))))
+       (let ((,size-var ,(eval size))
+	     (,var (cffi-sys::alien-sap ,alien-var)))
+	 (declare (ignorable ,size-var))
+	 ,@body))))
+
+(defmacro w-f-o ((var type &optional (count 1)) &body body)
+  "Bind VAR to a pointer to COUNT objects of TYPE during BODY.
+The buffer has dynamic extent and may be stack allocated."
+  `(w-f-p
+    (,var ,(* (eval count) (cffi:foreign-type-size (eval type))))
+    ,@body))
+
+

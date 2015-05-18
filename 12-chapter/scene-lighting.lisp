@@ -288,14 +288,27 @@
 
   )
 
-;; TODO: just test value
-(defvar *test-array* (cffi:foreign-alloc :float :initial-element 0.5 :count 40))
+;; TODO: wow, that's awfually complex; hide in function
+(defparameter *light-data*
+  ;; if already allocated, free old memory
+  (progn (when (and (boundp '*light-data*)
+		    (cffi:pointerp *light-data*))
+	   (cffi:foreign-free *light-data*))
+	 ;; always allocate fresh light-block c-struct!
+	 (cffi:foreign-alloc '(:struct light-block))))
+
+(defun init-light-data ()
+  (loop for i below 40 do
+       ;; treating the light-block struct as a float helps us
+       ;; easily iterate over it's whole structure!
+       (setf (cffi:mem-aref *light-data* :float i) 0.5)))
 
 (defun draw ()
   (let* ((model-matrix (make-instance 'glutil:matrix-stack))
 	 (world-to-camera-mat)
-	 (light-data ;;for now the initform data shall suffice
-	  (make-instance 'light-block)))
+	 ;; ( light-data ;;for now the initform data shall suffice
+	 ;;   *light-data*)
+	 )
 
     (glutil:set-matrix model-matrix (glutil:calc-matrix *view-pole*))
     
@@ -307,7 +320,7 @@
     (gl:bind-buffer :uniform-buffer *light-uniform-buffer*)
     ;; hm this is bad, AS-GLARR will alloocate a fresh array every time :I
     ;; (gl:buffer-sub-data :uniform-buffer (as-glarr light-data))
-    (%gl:buffer-sub-data :uniform-buffer 0 160 (light-block-test-array))
+    (%gl:buffer-sub-data :uniform-buffer 0 160 *light-data*)
 
     (gl:bind-buffer :uniform-buffer 0)
 
