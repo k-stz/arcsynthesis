@@ -1515,3 +1515,11 @@ But if we look at the Gaussian specular model we find ACOS in the algorithm,
 the inverse cosine, which is a notorious performance killer.
 
 --------------------------------------------------------------------------------
+
+material properties,
+properties of a surface, such as roughness/smoothness factor, the color used when
+diffusion takes place and the color used when specular lighting takes place etc. This
+takes into the lighting model the surface itself, as light does behave differently for
+different surfaces. According to John Carmack the accurate choice of material properties
+is where the rasterization photorealism approach can still do a lot. This is an issue that
+professional modelers have to take into account when creating models.
