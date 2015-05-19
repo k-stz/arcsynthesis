@@ -1,3 +1,14 @@
+;; NOT FINISHED!
+
+;; NEXT-TODO: implementing convenience function for the light-block
+;;            c-struct allocated to easily set it's field.
+
+;;            The only thing not covered is the gl:getintegerv to get the memory layout of
+;;            the shader material blocks right.
+;;            But at this point the necessary cffi knowledge should have been conveyed to trivally
+;;            translate the necessary parts yourself when needed.
+
+
 ;;; this tutorial c++ code is spread over several files:
 ;;; all share these files:
 ;;; 1. Scene.h and Scene.cpp
@@ -237,49 +248,6 @@
 		 :pos (glm:vec3 0.0 0.5 0.0)
 		 :orient (glm:quaternion 1.0 0.0 0.0 0.0)))
 
-(defparameter *draw-colored-cyl* t)
-(defparameter *draw-light* nil)
-
-
-(defparameter *light-height* 1.5)
-(defparameter *light-radius* 1.0)
-
-(defparameter *rotate-light-p* t)
-(defparameter *world-light-pos-save* (glm:vec4 0.0 0.0 0.0 1.0))
-
-
-(defun calc-light-position ()
-  (let ((curr-time-through-loop
-	 (/ (sdl2:get-ticks) 10000.0))
-	(ret (glm:vec4 0.0 *light-height* 0.0 1.0)))
-    (setf (glm:vec. ret :x) (* (cos (* curr-time-through-loop
-				       (* (coerce pi 'single-float) 2.0)))
-			       *light-radius*))
-    (setf (glm:vec. ret :z) (* (sin (* curr-time-through-loop
-				       (* (coerce pi 'single-float) 2.0)))
-			       *light-radius*))
-    (when *rotate-light-p*
-      (setf *world-light-pos-save* ret))
-    (if *rotate-light-p* 
-	ret
-	*world-light-pos-save*)))
-
-
-(defparameter *light-model* :lm-blinn-specular)
-
-(defparameter *light-attenuation* 1.2)
-;; TODO: add jumping between gaussian-specular (0,1] and other
-;; lighting models [0,infinity) shininess-factor. solved by
-;; arc using the MaterialParams class changing its operator
-;; (decides what the instanciated object will evaluate to)
-;; based on the *light-model* used.
-(defparameter *shininess-factor* 0.5) ;; was 4.0 by default
-
-(defparameter *dark-color* (glm:vec4 0.2 0.2 0.2 1.0))
-(defparameter *light-color* (glm:vec4 1.0))
-(defparameter *draw-dark-p* NIL)
-
-(defparameter *scale-cyl-p* NIL)
 
 
 ;; TODO: get it to change depending on sdl2:get-ticks
@@ -318,8 +286,9 @@
     ;; object we're dealing with we don't care what gl:use-program is used!
 
     (gl:bind-buffer :uniform-buffer *light-uniform-buffer*)
-    ;; hm this is bad, AS-GLARR will alloocate a fresh array every time :I
-    ;; (gl:buffer-sub-data :uniform-buffer (as-glarr light-data))
+
+
+    (init-light-data) ;; for tests, TODO: remove
     (%gl:buffer-sub-data :uniform-buffer 0 160 *light-data*)
 
     (gl:bind-buffer :uniform-buffer 0)
@@ -339,12 +308,14 @@
 	  ;; NEXT-TODO: continue drawobject/draw porting
 	  (list norm-matrix)
 	  (gl:use-program (the-program program))
+	  ;; yeah, still a mistery why transformation don't seem to have an effect
 	  :rotate 90.0
 	  
 	  (gl:uniform-matrix (model-to-camera-matrix-unif program) 4
 	  		     (vector (glutil:top-ms model-matrix)) NIL)
 	  (gl:uniform-matrix (normal-model-to-camera-matrix-unif program) 3
 	  		     (vector (glm:mat4->mat3 norm-matrix)) NIL)
+
 
 	  (framework:render *terrain-mesh*)
 	  ))
@@ -498,65 +469,13 @@
 	       (reshape (float d1) (float d2))))
 	    (:keydown
 	     (:keysym keysym)
-     	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-i)
-	       (incf *light-height* 0.2))
-	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-k)
-	       (decf *light-height* 0.2))
-	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-l)
-	       (incf *light-radius* 0.2))
-	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-j)
-	       (decf *light-radius* 0.2))
 
-     	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-o)
-	       ;; make the surface smoother
-	       (incf *shininess-factor* 0.1)
-	       (format t "Shiny: ~a~%" *shininess-factor*))
-     	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-u)
-	       ;; make the surface rougher
-	       (decf *shininess-factor* 0.1)
-	       (format t "Shiny: ~a~%" *shininess-factor*))
 	     
-	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-y)
-	       ;; toggle light rendering
-	       (setf *draw-light* (not *draw-light*)))
-	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-z)
-	       ;; toggle light rendering
-	       (setf *draw-light* (not *draw-light*)))
-     	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-t)
-	       ;; toggle cylinder scaling
-	       (setf *scale-cyl-p* (not *scale-cyl-p*)))
-
-	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-b)
-	       ;; break rotation
-	       (setf *rotate-light-p* (not *rotate-light-p*)))
-
-	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-g)
-	       ;; doggle dark/light plane
-	       (setf *draw-dark-p* (not *draw-dark-p*)))
-	     
-	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-h)
-	       ;; cycle through lighting-models
-	       (case *light-model*
-		 (:lm-phong-specular (setf *light-model* :lm-phong-only))
-		 (:lm-phong-only (setf *light-model* :lm-blinn-specular))
-		 (:lm-blinn-specular (setf *light-model* :lm-blinn-only))
-		 (:lm-blinn-only (setf *light-model* :lm-gaussian-specular))
-		 (:lm-gaussian-specular (setf *light-model* :lm-gaussian-only))
-		 (:lm-gaussian-only (setf *light-model* :lm-phong-specular)))
-	       (format t "Lighting Model used: ~a~%" *light-model*))	     
-
-	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-space)
-	       ;; toggle color on cylinder
-	       (setf *draw-colored-cyl* (not *draw-colored-cyl*)))
-
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-escape)
 	       (sdl2:push-event :quit)))
 	    (:quit () t)
 	    (:idle ()
 		   ;; MAIN LOOP:
-		   ;; clamping: (remove it and witness a nice eye-candy effect)
-		   (when (<= *shininess-factor* 0.0)
-		     (setf *shininess-factor* 0.0001))
 
 		   ;;rendering code:
 		   (display)
