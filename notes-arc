@@ -1523,3 +1523,62 @@ takes into the lighting model the surface itself, as light does behave different
 different surfaces. According to John Carmack the accurate choice of material properties
 is where the rasterization photorealism approach can still do a lot. This is an issue that
 professional modelers have to take into account when creating models.
+
+light clipping, or light clampping,
+when the light intensity falls outside the [0,1] range. Usually in the positive range.
+It looks somewhat interesting and might have just inspired some effects in various
+media.
+
+
+
+//code porting skip takes place here//
+
+
+
+--------------------------------------------------------------------------------
+HDR - high dynamic range lighting,
+we emulate the behaviour of our iris: it contracts in bright areas and expands as the
+area gets less bright. Hence we take the overall illumination into account and either
+filter out some more or some less light.
+
+--------------------------------------------------------------------------------
+gamma correction,
+very intersting, since the times of CRT TVs the color mapping relationship
+between light intensity and color is non-linear. The modern screens even though
+all don't use CRT still take this assumption when displaying colors. We need to
+counter this assumption by performing gamma correction which in effect simply
+raises the, for example, RGB color to the 1/gamma power where gamma is usually
+2.2:
+
+  linear-RGB^1/2.2 = gamma corrected color!
+
+See the curve in the tutorial section "Linearity and Gamma" to see how this changes
+the color mapping, how it was behaving until now "fully half of the linearRGB range
+is shoved into the bottom one-fifth of the available light intensity.". Applying
+this correction in our shaders makes the scene colors much more realistic, brighter
+and also imporves the shadow detail considerably.
+
+The CRT gamma-correction issue is due to cathode rays increasing brightness with
+higheer voltage, but at a non-linear way. To counter this issue the images send
+to the TVs via satallites where sending the inverse of this voltage/brightness
+relationship, thereby canceling out this non-linearity! The reason modern monitors
+still take this into account is because like the TV-station sending gamma-corrected
+imiages all sources: media, cameras etc. had to store the images gamma-corrected.
+This legacy today in the form of DVD bluerays etc. forced the new generation of
+monitors to adapt to this forced image property!
+
+Since we de-linearlize the images to make them the "anti-wave" curve to the CRT
+voltage-brighness wave to help them cancel out into a linear one, is called
+_gamma correction_.
+
+ Attention! 
+This means whenever we draw something directly to the screen, without going to
+our "gamma corrected" shaders, we can't forget to apply this gamma correction!
+(gl:clear-color ..) comes to mind.
+
+
+inverse-square attenuation,
+finally the reason why inverse-square attenuation wasn't realistic previously
+was precisely because the monitor expecting gamma corrected images in the first
+place!!
+--------------------------------------------------------------------------------

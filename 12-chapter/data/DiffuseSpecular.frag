@@ -65,6 +65,10 @@ vec4 ComputeLighting(in PerLight lightData)
 {
 	vec3 lightDir;
 	vec4 lightIntensity;
+	// "the time-honored" technique of differentiating directional from point
+	// light is to test for the w component (w = 0.0 = directional light). This test
+	// is necessary as point light use attenuation and the direction is computed
+	// relative to the position of the point light.
 	if(lightData.cameraSpaceLightPos.w == 0.0)
 	{
 		lightDir = vec3(lightData.cameraSpaceLightPos);
