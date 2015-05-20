@@ -1529,10 +1529,11 @@ when the light intensity falls outside the [0,1] range. Usually in the positive 
 It looks somewhat interesting and might have just inspired some effects in various
 media.
 
+--------------------------------------------------------------------------------
 
 
 //code porting skip takes place here//
-
+//the following notes are now skimming much more parts of the tutorial//
 
 
 --------------------------------------------------------------------------------
@@ -1582,6 +1583,13 @@ finally the reason why inverse-square attenuation wasn't realistic previously
 was precisely because the monitor expecting gamma corrected images in the first
 place!!
 --------------------------------------------------------------------------------
+
+
+//skipped some stuff here//
+
+
+--------------------------------------------------------------------------------
+
 ray,
 a ray is a direction and a position. It contains infinite position bound
 by its position origin and extends into inifity in its direction. The most
@@ -1599,3 +1607,27 @@ where P(t) yields the position of points
 The beatiful thing is that this is very easy to visualize: We simply multiply
 the direction starting at the origin O by the scalar 't', and we get the
 resulting vector to point at any point along the ray!
+
+--------------------------------------------------------------------------------
+interleaving,
+arranging vertex and their attributes next to each other in a datastructure is called
+interleaving. _This data arrangement_ (!) should be used where possible. Trying to lay out the
+datastructure in memory the c-struct comes to mind with two fields
+
+a vec-type field, and a some attribut, like arc's example:
+
+struct VertexData
+{
+    glm::vec3 cameraPosition;
+    float sphereRadius;
+};
+
+--------------------------------------------------------------------------------
+geometry shader,
+a new shader stage! It is entirely optional and takes place between the vertex and
+fragment shader stage. It takes a primitive as inputs and returns a primitive as output. A
+very vivid example would minecraft blocks: to store them efficiently we could use a point,
+then put the point in the geometry shader and make it return a cube primitive!
+
+This is why a better name would probably be "primitive shader"!
+
