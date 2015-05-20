@@ -1582,3 +1582,20 @@ finally the reason why inverse-square attenuation wasn't realistic previously
 was precisely because the monitor expecting gamma corrected images in the first
 place!!
 --------------------------------------------------------------------------------
+ray,
+a ray is a direction and a position. It contains infinite position bound
+by its position origin and extends into inifity in its direction. The most
+beautiful thing about a ray is the equation used to express the points within
+this bound inifinite, well, ray: the..
+
+Ray Equation:
+
+P(t) = Dt + O
+
+O = origin point of th ray
+D = directino of the ray
+where P(t) yields the position of points 
+
+The beatiful thing is that this is very easy to visualize: We simply multiply
+the direction starting at the origin O by the scalar 't', and we get the
+resulting vector to point at any point along the ray!
