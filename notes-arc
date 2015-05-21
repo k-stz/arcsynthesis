@@ -1626,8 +1626,28 @@ struct VertexData
 geometry shader,
 a new shader stage! It is entirely optional and takes place between the vertex and
 fragment shader stage. It takes a primitive as inputs and returns a primitive as output. A
-very vivid example would minecraft blocks: to store them efficiently we could use a point,
-then put the point in the geometry shader and make it return a cube primitive!
+very vivid example would be minecraft blocks: to store them efficiently we could use a
+point, then put the point in the geometry shader and make it return a cube primitive!
 
-This is why a better name would probably be "primitive shader"!
+This is why a better name for gemoetry shader would be "primitive shader"!
 
+--------------------------------------------------------------------------------
+Textures,  ;;TODO rewrite
+a texture is a look-up table; an array. We start into this big topic with the big
+disillusion: textures are _not_ pictures.
+
+First problem is one of in which set or scope we're talking about. Because texture
+can be pictures of something. Second, OpenGL reinforces that notion by calling
+data in textures "colors" and many functions dealing with textures contain the
+word "image"!
+
+texture,
+is an object containing 1..n arrays of varying dimensions. The storeage of a texture
+is owned by opengl just like with buffer objects' storage.
+
+images,
+the arrays within a texture are called images!
+
+texture type,
+textures have a texture type defining, among others, the number of dimensions of
+the images (remember images are arrays; arrays can have varying dimensions).
