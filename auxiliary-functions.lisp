@@ -35,12 +35,13 @@ working while cepl runs"
      (when connection
        (swank::handle-requests connection t)))))
 
+;; TODO: (gl:foreign-alloc ...  :initial-contents)
 (defun fill-gl-array (gl-array data-array)
   "Fills gl-array <gl-array> with <data-array> of type cl:array, <data-array>'s contents
 will be COERCEd to SINGLE-FLOAT"
   (if (and (typep gl-array 'gl:gl-array)
 	   (arrayp data-array)
-           (= (gl::gl-array-size gl-array) ;wow, this important function's an internal?
+           (= (gl::gl-array-size gl-array)
 	      (length data-array)))
       (dotimes (i (length data-array))
 	(setf

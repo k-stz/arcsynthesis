@@ -3,7 +3,6 @@
 (in-package #:arc-1)
 
 (defvar out *standard-output*)  (defvar dbg *debug-io*) (defvar err *error-output*)
-;(defparameter *connection* (or swank::*emacs-connection* (swank::default-connection)))
 
 ;; gl:with-gl-array might remedy this!
 ;;  const float vertex-positions[] } { 0.75f, ... 1.0f, };
@@ -12,9 +11,9 @@
 ;; will crash
 
 ;; TODO: lisp builtins possible?
-(defparameter *vertex-positions* (gl:alloc-gl-array :float 12))
+(defvar *vertex-positions* (gl:alloc-gl-array :float 12))
 ;;the alpha value seems to cause some scaling to happen...?
-(defparameter *verts* #(0.75  0.75 0.0 1.0
+(defvar *verts* #(0.75  0.75 0.0 1.0
 			0.75 -0.75 0.0 1.0
 			-0.75 -0.75 0.0 1.0
                          0.6 0.75 0.0 1.0
@@ -43,25 +42,19 @@ outputColor = vec4(0.0f, 1.0f, 1.0f, 1.0f);
   (let ((shader-list (list)))
     (push (arc:create-shader :vertex-shader *vertex-shader*) shader-list)
     (push (arc:create-shader :fragment-shader *fragment-shader*) shader-list)
-    (arc:create-program shader-list)
-    ;; got to delete the shader objects too apparently >_>
-    ;; maybe because they're residue as in the program object is already created from
-    ;; their construction plan
-     (loop for shader-object in shader-list
-	  do (%gl:delete-shader shader-object))))
+    (arc:create-program shader-list)))
 
 
 (defun main ()
-  (sdl2:with-init (:everything) ; k-stz: sdl2:in-main-thread code!!
+  (sdl2:with-init (:everything)
     (progn (setf *standard-output* out) (setf *debug-io* dbg) (setf *error-output* err))
-    ;K-STZ TEST:
     (format t "Using SDL Library Version: ~D.~D.~D~%"
             sdl2-ffi:+sdl-major-version+
             sdl2-ffi:+sdl-minor-version+
             sdl2-ffi:+sdl-patchlevel+)
     ;;SDL_Window *window = SDL_CreateWindow(
     ;; "SDL2 WINDOW", 0, 0, 640, 480, 
-    ;; SDL_WINDOW_OPENGL|SDL_WINDOW_RESIZABLE); ; i think all flaggs are used by default
+    ;; SDL_WINDOW_OPENGL|SDL_WINDOW_RESIZABLE); ; :resizeable can be used here
     (sdl2:with-window (win :w 200 :h 200 :flags '(:shown :opengl)) ;these flags necessary?
       ;; SDL_GLContext glcontext = SDL_GL_CreateContext(window)
       ;; also once its <body> is executed it runs:
@@ -89,13 +82,13 @@ outputColor = vec4(0.0f, 1.0f, 1.0f, 1.0f);
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-e)
 	       ;;experimental code
 	       (print "key-pressed: e -- executing experiments...:~%")
-	       ;;; hm, doesn't work, but lets not pursue this, since their is probably
-	       ;;; a canonical way to do this anyway! (static-draw is my foe?)
+;;; hm, doesn't work, but lets not pursue this, since their is probably
+;;; a canonical way to do this anyway! (static-draw is my foe?)
                ;; (%gl:bind-buffer :array-buffer 0)
 	       ;; (gl:buffer-data :array-buffer :static-draw
 	       ;; 		       (create-gl-array-from-vector #(1.0 1.0 1.0 0.0)))
 	       ;; (print 'WINITUDE)
-	       ;(%gl:viewport 0 0 200 200)
+					;(%gl:viewport 0 0 200 200)
 	       ;; clears screen with color set in glClearColor!!
 	       (gl:clear :color-buffer-bit) ;glClear(GL_COLOR_BUFFER_BIT)
 	       )
@@ -105,9 +98,9 @@ outputColor = vec4(0.0f, 1.0f, 1.0f, 1.0f);
 	     (let ((k (sdl2:scancode-value keysym)))
 	       (format t "~a~%" k)))
 	    (:idle () ;;;main rendering code:
-                  ; (arc::update-swank) ;TODO: new slime-connect for this??
-		  ; (swank::handle-requests *connection* t) ;TODO, do NOT understand
-		  ; (swank::handle-requests (swank::default-connection) t)
+					; (arc::update-swank) ;TODO: new slime-connect for this??
+					; (swank::handle-requests *connection* t) ;TODO, do NOT understand
+					; (swank::handle-requests (swank::default-connection) t)
 		   ;; TODO: state setting functions don't need to run every iteration
 		   ;; of the rendering loop, instead only when change is needed!!
 		   (gl:bind-buffer :array-buffer position-buffer-object)

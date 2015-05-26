@@ -1553,6 +1553,9 @@ raises the, for example, RGB color to the 1/gamma power where gamma is usually
 
   linear-RGB^1/2.2 = gamma corrected color!
 
+A quick and dirty solution might be to simply perform the sqrt(linear-rgb) as
+sqrt is close enough to the root of radix 2.2
+
 See the curve in the tutorial section "Linearity and Gamma" to see how this changes
 the color mapping, how it was behaving until now "fully half of the linearRGB range
 is shoved into the bottom one-fifth of the available light intensity.". Applying
@@ -1560,16 +1563,16 @@ this correction in our shaders makes the scene colors much more realistic, brigh
 and also imporves the shadow detail considerably.
 
 The CRT gamma-correction issue is due to cathode rays increasing brightness with
-higheer voltage, but at a non-linear way. To counter this issue the images send
+higher voltage, but in a non-linear way. To counter this issue the images send
 to the TVs via satallites where sending the inverse of this voltage/brightness
 relationship, thereby canceling out this non-linearity! The reason modern monitors
 still take this into account is because like the TV-station sending gamma-corrected
-imiages all sources: media, cameras etc. had to store the images gamma-corrected.
+images all sources: media, cameras etc. had to store the images gamma-corrected.
 This legacy today in the form of DVD bluerays etc. forced the new generation of
 monitors to adapt to this forced image property!
 
 Since we de-linearlize the images to make them the "anti-wave" curve to the CRT
-voltage-brighness wave to help them cancel out into a linear one, is called
+voltage-brighness wave to help them cancel out into a linear one, it is called
 _gamma correction_.
 
  Attention! 
@@ -1651,3 +1654,24 @@ the arrays within a texture are called images!
 texture type,
 textures have a texture type defining, among others, the number of dimensions of
 the images (remember images are arrays; arrays can have varying dimensions).
+
+--------------------------------------------------------------------------------
+
+We want to associate a texture with locations on the surface of an object. We
+enter the problem of interpolation where perspective projection is non-linear
+that is points move away from each other at a non-linear pace, namely a
+logarithmic one (by orders of mulitplication, not by orders of units/addition).
+
+There is a remedy to this:
+
+_/perspective-correct interpolation/_,
+we are divulged the final reason why we use clip space coordinates with their
+w-component, which so far was used to perform the perspective divide, an operation
+that is non-linear and hence not be accomplished with matrix multiplication.
+We may be using a projection matrix, but the magic of perspective divide is
+multiplying the positions with the 'w' component being -1, and projecting the
+position down on the "screen" - or retina to be more imaginative.
+While the 'w'-component seems to be the critical part implementation wise, as
+far as we're concerned it is just changing the qualified of output variables
+from "smooth" (= perspective correct interpolation) to "noperspective".
+Finally the author even hints that window space interpolation is rather rare.
