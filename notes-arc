@@ -1656,7 +1656,6 @@ textures have a texture type defining, among others, the number of dimensions of
 the images (remember images are arrays; arrays can have varying dimensions).
 
 --------------------------------------------------------------------------------
-
 We want to associate a texture with locations on the surface of an object. We
 enter the problem of interpolation where perspective projection is non-linear
 that is points move away from each other at a non-linear pace, namely a
@@ -1675,3 +1674,12 @@ While the 'w'-component seems to be the critical part implementation wise, as
 far as we're concerned it is just changing the qualified of output variables
 from "smooth" (= perspective correct interpolation) to "noperspective".
 Finally the author even hints that window space interpolation is rather rare.
+
+--------------------------------------------------------------------------------
+_texture mapping_,
+so far we've used shaders to lookup returns value for expensive computation
+(e.g. gaussian term), based on the function input alone. 
+In this case we can use it to vary the surface material property "down to the
+texel".
+For this to work we need to associate a texel with a point on a triangle, this
+is called texture mapping.

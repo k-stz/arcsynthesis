@@ -27,6 +27,7 @@
 ;; struct that uses the same accessor name e.g. "the-program" to get at the program data,
 ;; like in this tutorial. Hence we will implement program-data and unlitprogdata as
 ;; classes so (the-program <obj>) dispatches appropriately depending on the object class
+
 ;; passed.  (defstruct (program-data (:conc-name NIL)) ; don't hyphenate struct readers
 ;; the-program
 
