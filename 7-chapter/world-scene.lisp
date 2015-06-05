@@ -2,17 +2,12 @@
 
 (in-package #:arc-7)
 
-;; TODO: this might solve the problem:
-;; (print (uiop/lisp-build:current-lisp-file-pathname)) ?
-(defvar *glsl-directory*
-  (merge-pathnames #p "7-chapter/" (asdf/system:system-source-directory :arcsynthesis)))
 (defvar *data-dir*
-  (merge-pathnames #p "data/" *glsl-directory*))
+  (merge-pathnames #p "7-chapter/data/" (asdf/system:system-source-directory :arcsynthesis)))
 ;;todo: fix this output to slime-repl solution
 (defvar out *standard-output*)  (defvar dbg *debug-io*) (defvar err *error-output*)
 
 
-;; TODO: alternative: (defstruct (program-data (:nconc-name NIL)) the-program ..)
 (defclass program-data ()
   ((the-program :accessor the-program)
    (model-to-world-matrix-unif :accessor model-to-world-matrix-unif)
@@ -32,11 +27,11 @@
 	(data (make-instance 'program-data)))
     (push (arc:create-shader
 	   :vertex-shader
-	   (arc:file-to-string (merge-pathnames str-vertex-shader *glsl-directory*)))
+	   (arc:file-to-string (merge-pathnames str-vertex-shader *data-dir*)))
 	  shader-list)
     (push (arc:create-shader
 	   :fragment-shader
-	   (arc:file-to-string (merge-pathnames str-fragment-shader *glsl-directory*)))
+	   (arc:file-to-string (merge-pathnames str-fragment-shader *data-dir*)))
     	  shader-list)
     (setf (the-program data) (arc:create-program shader-list))
     ;; hard-coding time: also this should undergo test if assignment was successful
@@ -46,7 +41,6 @@
 	  (gl:get-uniform-location (the-program data) "world_to_camera_matrix"))
     (setf (camera-to-clip-matrix-unif data)
 	  (gl:get-uniform-location (the-program data) "camera_to_clip_matrix"))
-    ;; TODO: if uniform doesn't really exist in shader, wasn't opengl lenient about it?
     (setf (base-color-unif data)
 	  (gl:get-uniform-location (the-program data) "base_color"))
     data))
@@ -80,30 +74,20 @@
 	(framework::xml->mesh-obj (merge-pathnames *data-dir* "UnitPlane.xml"))))
 
 (defun init ()
-	(initialize-program)
-	(init-meshes)
+  (initialize-program)
+  (init-meshes)
 
-	;; TODO: why doesn't this seem to affect the unit-plane when it is rotated 360?
-	;; this gotta be a pernicious bug, swapping the z-axis so that the winding order is
-	;; always clock-wise?
-	(gl:enable :cull-face)
-	(%gl:cull-face :back)
-	(%gl:front-face :cw) 
+  (gl:enable :cull-face)
+  (%gl:cull-face :back)
+  (%gl:front-face :cw) 
 
-	(gl:viewport 0 0 500 500)
+  (gl:viewport 0 0 500 500)
 
-	(gl:enable :depth-test)
-	(gl:depth-mask :true)
-	(%gl:depth-func :lequal)
-	(gl:depth-range 0.0 1.0)
-)
+  (gl:enable :depth-test)
+  (gl:depth-mask :true)
+  (%gl:depth-func :lequal)
+  (gl:depth-range 0.0 1.0))
 
-
-;; makeshift solution
-(defparameter t-mat (let ((translate-mat4 (glm:make-mat4 1.0))
-			  (vec4 (glm:vec4-from-vec3 (glm:vec3 3.0 -5.0 -40.0))))
-		      (glm:set-mat4-col translate-mat4 3 vec4)
-		      translate-mat4))
 
 ;;g_ in arcsynthesis code variable names, is a convention for global-variable naming
 ;;hence replaced by ear-muffs
@@ -141,8 +125,7 @@ geometry coordinates and returned as a position vector."
     ;; and add it to the target the camera is supposed to look at, thereby creating
     ;; a geometrical dependent positions of the camera to the *cam-target*
     (sb-cga:vec+ (sb-cga:vec* dir-to-camera (glm:vec. *sphere-cam-rel-pos* :z))
-		 *cam-target*)
-    ))
+		 *cam-target*)))
 
 ;; Note: c++ function signature: foo(const &var) means:
 ;; &var we don't need a copy (reuse of resource;pass by reference)
@@ -179,10 +162,6 @@ geometry coordinates and returned as a position vector."
     ;; using the cross-product, which doesn't seem to return the perpendicular axis
     ;; needed (there are always two perpendicular direction vectors for a plane)
     (glm:set-mat4-col rot-mat 2 (glm:vec4-from-vec3 (glm:vec- look-dir) 0.0))
-
-    ;; TODO: why transpose it eventually? Maybe because it is col-major and setting
-    ;; column-wise and transpose is more efficient than just setting the rows
-    ;; with discontiguous indices
     (setf rot-mat (sb-cga:transpose-matrix rot-mat))
 
     ;; oh, its just a translation matrix putting the camera-pt into origin! (and thereby
@@ -222,7 +201,6 @@ geometry coordinates and returned as a position vector."
   (glutil:with-transform (matrix-stack)
       :scale 1.0 trunk-height 1.0
       :translate 0.0 0.5 0.0
-      ;; TODO: write with-program-data macro?
       (gl:use-program (the-program *uniform-color-tint*))
       (gl:uniform-matrix (model-to-world-matrix-unif *uniform-color-tint*) 4
       			 (vector (glutil:top-ms matrix-stack)) NIL)
@@ -242,111 +220,111 @@ geometry coordinates and returned as a position vector."
 
 (defvar *tree-data*
   (apply #'vector
-   (mapcar (lambda (x) (apply #'vector x))
-	   '((-45.0 -40.0 2.0 3.0)
-	     (-42.0 -35.0 2.0 3.0) 
-	     (-39.0 -29.0 2.0 4.0) 
-	     (-44.0 -26.0 3.0 3.0) 
-	     (-40.0 -22.0 2.0 4.0) 
-	     (-36.0 -15.0 3.0 3.0) 
-	     (-41.0 -11.0 2.0 3.0) 
-	     (-37.0 -6.0 3.0 3.0) 
-	     (-45.0 0.0 2.0 3.0) 
-	     (-39.0 4.0 3.0 4.0) 
-	     (-36.0 8.0 2.0 3.0) 
-	     (-44.0 13.0 3.0 3.0) 
-	     (-42.0 17.0 2.0 3.0) 
-	     (-38.0 23.0 3.0 4.0) 
-	     (-41.0 27.0 2.0 3.0) 
-	     (-39.0 32.0 3.0 3.0) 
-	     (-44.0 37.0 3.0 4.0) 
-	     (-36.0 42.0 2.0 3.0) 
+	 (mapcar (lambda (x) (apply #'vector x))
+		 '((-45.0 -40.0 2.0 3.0)
+		   (-42.0 -35.0 2.0 3.0) 
+		   (-39.0 -29.0 2.0 4.0) 
+		   (-44.0 -26.0 3.0 3.0) 
+		   (-40.0 -22.0 2.0 4.0) 
+		   (-36.0 -15.0 3.0 3.0) 
+		   (-41.0 -11.0 2.0 3.0) 
+		   (-37.0 -6.0 3.0 3.0) 
+		   (-45.0 0.0 2.0 3.0) 
+		   (-39.0 4.0 3.0 4.0) 
+		   (-36.0 8.0 2.0 3.0) 
+		   (-44.0 13.0 3.0 3.0) 
+		   (-42.0 17.0 2.0 3.0) 
+		   (-38.0 23.0 3.0 4.0) 
+		   (-41.0 27.0 2.0 3.0) 
+		   (-39.0 32.0 3.0 3.0) 
+		   (-44.0 37.0 3.0 4.0) 
+		   (-36.0 42.0 2.0 3.0) 
 
-	     (-32.0 -45.0 2.0 3.0) 
-	     (-30.0 -42.0 2.0 4.0) 
-	     (-34.0 -38.0 3.0 5.0) 
-	     (-33.0 -35.0 3.0 4.0) 
-	     (-29.0 -28.0 2.0 3.0) 
-	     (-26.0 -25.0 3.0 5.0) 
-	     (-35.0 -21.0 3.0 4.0) 
-	     (-31.0 -17.0 3.0 3.0) 
-	     (-28.0 -12.0 2.0 4.0) 
-	     (-29.0 -7.0 3.0 3.0) 
-	     (-26.0 -1.0 2.0 4.0) 
-	     (-32.0 6.0 2.0 3.0) 
-	     (-30.0 10.0 3.0 5.0) 
-	     (-33.0 14.0 2.0 4.0) 
-	     (-35.0 19.0 3.0 4.0) 
-	     (-28.0 22.0 2.0 3.0) 
-	     (-33.0 26.0 3.0 3.0) 
-	     (-29.0 31.0 3.0 4.0) 
-	     (-32.0 38.0 2.0 3.0) 
-	     (-27.0 41.0 3.0 4.0) 
-	     (-31.0 45.0 2.0 4.0) 
-	     (-28.0 48.0 3.0 5.0) 
+		   (-32.0 -45.0 2.0 3.0) 
+		   (-30.0 -42.0 2.0 4.0) 
+		   (-34.0 -38.0 3.0 5.0) 
+		   (-33.0 -35.0 3.0 4.0) 
+		   (-29.0 -28.0 2.0 3.0) 
+		   (-26.0 -25.0 3.0 5.0) 
+		   (-35.0 -21.0 3.0 4.0) 
+		   (-31.0 -17.0 3.0 3.0) 
+		   (-28.0 -12.0 2.0 4.0) 
+		   (-29.0 -7.0 3.0 3.0) 
+		   (-26.0 -1.0 2.0 4.0) 
+		   (-32.0 6.0 2.0 3.0) 
+		   (-30.0 10.0 3.0 5.0) 
+		   (-33.0 14.0 2.0 4.0) 
+		   (-35.0 19.0 3.0 4.0) 
+		   (-28.0 22.0 2.0 3.0) 
+		   (-33.0 26.0 3.0 3.0) 
+		   (-29.0 31.0 3.0 4.0) 
+		   (-32.0 38.0 2.0 3.0) 
+		   (-27.0 41.0 3.0 4.0) 
+		   (-31.0 45.0 2.0 4.0) 
+		   (-28.0 48.0 3.0 5.0) 
 
-	     (-25.0 -48.0 2.0 3.0) 
-	     (-20.0 -42.0 3.0 4.0) 
-	     (-22.0 -39.0 2.0 3.0) 
-	     (-19.0 -34.0 2.0 3.0) 
-	     (-23.0 -30.0 3.0 4.0) 
-	     (-24.0 -24.0 2.0 3.0) 
-	     (-16.0 -21.0 2.0 3.0) 
-	     (-17.0 -17.0 3.0 3.0) 
-	     (-25.0 -13.0 2.0 4.0) 
-	     (-23.0 -8.0 2.0 3.0) 
-	     (-17.0 -2.0 3.0 3.0) 
-	     (-16.0 1.0 2.0 3.0) 
-	     (-19.0 4.0 3.0 3.0) 
-	     (-22.0 8.0 2.0 4.0) 
-	     (-21.0 14.0 2.0 3.0) 
-	     (-16.0 19.0 2.0 3.0) 
-	     (-23.0 24.0 3.0 3.0) 
-	     (-18.0 28.0 2.0 4.0) 
-	     (-24.0 31.0 2.0 3.0) 
-	     (-20.0 36.0 2.0 3.0) 
-	     (-22.0 41.0 3.0 3.0) 
-	     (-21.0 45.0 2.0 3.0) 
+		   (-25.0 -48.0 2.0 3.0) 
+		   (-20.0 -42.0 3.0 4.0) 
+		   (-22.0 -39.0 2.0 3.0) 
+		   (-19.0 -34.0 2.0 3.0) 
+		   (-23.0 -30.0 3.0 4.0) 
+		   (-24.0 -24.0 2.0 3.0) 
+		   (-16.0 -21.0 2.0 3.0) 
+		   (-17.0 -17.0 3.0 3.0) 
+		   (-25.0 -13.0 2.0 4.0) 
+		   (-23.0 -8.0 2.0 3.0) 
+		   (-17.0 -2.0 3.0 3.0) 
+		   (-16.0 1.0 2.0 3.0) 
+		   (-19.0 4.0 3.0 3.0) 
+		   (-22.0 8.0 2.0 4.0) 
+		   (-21.0 14.0 2.0 3.0) 
+		   (-16.0 19.0 2.0 3.0) 
+		   (-23.0 24.0 3.0 3.0) 
+		   (-18.0 28.0 2.0 4.0) 
+		   (-24.0 31.0 2.0 3.0) 
+		   (-20.0 36.0 2.0 3.0) 
+		   (-22.0 41.0 3.0 3.0) 
+		   (-21.0 45.0 2.0 3.0) 
 
-	     (-12.0 -40.0 2.0 4.0) 
-	     (-11.0 -35.0 3.0 3.0) 
-	     (-10.0 -29.0 1.0 3.0) 
-	     (-9.0 -26.0 2.0 2.0) 
-	     (-6.0 -22.0 2.0 3.0) 
-	     (-15.0 -15.0 1.0 3.0) 
-	     (-8.0 -11.0 2.0 3.0) 
-	     (-14.0 -6.0 2.0 4.0) 
-	     (-12.0 0.0 2.0 3.0) 
-	     (-7.0 4.0 2.0 2.0) 
-	     (-13.0 8.0 2.0 2.0) 
-	     (-9.0 13.0 1.0 3.0) 
-	     (-13.0 17.0 3.0 4.0) 
-	     (-6.0 23.0 2.0 3.0) 
-	     (-12.0 27.0 1.0 2.0) 
-	     (-8.0 32.0 2.0 3.0) 
-	     (-10.0 37.0 3.0 3.0) 
-	     (-11.0 42.0 2.0 2.0) 
+		   (-12.0 -40.0 2.0 4.0) 
+		   (-11.0 -35.0 3.0 3.0) 
+		   (-10.0 -29.0 1.0 3.0) 
+		   (-9.0 -26.0 2.0 2.0) 
+		   (-6.0 -22.0 2.0 3.0) 
+		   (-15.0 -15.0 1.0 3.0) 
+		   (-8.0 -11.0 2.0 3.0) 
+		   (-14.0 -6.0 2.0 4.0) 
+		   (-12.0 0.0 2.0 3.0) 
+		   (-7.0 4.0 2.0 2.0) 
+		   (-13.0 8.0 2.0 2.0) 
+		   (-9.0 13.0 1.0 3.0) 
+		   (-13.0 17.0 3.0 4.0) 
+		   (-6.0 23.0 2.0 3.0) 
+		   (-12.0 27.0 1.0 2.0) 
+		   (-8.0 32.0 2.0 3.0) 
+		   (-10.0 37.0 3.0 3.0) 
+		   (-11.0 42.0 2.0 2.0) 
 
 
-	     (15.0 5.0 2.0 3.0) 
-	     (15.0 10.0 2.0 3.0) 
-	     (15.0 15.0 2.0 3.0) 
-	     (15.0 20.0 2.0 3.0) 
-	     (15.0 25.0 2.0 3.0) 
-	     (15.0 30.0 2.0 3.0) 
-	     (15.0 35.0 2.0 3.0) 
-	     (15.0 40.0 2.0 3.0) 
-	     (15.0 45.0 2.0 3.0) 
+		   (15.0 5.0 2.0 3.0) 
+		   (15.0 10.0 2.0 3.0) 
+		   (15.0 15.0 2.0 3.0) 
+		   (15.0 20.0 2.0 3.0) 
+		   (15.0 25.0 2.0 3.0) 
+		   (15.0 30.0 2.0 3.0) 
+		   (15.0 35.0 2.0 3.0) 
+		   (15.0 40.0 2.0 3.0) 
+		   (15.0 45.0 2.0 3.0) 
 
-	     (25.0 5.0 2.0 3.0) 
-	     (25.0 10.0 2.0 3.0) 
-	     (25.0 15.0 2.0 3.0) 
-	     (25.0 20.0 2.0 3.0) 
-	     (25.0 25.0 2.0 3.0) 
-	     (25.0 30.0 2.0 3.0) 
-	     (25.0 35.0 2.0 3.0) 
-	     (25.0 40.0 2.0 3.0) 
-	     (25.0 45.0 2.0 3.0)))))
+		   (25.0 5.0 2.0 3.0) 
+		   (25.0 10.0 2.0 3.0) 
+		   (25.0 15.0 2.0 3.0) 
+		   (25.0 20.0 2.0 3.0) 
+		   (25.0 25.0 2.0 3.0) 
+		   (25.0 30.0 2.0 3.0) 
+		   (25.0 35.0 2.0 3.0) 
+		   (25.0 40.0 2.0 3.0) 
+		   (25.0 45.0 2.0 3.0)))))
 
 (defun draw-forest (matrix-stack)
   (loop for forest-data across *tree-data*
@@ -384,7 +362,7 @@ geometry coordinates and returned as a position vector."
       (%gl:uniform-4f (base-color-unif *uniform-color-tint*) 0.9 0.9 0.9 0.9)
       (framework:render *cube-tint-mesh*)
       (gl:use-program 0))
-  ;; Draw the main column ;; TODO: why does it draw it falsely
+  ;; Draw the main column
   (glutil:with-transform (matrix-stack)
       :translate 0.0 *column-base-height* 0.0
       :scale 0.8 (- height (* *column-base-height* 2.0)) 0.8
@@ -476,9 +454,7 @@ geometry coordinates and returned as a position vector."
       (gl:uniform-matrix (model-to-world-matrix-unif *object-color*) 4
 			 (vector (glutil:top-ms matrix-stack)) NIL)
       (framework:render *cube-color-mesh*)
-      (gl:use-program 0))
-    
-  )
+      (gl:use-program 0)))
 
 (defparameter *look-pt* (glm:vec3 0.0 0.0 0.0)) ; look at actual vertex of drawn object
 (defparameter *cam-pt* (glm:vec3 0.0 0.0 1.0))
@@ -503,34 +479,22 @@ geometry coordinates and returned as a position vector."
 		       (vector (glutil:top-ms cam-matrix)) NIL)
     (gl:use-program 0)
 
-    ;; TODO: all the other camera-matrices setting
-
     ;; render the ground plane:
     (glutil:with-transform (model-matrix)
 	:scale 100.0 1.0 100.0
-
-	;; TODO fold into WITH-TRANSFORM macro: optional slots (make matrix-stack
-	;; have slots for shader uniforms? Create shader-program class to work with?
 
 	(%gl:use-program (the-program *uniform-color*))
 	(gl:uniform-matrix (model-to-world-matrix-unif *uniform-color*) 4
 			   (vector (glutil:top-ms model-matrix)) NIL)
 	(%gl:uniform-4f (base-color-unif *uniform-color*) 0.302 0.416 0.0589 1.0)
-	(framework:render *plane-mesh*)
-	;; (gl:use-program (the-program *uniform-color-tint*))
-	;; :scale 1.0 50.0 1.0
-	;; (gl:uniform-matrix (model-to-world-matrix-unif *uniform-color-tint*) 4
-	;; 		   (vector (glutil:top-ms model-matrix)) NIL)
-	;; (framework:render *cone-mesh*)
-	;; (gl:use-program 0)
-	) 
-    ;; now that arc codes has onle "PUSH-MS" while here we use WITH-TRANSFORM
+	(framework:render *plane-mesh*)) 
+    ;; now that arc codes has only "PUSH-MS" while here we use WITH-TRANSFORM
     ;; this works for arc because it uses separate namespaces { inside these }
     ;; model-matrix { push matrix-stack } code outside the curly-brackets refers to
     ;; model-matrix as if the code inside the {brackets} never happened!
     ;;Draw the trees:
 
-   (draw-forest model-matrix)
+    (draw-forest model-matrix)
 
     ;;draw building
     (glutil:with-transform (model-matrix)
@@ -538,9 +502,7 @@ geometry coordinates and returned as a position vector."
 	(draw-parthenon model-matrix))
 
     (when *draw-look-at-point*
-      (draw-look-at-point model-matrix cam-pos))
-
-    ))
+      (draw-look-at-point model-matrix cam-pos))))
 
 
 (defun display ()
@@ -548,14 +510,7 @@ geometry coordinates and returned as a position vector."
   (gl:clear-depth 1.0)
   (gl:clear :color-buffer-bit :depth-buffer-bit)
 
-
-;  (gl:bind-vertex-array *vao*)
-
-  (draw)
-  
-;  (gl:bind-vertex-array 0)
-  ;;swap buffers: in main loop 
-       )
+  (draw))
 
 (defparameter *fz-near* 1.0)
 (defparameter *fz-far* 1000.0)
@@ -584,12 +539,13 @@ geometry coordinates and returned as a position vector."
       (sdl2:with-gl-context (gl-context win)
 	;; INIT code:
 	(init)
-	;; TODO: callback for reshape; for now used to setup cam-to-clip-space matrix
-	(reshape 500.0 500.0)
 	(sdl2:with-event-loop (:method :poll)
+	  (:windowevent
+	   (:event 6-is-resize-event :data1 x :data2 y)
+	   (when (= 6-is-resize-event 6)
+	     (reshape (float x) (float y))))
 	  (:keydown
 	   (:keysym keysym)
-	   ;; TODO: capture in macro
 	   ;; move cam target horizontally
 	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-a)
 	     (decf (glm:vec. *cam-target* :x) 0.4))
