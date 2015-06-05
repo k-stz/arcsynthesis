@@ -10,7 +10,7 @@
 			-0.75 -0.75 0.0 1.0
                          0.6 0.75 0.0 1.0
 			 -0.75 0.75 0.0 1.0
-			 -0.75 -0.6 0.0 1.0)) ;very strange: enter negative values for alpha... wtf
+			 -0.75 -0.6 0.0 1.0))
 
 ;; if *vectex-positions* isn't of type gl:gl-array (which it gets from gl:alloc-gl-array)
 ;; (gl:buffer-data .. *vector-positions*) will complain explicitly about this, and sdl2
@@ -24,24 +24,24 @@
 ;; 						       0.6 0.75 0.0 1.0
 ;; 						       -0.75 0.75 0.0 1.0
 ;; 						       -0.75 -0.6 0.0 1.0))
-;; can be used, the gl:gl-array is just a cl-struct with the above forein memory pointer
+;; can be used, the gl:gl-array is just a cl-struct with the above foreign memory pointer
 ;; plus size and type information attached to it. Further benefit is that most of the
 ;; "gl:" wrapper functions expect data in the form of a gl-array. Such as (gl:buffer-data
-;; ..)  while the actuall bindings (%gl:buffer-data ...) (note the "%" sign indicating the
-;; direct gl API binings) can take the direct forein data as provided by the above
-;; (cffi:foreing-alloc.. ). If the size information is needed, that's where gl-array comes
-;; in handy, being struct with the field "size" so we can simply (gl::gl-array-size
-;; <gl-array>) and get it.
-;; Note "size" stores the number of elements of a certain :type that is stored within, If
-;; the byte size is needed you need to get the (cffi:foreign-type-size (gl::gl-array-type
-;; <gl-array>)) and finally multiply it by the (gl::gl-array-size <gl-array>) above.
-;; Anyway, that's pertaining dealing with the API at the lowlevel, there are already lispy
-;; solutions available to this, such as in the code for Chris Bagley's CEPL - "code eval
-;; play loop" (LLGPL'd).
+;; ..)  while the actual bindings (%gl:buffer-data ...) (note the "%" sign indicating the
+;; direct gl API bindings, and "gl:" is the convenience layer) can take the direct foreign
+;; data as provided by the above (cffi:foreign-alloc.. ). If the size information is
+;; needed, that's where gl-array comes in handy, being a struct with the field "size" so we
+;; can simply (gl::gl-array-size <gl-array>) and get it.
+;; Note "size" stores the number of elements of a certain :type that is stored within the
+;; foreign array. If the byte size is needed you need to get the (cffi:foreign-type-size
+;; (gl::gl-array-type <gl-array>)) and finally multiply it by the (gl::gl-array-size
+;; <gl-array>) above.  Anyway, that's pertaining dealing with the API at the lowlevel,
+;; there are already lispy solutions available to this, such as in the code for Chris
+;; Bagley's CEPL - "code eval play loop" (LLGPL'd).
 
 ;;shader functions:
 (defvar *vertex-shader* "
-#version 330  //coments desu!!!
+#version 330  //comments desu!!!
 /* these too?? */
 layout(location = 0) in vec4 position;
 void main () {
