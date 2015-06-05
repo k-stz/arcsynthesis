@@ -3,11 +3,9 @@
 (in-package #:arc-6.3)
 
 (defvar *data-directory*
-  (merge-pathnames #p "6-chapter/" (asdf/system:system-source-directory :arcsynthesis)))
+  (merge-pathnames #p "6-chapter/data/" (asdf/system:system-source-directory :arcsynthesis)))
 ;;todo: fix this output to slime-repl solution
 (defvar out *standard-output*)  (defvar dbg *debug-io*) (defvar err *error-output*)
-
-(defvar position-buffer-object) ; buffer object handle
 
 (defvar *program*)
 
@@ -85,108 +83,105 @@ the projection plane)"
 
 (defparameter *vertex-data*
   (arc:create-gl-array-from-vector 
-`#(
-   ;; Very important note: See how every point is in a difference quadrant?
-   ;; this causes the SCALE operation to be intuitive, because all points
-   ;; when being scale transformed will move away from their relative origin.
-   ;; and therefore the object will appear to grow in place (namely its origin)
-   ;; This caused quite the confusion to me, why the hierarchy transform model
-   ;; should work with arbitrary models, but building upon these "axioms" we
-   ;; set the trait of intuition to be inherited by all its children!!
+   `#(
+      ;; Very important note: See how every point is in a difference quadrant?
+      ;; this causes the SCALE operation to be intuitive, because all points
+      ;; when being scale transformed will move away from their relative origin.
+      ;; and therefore the object will appear to grow in place (namely its origin)
+      ;; This caused quite the confusion to me, why the hierarchy transform model
+      ;; should work with arbitrary models, but building upon these "axioms" we
+      ;; set the trait of intuition to be inherited by all its children!!
 
-   ;; Note also the explanation of arcsynthesis:" Since what you (probably) actually
-   ;; wanted was to scale the points away from the origin point in /model space/, hence
-   ;; S[caling] needs to come first."
+      ;; Note also the explanation of arcsynthesis:" Since what you (probably) actually
+      ;; wanted was to scale the points away from the origin point in /model space/, hence
+      ;; S[caling] needs to come first."
 
-	;;Front
-	+1.0  +1.0  +1.0 
-	+1.0  -1.0  +1.0 
-	-1.0  -1.0  +1.0 
-	-1.0  +1.0  +1.0 
+      ;;Front
+      +1.0  +1.0  +1.0 
+      +1.0  -1.0  +1.0 
+      -1.0  -1.0  +1.0 
+      -1.0  +1.0  +1.0 
 
-	;;Top
-	+1.0  +1.0  +1.0 
-	-1.0  +1.0  +1.0 
-	-1.0  +1.0  -1.0 
-	+1.0  +1.0  -1.0 
+      ;;Top
+      +1.0  +1.0  +1.0 
+      -1.0  +1.0  +1.0 
+      -1.0  +1.0  -1.0 
+      +1.0  +1.0  -1.0 
 
-	;;Left
-	+1.0  +1.0  +1.0 
-	+1.0  +1.0  -1.0 
-	+1.0  -1.0  -1.0 
-	+1.0  -1.0  +1.0 
+      ;;Left
+      +1.0  +1.0  +1.0 
+      +1.0  +1.0  -1.0 
+      +1.0  -1.0  -1.0 
+      +1.0  -1.0  +1.0 
 
-	;;Back
-	+1.0  +1.0  -1.0 
-	-1.0  +1.0  -1.0 
-	-1.0  -1.0  -1.0 
-	+1.0  -1.0  -1.0 
+      ;;Back
+      +1.0  +1.0  -1.0 
+      -1.0  +1.0  -1.0 
+      -1.0  -1.0  -1.0 
+      +1.0  -1.0  -1.0 
 
-	;;Bottom
-	+1.0  -1.0  +1.0 
-	+1.0  -1.0  -1.0 
-	-1.0  -1.0  -1.0 
-	-1.0  -1.0  +1.0 
+      ;;Bottom
+      +1.0  -1.0  +1.0 
+      +1.0  -1.0  -1.0 
+      -1.0  -1.0  -1.0 
+      -1.0  -1.0  +1.0 
 
-	;;Right
-	-1.0  +1.0  +1.0 
-	-1.0  -1.0  +1.0 
-	-1.0  -1.0  -1.0 
-	-1.0  +1.0  -1.0 
+      ;;Right
+      -1.0  +1.0  +1.0 
+      -1.0  -1.0  +1.0 
+      -1.0  -1.0  -1.0 
+      -1.0  +1.0  -1.0 
 
 
-	,@+green-color+
-	,@+green-color+
-	,@+green-color+
-	,@+green-color+
+      ,@+green-color+
+      ,@+green-color+
+      ,@+green-color+
+      ,@+green-color+
 
-	,@+blue-color+
-	,@+blue-color+
-	,@+blue-color+
-	,@+blue-color+
+      ,@+blue-color+
+      ,@+blue-color+
+      ,@+blue-color+
+      ,@+blue-color+
 
-	,@+red-color+
-	,@+red-color+
-	,@+red-color+
-	,@+red-color+
+      ,@+red-color+
+      ,@+red-color+
+      ,@+red-color+
+      ,@+red-color+
 
-	,@+yellow-color+
-	,@+yellow-color+
-	,@+yellow-color+
-	,@+yellow-color+
+      ,@+yellow-color+
+      ,@+yellow-color+
+      ,@+yellow-color+
+      ,@+yellow-color+
 
-	,@+cyan-color+
-	,@+cyan-color+
-	,@+cyan-color+
-	,@+cyan-color+
+      ,@+cyan-color+
+      ,@+cyan-color+
+      ,@+cyan-color+
+      ,@+cyan-color+
 
-	,@+magenta-color+
-	,@+magenta-color+
-	,@+magenta-color+
-	,@+magenta-color+
-  )))
+      ,@+magenta-color+
+      ,@+magenta-color+
+      ,@+magenta-color+
+      ,@+magenta-color+)))
 
 (defparameter *index-data*
   (arc::create-gl-array-of-unsigned-short-from-vector
-   #(
-	0  1  2 
-	2  3  0 
+   #(0  1  2 
+     2  3  0 
 
-	4  5  6 
-	6  7  4 
+     4  5  6 
+     6  7  4 
 
-	8  9  10 
-	10  11  8 
+     8  9  10 
+     10  11  8 
 
-	12  13  14 
-	14  15  12 
+     12  13  14 
+     14  15  12 
 
-	16  17  18 
-	18  19  16 
+     16  17  18 
+     18  19  16 
 
-	20  21  22 
-	22  23  20 
-     )))
+     20  21  22 
+     22  23  20)))
 
 (defvar *vertex-buffer-object*)
 (defvar *index-buffer-object*)
@@ -203,8 +198,7 @@ the projection plane)"
 
   (gl:bind-buffer :element-array-buffer  *index-buffer-object*)
   (gl:buffer-data :element-array-buffer  :static-draw *index-data*)
-  (gl:bind-buffer :element-array-buffer  0)  
-  )
+  (gl:bind-buffer :element-array-buffer  0))
 
 (defvar *vao*)
 
@@ -220,29 +214,26 @@ the projection plane)"
     (%gl:vertex-attrib-pointer 1 4 :float :false 0 color-data-offset)
     (%gl:bind-buffer :element-array-buffer *index-buffer-object*)
 
-    (%gl:bind-vertex-array 0)
-    )
-  )
+    (%gl:bind-vertex-array 0)))
 
 
 
 
 (defun init ()
-	(initialize-program)
-	(initialize-vertex-buffer)
-	(initialize-vertex-array-objects)
+  (initialize-program)
+  (initialize-vertex-buffer)
+  (initialize-vertex-array-objects)
   
-	(gl:enable :cull-face)
-	(%gl:cull-face :back)
-	(%gl:front-face :cw)
+  (gl:enable :cull-face)
+  (%gl:cull-face :back)
+  (%gl:front-face :cw)
 
-	(gl:viewport 0 0 500 500)
+  (gl:viewport 0 0 500 500)
 
-	(gl:enable :depth-test)
-	(gl:depth-mask :true)
-	(%gl:depth-func :lequal)
-	(gl:depth-range 0.0 1.0)
-)
+  (gl:enable :depth-test)
+  (gl:depth-mask :true)
+  (%gl:depth-func :lequal)
+  (gl:depth-range 0.0 1.0))
 
 
 (defun translate-matrix-from-vec3 (vec3)
@@ -258,8 +249,6 @@ the projection plane)"
 
 
 
-;;TODO: implement matrix-stack methods, change and fully implemet (draw) and (display) code
-;; TODO: creating class overkill? Simpler solution?
 (defclass matrix-stack ()
   ;; Hierarchy.cpp also uses these as "private"
   ((m-curr-mat :initform (glm:make-mat4 1.0)
@@ -273,7 +262,6 @@ the projection plane)"
   "Returns the current-matrix"
   (m-curr-mat ms))
 
-;; TODO: lock on "push" even though it is cl:push is a function not a generic method
 (defgeneric push-ms (matrix-stack))
 (defmethod push-ms ((ms matrix-stack))
   "PUSH the current-matrix on the internal stack"
@@ -287,8 +275,6 @@ the projection plane)"
   (setf (m-curr-mat ms) (first (m-matrices ms)))
   (pop (m-matrices ms)))
 
-;; TODO: defmethod lambda-list displayed with class-name instead of "offset-vec3"
-;; it's "simple-array"
 (defgeneric translate (matrix-stack simple-array))
 (defmethod translate ((ms matrix-stack) (offset-vec3 simple-array))
   "Translate transform the current-matrix by given vec3"
@@ -313,7 +299,7 @@ the projection plane)"
 
 (defgeneric rotate-z (matrix-stack float))
 (defmethod rotate-z ((ms matrix-stack) (ang-deg float))
-  (let ((translate-mat4 (glm:rotate-x ang-deg)))
+  (let ((translate-mat4 (glm:rotate-z ang-deg)))
     (setf (m-curr-mat ms) (sb-cga:matrix* (m-curr-mat ms)
 					  translate-mat4))))
 
@@ -336,10 +322,6 @@ the projection plane)"
       (%gl:draw-elements :triangles (gl::gl-array-size *index-data*)
 			 :unsigned-short 0))
 
-;;TODO: actually using :drawp nil, causes the code to expand the WHEN to a NIL
-;;      try to remove that. Add macrolet, to expose local variable to capture given
-;;      matrix-stack. Instead of passing (translate ..) use :translate
-;;      instead of (glm:vec3..) use :vec3. Try to make intuitive like LOOP?
 (defmacro with-transform ((&key (drawp t)) matrix-stack &body body)
   "Creates PUSH-MS POP-MS wrapper around its input, so many with-transform can
 be nested to facilitate the hierarchical model."
@@ -380,19 +362,17 @@ be nested to facilitate the hierarchical model."
 (defun draw ()
   ;;OOOOH we really need to "create" a new stack on every iteration, don't
   ;;we create a lot of "garbage" this way?
+  ;;The simple solution to this is simply set the object *model-to-camera-stack*
+  ;;to its initialial state, hence reusing memory.
   (setf *model-to-camera-stack* (make-instance 'matrix-stack))
 
   (translate *model-to-camera-stack* *pos-base*)
   (rotate-y *model-to-camera-stack* *ang-base*)
-  ;; TODO: weird using rotate-x/rotate-z instead of the above rotate-y causes rotation
-  ;; about the same axis (like gimbal-lock) but for that a prior folding of the
-  ;; axis into one another should have taken place
 
   ;; Draw left base
   (with-transform () *model-to-camera-stack*
     (translate *model-to-camera-stack* *pos-base-left*)
-    (scale *model-to-camera-stack* (glm:vec3 1.0 1.0 *scale-base-z*))
-    )
+    (scale *model-to-camera-stack* (glm:vec3 1.0 1.0 *scale-base-z*)))
 
   ;; Draw right base
   (with-transform () *model-to-camera-stack*
@@ -419,61 +399,60 @@ be nested to facilitate the hierarchical model."
   						 (/ *len-lower-arm* 2.0))))
       ;; DrawWrist(...)
       (with-transform (:drawp nil) *model-to-camera-stack*
-  	  (translate *model-to-camera-stack* *pos-wrist*)
-  	  (rotate-z *model-to-camera-stack* *ang-wrist-roll*)
-  	  (rotate-x *model-to-camera-stack* *ang-wrist-pitch*)
+	(translate *model-to-camera-stack* *pos-wrist*)
+	(rotate-z *model-to-camera-stack* *ang-wrist-roll*)
+	(rotate-x *model-to-camera-stack* *ang-wrist-pitch*)
 
-  	  (with-transform () *model-to-camera-stack*
-  	    (scale *model-to-camera-stack* (glm:vec3 (/ *width-wrist* 2.0)
-  	  					     (/ *width-wrist* 2.0)
-  	  					     (/ *len-wrist* 2.0))))
-  	  ;; DrawFingers(...)
-  	  (with-transform (:drawp nil) *model-to-camera-stack*
-  	    ;; Draw left finger
-  	    (translate *model-to-camera-stack* *pos-left-finger*)
-  	    (rotate-y *model-to-camera-stack* *ang-finger-open*)
+	(with-transform () *model-to-camera-stack*
+	  (scale *model-to-camera-stack* (glm:vec3 (/ *width-wrist* 2.0)
+						   (/ *width-wrist* 2.0)
+						   (/ *len-wrist* 2.0))))
+	;; DrawFingers(...)
+	(with-transform (:drawp nil) *model-to-camera-stack*
+	  ;; Draw left finger
+	  (translate *model-to-camera-stack* *pos-left-finger*)
+	  (rotate-y *model-to-camera-stack* *ang-finger-open*)
 
-  	    (with-transform () *model-to-camera-stack*
-  	      (translate *model-to-camera-stack* (glm:vec3 0.0 0.0 (/ *len-finger* 2.0)))
-  	      (scale *model-to-camera-stack* (glm:vec3 (/ *width-finger* 2.0)
-  						       (/ *width-finger* 2.0)
-  						       (/ *len-finger* 2.0))))
-  	    ;;Draw left lower finger
-  	    (with-transform (:drawp nil) *model-to-camera-stack*
-  	      (translate *model-to-camera-stack* (glm:vec3 0.0 0.0 *len-finger*))
-  	      (rotate-y *model-to-camera-stack* (- *ang-lower-finger*))
-  	      (with-transform () *model-to-camera-stack*
-  		(translate *model-to-camera-stack* (glm:vec3 0.0 0.0
-  							     (/ *len-finger* 2.0)))
-  		(scale *model-to-camera-stack* (glm:vec3 (/ *width-finger* 2.0)
-  							 (/ *width-finger* 2.0)
-  							 (/ *len-finger* 2.0))))))
-  	  ;;/ Draw left finger
+	  (with-transform () *model-to-camera-stack*
+	    (translate *model-to-camera-stack* (glm:vec3 0.0 0.0 (/ *len-finger* 2.0)))
+	    (scale *model-to-camera-stack* (glm:vec3 (/ *width-finger* 2.0)
+						     (/ *width-finger* 2.0)
+						     (/ *len-finger* 2.0))))
+	  ;;Draw left lower finger
+	  (with-transform (:drawp nil) *model-to-camera-stack*
+	    (translate *model-to-camera-stack* (glm:vec3 0.0 0.0 *len-finger*))
+	    (rotate-y *model-to-camera-stack* (- *ang-lower-finger*))
+	    (with-transform () *model-to-camera-stack*
+	      (translate *model-to-camera-stack* (glm:vec3 0.0 0.0
+							   (/ *len-finger* 2.0)))
+	      (scale *model-to-camera-stack* (glm:vec3 (/ *width-finger* 2.0)
+						       (/ *width-finger* 2.0)
+						       (/ *len-finger* 2.0))))))
+	;;/ Draw left finger
 
-          ;; Draw right finger
-  	  (with-transform (:drawp nil) *model-to-camera-stack*
-  	    (translate *model-to-camera-stack* *pos-right-finger*)
-  	    (rotate-y *model-to-camera-stack* (- *ang-finger-open*))
-  	    (with-transform () *model-to-camera-stack*
-  	      (translate *model-to-camera-stack* (glm:vec3 0.0 0.0 (/ *len-finger* 2.0)))
-  	      (scale *model-to-camera-stack* (glm:vec3 (/ *width-finger* 2.0)
-  						       (/ *width-finger* 2.0)
-  						       (/ *len-finger* 2.0))))
-  	    ;; Draw right lower finger
-  	    (with-transform (:drawp nil) *model-to-camera-stack*
-  	      (translate *model-to-camera-stack* (glm:vec3 0.0 0.0 *len-finger*))
-  	      (rotate-y *model-to-camera-stack* *ang-lower-finger*)
-  	      (with-transform () *model-to-camera-stack*
-  		(translate *model-to-camera-stack* (glm:vec3 0.0 0.0 (/ *len-finger* 2.0)))
-  		(scale *model-to-camera-stack* (glm:vec3 (/ *width-finger* 2.0)
-  							 (/ *width-finger* 2.0)
-  							 (/ *len-finger* 2.0)))))
-  	    );;/Draw right finger
+	;; Draw right finger
+	(with-transform (:drawp nil) *model-to-camera-stack*
+	  (translate *model-to-camera-stack* *pos-right-finger*)
+	  (rotate-y *model-to-camera-stack* (- *ang-finger-open*))
+	  (with-transform () *model-to-camera-stack*
+	    (translate *model-to-camera-stack* (glm:vec3 0.0 0.0 (/ *len-finger* 2.0)))
+	    (scale *model-to-camera-stack* (glm:vec3 (/ *width-finger* 2.0)
+						     (/ *width-finger* 2.0)
+						     (/ *len-finger* 2.0))))
+	  ;; Draw right lower finger
+	  (with-transform (:drawp nil) *model-to-camera-stack*
+	    (translate *model-to-camera-stack* (glm:vec3 0.0 0.0 *len-finger*))
+	    (rotate-y *model-to-camera-stack* *ang-lower-finger*)
+	    (with-transform () *model-to-camera-stack*
+	      (translate *model-to-camera-stack* (glm:vec3 0.0 0.0 (/ *len-finger* 2.0)))
+	      (scale *model-to-camera-stack* (glm:vec3 (/ *width-finger* 2.0)
+						       (/ *width-finger* 2.0)
+						       (/ *len-finger* 2.0)))))
+	  ) ;;/Draw right finger
 
-  	  );;/DrawWrist
-      ) ;;/DrawLowerArm
-    ) ;;/Draw main arm
-  
+	) ;;/DrawWrist
+      )	  ;;/DrawLowerArm
+    )	  ;;/Draw main arm
   )
 
 (defun display ()
@@ -489,10 +468,9 @@ be nested to facilitate the hierarchical model."
   (gl:bind-vertex-array 0)
   (gl:use-program *program*)
   ;;swap buffers: in main loop 
-       )
+  )
 
 ;; teehee, just found a #define substitute
-;; TODO: do symbol-macro somehow still clutter up space at runtime or after compilation?
 (define-symbol-macro standard-angle-increment 11.25)
 (define-symbol-macro small-angle-increment 9.0)
 
@@ -504,10 +482,6 @@ be nested to facilitate the hierarchical model."
 	(t ;;else
 	 x)))
 
-;; TODO: test
-(defmacro adj-* (var inc-by bound-fn)
-  `(progn (incf ,var ,inc-by)
-	  ( setf ,var ,bound-fn)))
 
 (defun main ()
   (sdl2:with-init (:everything)
@@ -519,7 +493,6 @@ be nested to facilitate the hierarchical model."
 	(sdl2:with-event-loop (:method :poll)
 	  (:keydown
 	   (:keysym keysym)
-	   ;; TODO: capture in macro
 	   ;; AdjBase()
 	   (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-a)
 	     (incf *ang-base* standard-angle-increment)

@@ -1,12 +1,9 @@
 (in-package #:arc-6.1)
 
 (defvar *data-directory*
-  (merge-pathnames #p "6-chapter/" (asdf/system:system-source-directory :arcsynthesis)))
+  (merge-pathnames #p "6-chapter/data/" (asdf/system:system-source-directory :arcsynthesis)))
 ;;todo: fix this output to slime-repl solution
 (defvar out *standard-output*)  (defvar dbg *debug-io*) (defvar err *error-output*)
-
-(defvar position-buffer-object) ; buffer object handle
-
 
 (defvar *program*)
 
@@ -29,8 +26,6 @@ the projection plane)"
 	(tan (/ f-fov-rad 2.0)))
      'single-float)))
 
-;; TODO: why looks does it look smaller than the screenshots?
-;; provisional solution to scale problem
 (defparameter *frustum-scale* (calc-frustum-scale 25.0)) 
 
 (defun initialize-program ()
@@ -83,33 +78,29 @@ the projection plane)"
 
 (defparameter *vertex-data*
   (arc:create-gl-array-from-vector 
-`#(
-	+1.0  +1.0  +1.0  
-	-1.0  -1.0  +1.0  
-	-1.0  +1.0  -1.0  
-	+1.0  -1.0  -1.0  
+   `#(+1.0  +1.0  +1.0  
+      -1.0  -1.0  +1.0  
+      -1.0  +1.0  -1.0  
+      +1.0  -1.0  -1.0  
 
-	-1.0  -1.0  -1.0  
-	+1.0  +1.0  -1.0  
-	+1.0  -1.0  +1.0  
-	-1.0  +1.0  +1.0  
+      -1.0  -1.0  -1.0  
+      +1.0  +1.0  -1.0  
+      +1.0  -1.0  +1.0  
+      -1.0  +1.0  +1.0  
 
-	,@+green-color+ 
-	,@+blue-color+ 
-	,@+red-color+ 
-	,@+brown-color+ 
+      ,@+green-color+ 
+      ,@+blue-color+ 
+      ,@+red-color+ 
+      ,@+brown-color+ 
 
-	,@+green-color+ 
-	,@+blue-color+ 
-	,@+red-color+ 
-	,@+brown-color+ 
-
-  )))
+      ,@+green-color+ 
+      ,@+blue-color+ 
+      ,@+red-color+ 
+      ,@+brown-color+)))
 
 (defparameter *index-data*
   (arc::create-gl-array-of-unsigned-short-from-vector
-   #(
-     0  1  2 
+   #(0  1  2 
      1  0  3 
      2  3  0 
      3  2  1 
@@ -117,8 +108,7 @@ the projection plane)"
      5  4  6 
      4  5  7 
      7  6  4 
-     6  7  5 							
-     )))
+     6  7  5)))
 
 (defvar *vertex-buffer-object*)
 (defvar *index-buffer-object*)
@@ -135,8 +125,7 @@ the projection plane)"
 
   (gl:bind-buffer :element-array-buffer  *index-buffer-object*)
   (gl:buffer-data :element-array-buffer  :static-draw *index-data*)
-  (gl:bind-buffer :element-array-buffer  0)  
-  )
+  (gl:bind-buffer :element-array-buffer  0))
 
 (defvar *vao*)
 
@@ -152,29 +141,26 @@ the projection plane)"
     (%gl:vertex-attrib-pointer 1 4 :float :false 0 color-data-offset)
     (%gl:bind-buffer :element-array-buffer *index-buffer-object*)
 
-    (%gl:bind-vertex-array 0)
-    )
-  )
+    (%gl:bind-vertex-array 0)))
 
 
 
 
 (defun init ()
-	(initialize-program)
-	(initialize-vertex-buffer)
-	(initialize-vertex-array-objects)
+  (initialize-program)
+  (initialize-vertex-buffer)
+  (initialize-vertex-array-objects)
   
-	(gl:enable :cull-face)
-	(%gl:cull-face :back)
-	(%gl:front-face :cw)
+  (gl:enable :cull-face)
+  (%gl:cull-face :back)
+  (%gl:front-face :cw)
 
-	(gl:viewport 0 0 500 500)
+  (gl:viewport 0 0 500 500)
 
-	(gl:enable :depth-test)
-	(gl:depth-mask :true)
-	(%gl:depth-func :lequal)
-	(gl:depth-range 0.0 1.0)
-)
+  (gl:enable :depth-test)
+  (gl:depth-mask :true)
+  (%gl:depth-func :lequal)
+  (gl:depth-range 0.0 1.0))
 
 (defvar *elapsed-time*)
 
@@ -184,7 +170,7 @@ the projection plane)"
 (defun static-uniform-scale ()
   (glm:vec3 4.0 4.0 4.0))
 
-(defun static-nun-uniform-scale ()
+(defun static-non-uniform-scale ()
   (glm:vec3 0.5 1.0 10.0))
 
 (defun calc-lerp-factor (loop-duration)
@@ -194,10 +180,6 @@ the projection plane)"
     	(setf f-value (- 1.0 f-value)))
     (coerce (* 2.0 f-value) 'single-float)))
 
-;;TODO: why is it "pulsating"?
-;; experimentation indicate that the implementation of mix might be wrong, as the pulsating
-;; looks like we can see the inverse of the object for a moment (negative values must be
-;; used for scale). Using 0.0 4.0 shows a neat shriking/growing animation
 (defun dynamic-uniform-scale ()
   (let ((loop-duration 3.0))
     (glm:vec3 (glm:mix 1.0 4.0 (calc-lerp-factor loop-duration)))))
@@ -228,20 +210,18 @@ the projection plane)"
 		   (list
 		    (list (null-scale) (glm:vec3 +00.0 +00.0 -45.0))
 		    (list (static-uniform-scale) (glm:vec3 -10.0 -10.0 -45.0))
-		    (list (static-nun-uniform-scale) (glm:vec3 -10.0 +10.0 -45.0))
+		    (list (static-non-uniform-scale) (glm:vec3 -10.0 +10.0 -45.0))
 		    (list (dynamic-uniform-scale ) (glm:vec3 +10.0 +10.0 -45.0))
 		    (list (dynamic-non-uniform-scale) (glm:vec3 +10.0 -10.0 -45.0))))))
-    (init-g-instance-list)
-
-    )
+    (init-g-instance-list))
   (let ((transform-matrix (glm:make-mat4 1.0)))
     ;; here we marry the identity matrix with the translation matrix AND
     ;; the scale matrix, so they can plant origins in a space AND grow them
     ;; at will!
     (loop for i from 0 below (length *g-instance-list*)
-	 ;; very interesting: using 'with var = value' gets us a variable that
-	 ;; stays unchanged throughout the entire loop. Using 'for var = value'
-	 ;; however, gets us a on iteration assigned variable!!
+       ;; very interesting: using 'with var = value' gets us a variable that
+       ;; stays unchanged throughout the entire loop. Using 'for var = value'
+       ;; however, gets us a on iteration assigned variable!!
        for scale-vec3 = (first (elt *g-instance-list* i))
        for translation-vec3 = (second (elt *g-instance-list* i)) do
 	 (progn
@@ -254,9 +234,7 @@ the projection plane)"
 	   (gl:uniform-matrix
 	    *model-to-camera-matrix-unif* 4 (vector transform-matrix) NIL)
 	   (%gl:draw-elements
-	    :triangles (gl::gl-array-size *index-data*) :unsigned-short 0))
-	 ))
-
+	    :triangles (gl::gl-array-size *index-data*) :unsigned-short 0))))
 
 
   (gl:bind-vertex-array 0)

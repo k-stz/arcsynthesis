@@ -1,12 +1,9 @@
 (in-package #:arc-6.2)
 
 (defvar *data-directory*
-  (merge-pathnames #p "6-chapter/" (asdf/system:system-source-directory :arcsynthesis)))
+  (merge-pathnames #p "6-chapter/data/" (asdf/system:system-source-directory :arcsynthesis)))
 ;;todo: fix this output to slime-repl solution
-(defvar out *standard-output*)  (defvar dbg *debug-io*) (defvar err *error-output*)
-
-(defvar position-buffer-object) ; buffer object handle
-
+(defvar out *standard-output*) (defvar dbg *debug-io*) (defvar err *error-output*)
 
 (defvar *program*)
 
@@ -23,16 +20,12 @@
 of the farmost-extent of the view (meaning vectors from these points still get to hit
 the projection plane)"
   (let* ((deg-to-rad (/ (* pi 2.0) 360.0))
-	(f-fov-rad (* f-fov-deg deg-to-rad)))
+	 (f-fov-rad (* f-fov-deg deg-to-rad)))
     (coerce
      (/ 1.0
 	(tan (/ f-fov-rad 2.0)))
      'single-float)))
 
-;; DONE: why does it look smaller than the screenshots?
-;; provisional solution to scale problem using 25.0
-;; => cam-matrix was wrong ALLLL ALONG, (essentially: row/col-major issue, just transposing
-;;    it solved it!)
 (defparameter *frustum-scale* (calc-frustum-scale 45.0)) 
 
 (defun initialize-program ()
@@ -85,33 +78,29 @@ the projection plane)"
 
 (defparameter *vertex-data*
   (arc:create-gl-array-from-vector 
-`#(
-	+1.0  +1.0  +1.0  
-	-1.0  -1.0  +1.0  
-	-1.0  +1.0  -1.0  
-	+1.0  -1.0  -1.0  
+   `#(+1.0  +1.0  +1.0  
+      -1.0  -1.0  +1.0  
+      -1.0  +1.0  -1.0  
+      +1.0  -1.0  -1.0  
 
-	-1.0  -1.0  -1.0  
-	+1.0  +1.0  -1.0  
-	+1.0  -1.0  +1.0  
-	-1.0  +1.0  +1.0  
+      -1.0  -1.0  -1.0  
+      +1.0  +1.0  -1.0  
+      +1.0  -1.0  +1.0  
+      -1.0  +1.0  +1.0  
 
-	,@+green-color+ 
-	,@+blue-color+ 
-	,@+red-color+ 
-	,@+brown-color+ 
+      ,@+green-color+ 
+      ,@+blue-color+ 
+      ,@+red-color+ 
+      ,@+brown-color+ 
 
-	,@+green-color+ 
-	,@+blue-color+ 
-	,@+red-color+ 
-	,@+brown-color+ 
-
-  )))
+      ,@+green-color+ 
+      ,@+blue-color+ 
+      ,@+red-color+ 
+      ,@+brown-color+)))
 
 (defparameter *index-data*
   (arc::create-gl-array-of-unsigned-short-from-vector
-   #(
-     0  1  2 
+   #(0  1  2 
      1  0  3 
      2  3  0 
      3  2  1 
@@ -119,8 +108,7 @@ the projection plane)"
      5  4  6 
      4  5  7 
      7  6  4 
-     6  7  5 							
-     )))
+     6  7  5)))
 
 (defvar *vertex-buffer-object*)
 (defvar *index-buffer-object*)
@@ -137,8 +125,7 @@ the projection plane)"
 
   (gl:bind-buffer :element-array-buffer  *index-buffer-object*)
   (gl:buffer-data :element-array-buffer  :static-draw *index-data*)
-  (gl:bind-buffer :element-array-buffer  0)  
-  )
+  (gl:bind-buffer :element-array-buffer  0))
 
 (defvar *vao*)
 
@@ -154,29 +141,26 @@ the projection plane)"
     (%gl:vertex-attrib-pointer 1 4 :float :false 0 color-data-offset)
     (%gl:bind-buffer :element-array-buffer *index-buffer-object*)
 
-    (%gl:bind-vertex-array 0)
-    )
-  )
+    (%gl:bind-vertex-array 0)))
 
 
 
 
 (defun init ()
-	(initialize-program)
-	(initialize-vertex-buffer)
-	(initialize-vertex-array-objects)
+  (initialize-program)
+  (initialize-vertex-buffer)
+  (initialize-vertex-array-objects)
   
-	(gl:enable :cull-face)
-	(%gl:cull-face :back)
-	(%gl:front-face :cw)
+  (gl:enable :cull-face)
+  (%gl:cull-face :back)
+  (%gl:front-face :cw)
 
-	(gl:viewport 0 0 500 500)
+  (gl:viewport 0 0 500 500)
 
-	(gl:enable :depth-test)
-	(gl:depth-mask :true)
-	(%gl:depth-func :lequal)
-	(gl:depth-range 0.0 1.0)
-)
+  (gl:enable :depth-test)
+  (gl:depth-mask :true)
+  (%gl:depth-func :lequal)
+  (gl:depth-range 0.0 1.0))
 
 (defvar *elapsed-time*)
 
@@ -186,7 +170,7 @@ the projection plane)"
 (defun static-uniform-scale ()
   (glm:vec3 4.0 4.0 4.0))
 
-(defun static-nun-uniform-scale ()
+(defun static-non-uniform-scale ()
   (glm:vec3 0.5 1.0 10.0))
 
 (defun calc-lerp-factor (loop-duration)
@@ -196,10 +180,6 @@ the projection plane)"
     	(setf f-value (- 1.0 f-value)))
     (coerce (* 2.0 f-value) 'single-float)))
 
-;;TODO: why is it "pulsating"?
-;; experimentation indicate that the implementation of mix might be wrong, as the pulsating
-;; looks like we can see the inverse of the object for a moment (negative values must be
-;; used for scale). Using 0.0 4.0 shows a neat shriking/growing animation
 (defun dynamic-uniform-scale ()
   (let ((loop-duration 3.0))
     (glm:vec3 (glm:mix 1.0 4.0 (calc-lerp-factor loop-duration)))))
@@ -229,8 +209,7 @@ the projection plane)"
 	 (matrix (glm:make-mat3 1.0)))
     (glm:set-mat3 matrix 1 :y f-cos) (glm:set-mat3 matrix 2 :y (- f-sin)) 
     (glm:set-mat3 matrix 1 :z f-sin) (glm:set-mat3 matrix 2 :z f-cos)
-    matrix
-    ))
+    matrix))
 
 (defun rotate-y ()
   (let* ((ang-rad (compute-angle-rad 2.0))
@@ -239,8 +218,7 @@ the projection plane)"
 	 (matrix (glm:make-mat3 1.0)))
     (glm:set-mat3 matrix 0 :x f-cos)     (glm:set-mat3 matrix 2 :x f-sin) 
     (glm:set-mat3 matrix 0 :z (- f-sin)) (glm:set-mat3 matrix 2 :z f-cos)
-    matrix
-    ))
+    matrix))
 
 (defun rotate-z ()
   (let* ((ang-rad (compute-angle-rad 2.0))
@@ -249,12 +227,9 @@ the projection plane)"
 	 (matrix (glm:make-mat3 1.0)))
     (glm:set-mat3 matrix 0 :x f-cos) (glm:set-mat3 matrix 1 :x (- f-sin)) 
     (glm:set-mat3 matrix 0 :y f-sin) (glm:set-mat3 matrix 1 :y f-cos)
-    matrix
-    ))
+    matrix))
 
 
-;;TODO FIND TYPO
-;; Rotate along arbitrary axis!
 (defun rotate-axis (axis-x axis-y axis-z)
   (let* ((ang-rad (compute-angle-rad 0.4))
 	 (f-cos (cos ang-rad))
@@ -280,8 +255,7 @@ the projection plane)"
     (glm:set-mat3 matrix 1 :z (+ (* a-y a-z f-inv-cos) (* a-x f-sin)))
     (glm:set-mat3 matrix 2 :z (+ (* a-z a-z) (* (- 1 (* a-z a-z)) f-cos)))
 
-    matrix
-    ))
+    matrix))
 
 (defvar *g-instance-list*)
 
@@ -296,19 +270,15 @@ the projection plane)"
 
   (setf *elapsed-time* (float  (/ (sdl2:get-ticks) 1000.0)))
   (labels ((init-g-instance-list ()
-	     ;; TODO: is it bad style not rely on all these functions to fetch
-	     ;; *elapsed-time* globally?
 	     (setf *g-instance-list*
 		   (list
 		    (list (null-rotation) (glm:vec3 +00.0 +00.0 -25.0))
 		    (list (rotate-x) (glm:vec3 -5.0 -5.0 -25.0))
 		    (list (rotate-y) (glm:vec3 -5.0 +5.0 -25.0))
 		    (list (rotate-z) (glm:vec3 +5.0 +5.0 -25.0))
-		    (list (rotate-axis 1.0 1.0 1.0) (glm:vec3 +5.0 -5.0 -25.0))
-		    ))))
-    (init-g-instance-list)
-
-    )
+		    (list (rotate-axis 1.0 1.0 1.0) (glm:vec3 +5.0 -5.0 -25.0))))))
+    (init-g-instance-list))
+  
   (let ((transform-matrix (glm:make-mat4 1.0)))
     ;; here we marry the identity matrix with the translation matrix AND
     ;; the scale matrix, so they can plant origins in a space AND grow them
@@ -326,8 +296,7 @@ the projection plane)"
 	   (gl:uniform-matrix
 	    *model-to-camera-matrix-unif* 4 (vector transform-matrix) NIL)
 	   (%gl:draw-elements
-	    :triangles (gl::gl-array-size *index-data*) :unsigned-short 0))
-	 ))
+	    :triangles (gl::gl-array-size *index-data*) :unsigned-short 0))))
 
 
 

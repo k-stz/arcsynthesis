@@ -1,6 +1,3 @@
-;;TODO: the distance/scaling is not like on the picture in arcsynthesis :I
-;;      (calc-frustum-scale ..) was tested already. Maybe tutorial changed window size?
-
 ;; use the translation matrix:
 ;; translation (x, y, z)
 ;;  [1, 0, 0, x
@@ -15,12 +12,9 @@
 (in-package #:arc-6)
 
 (defvar *data-directory*
-  (merge-pathnames #p "6-chapter/" (asdf/system:system-source-directory :arcsynthesis)))
+  (merge-pathnames #p "6-chapter/data/" (asdf/system:system-source-directory :arcsynthesis)))
 ;;todo: fix this output to slime-repl solution
 (defvar out *standard-output*)  (defvar dbg *debug-io*) (defvar err *error-output*)
-
-(defvar position-buffer-object) ; buffer object handle
-
 
 (defvar *program*)
 
@@ -92,33 +86,29 @@ the projection plane)"
 
 (defparameter *vertex-data*
   (arc:create-gl-array-from-vector 
-`#(
-	+1.0  +1.0  +1.0  
-	-1.0  -1.0  +1.0  
-	-1.0  +1.0  -1.0  
-	+1.0  -1.0  -1.0  
+   `#(+1.0  +1.0  +1.0  
+      -1.0  -1.0  +1.0  
+      -1.0  +1.0  -1.0  
+      +1.0  -1.0  -1.0  
 
-	-1.0  -1.0  -1.0  
-	+1.0  +1.0  -1.0  
-	+1.0  -1.0  +1.0  
-	-1.0  +1.0  +1.0  
+      -1.0  -1.0  -1.0  
+      +1.0  +1.0  -1.0  
+      +1.0  -1.0  +1.0  
+      -1.0  +1.0  +1.0  
 
-	,@+green-color+ 
-	,@+blue-color+ 
-	,@+red-color+ 
-	,@+brown-color+ 
+      ,@+green-color+ 
+      ,@+blue-color+ 
+      ,@+red-color+ 
+      ,@+brown-color+ 
 
-	,@+green-color+ 
-	,@+blue-color+ 
-	,@+red-color+ 
-	,@+brown-color+ 
-
-  )))
+      ,@+green-color+ 
+      ,@+blue-color+ 
+      ,@+red-color+ 
+      ,@+brown-color+)))
 
 (defparameter *index-data*
   (arc::create-gl-array-of-unsigned-short-from-vector
-   #(
-     0  1  2 
+   #(0  1  2 
      1  0  3 
      2  3  0 
      3  2  1 
@@ -126,8 +116,7 @@ the projection plane)"
      5  4  6 
      4  5  7 
      7  6  4 
-     6  7  5 							
-     )))
+     6  7  5)))
 
 (defvar *vertex-buffer-object*)
 (defvar *index-buffer-object*)
@@ -161,29 +150,26 @@ the projection plane)"
     (%gl:vertex-attrib-pointer 1 4 :float :false 0 color-data-offset)
     (%gl:bind-buffer :element-array-buffer *index-buffer-object*)
 
-    (%gl:bind-vertex-array 0)
-    )
-  )
+    (%gl:bind-vertex-array 0)))
 
 
 
 
 (defun init ()
-	(initialize-program)
-	(initialize-vertex-buffer)
-	(initialize-vertex-array-objects)
+  (initialize-program)
+  (initialize-vertex-buffer)
+  (initialize-vertex-array-objects)
   
-	(gl:enable :cull-face)
-	(%gl:cull-face :back)
-	(%gl:front-face :cw)
+  (gl:enable :cull-face)
+  (%gl:cull-face :back)
+  (%gl:front-face :cw)
 
-	(gl:viewport 0 0 500 500)
+  (gl:viewport 0 0 500 500)
 
-	(gl:enable :depth-test)
-	(gl:depth-mask :true)
-	(%gl:depth-func :lequal)
-	(gl:depth-range 0.0 1.0)
-)
+  (gl:enable :depth-test)
+  (gl:depth-mask :true)
+  (%gl:depth-func :lequal)
+  (gl:depth-range 0.0 1.0))
 
 (defvar *elapsed-time*)
 
@@ -198,9 +184,7 @@ the projection plane)"
 	 (y (coerce
 	     (* 6.0  (sin (* curr-time-through-loop scale))) 'single-float))
 	 (z -20.0))
-    (glm:vec3 x y z)
-    )
-)
+    (glm:vec3 x y z)))
 
 (defun bottom-circle-offset (elapsed-time)
   (let* ((loop-duration 12.0)
@@ -256,12 +240,11 @@ the projection plane)"
 	   (gl:uniform-matrix
 	    *model-to-camera-matrix-unif* 4 (vector transform-matrix) NIL)
 	   (%gl:draw-elements
-	    :points (gl::gl-array-size *index-data*) :unsigned-short 0))))
+	    :triangles (gl::gl-array-size *index-data*) :unsigned-short 0))))
 
 
   (gl:bind-vertex-array 0)
-  (gl:use-program *program*)
-  
+  (gl:use-program *program*)  
   ;;swap buffers: in main loop 
   )
 
