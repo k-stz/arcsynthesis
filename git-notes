@@ -2,6 +2,9 @@ to "synchronize" git repositories with Magit:
 
 F C-u F -> origin -> master
 
+the inverse is
+P C-u P -> <remote to be pushed to> etc.
+
 Overview -----------------------------------------------------------------------
 
 
@@ -24,3 +27,10 @@ git remote ==> list available remotes
 git push -u origin master ==> push your current branch to the remote origin, ON the BRANCH master
 
 git clone https.//github.com/k-stz/arcsynthesis ==> get a copy of the repository 
+
+
+new tricks----------------------------------------------------------------------
+
+git checkout <filename>
+or in magit:
+"k" a commit, to discard the changes made to a file since the last commit
