@@ -1707,3 +1707,6 @@ And this is how we compressed memory from 4 bytes (float) down to 1 byte (GLubyt
 
 Note: This saves a lot of memory and when it comes to textures it oftentimes
 saving memory yields improved performance.
+
+Use cases of normalized integers are whenever values on the range [0.0,1.0] suffice
+this can be the case for: colors, normals(!) and other coordinates on such a range!
