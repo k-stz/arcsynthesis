@@ -1686,3 +1686,24 @@ For this to work we need to associate a texel with a point on a triangle, this
 is called texture mapping, and grants much finer granulation of material
 properties for point a surface.
 
+
+--------------------------------------------------------------------------------
+normalized integer,
+dealing with floats in opengl oftentimes only includes the value on the range
+[0,1] but to store a single float 4-bytes are needed. The idea of a normalized
+integer is to map the whole range of floats from 0 to 1.0 to the to the range
+of a unsigned byte, which has the range which can represent 256 distinct values
+and only needs a single byte to be stored.
+
+So how do we map a value like 0.52 to an unsigned byte?
+Simple: 0.52 * 255 = 132 (rounded).
+
+OpenGL will, provided the proper information via gl:tex-image* automatically
+convert the unsigned byte (represented by the opengl type enum: GLubyte)
+to a float. How? 
+Simple 132 / 255 = 0.52 (rounding)
+
+And this is how we compressed memory from 4 bytes (float) down to 1 byte (GLubyte)!
+
+Note: This saves a lot of memory and when it comes to textures it oftentimes
+saving memory yields improved performance.
