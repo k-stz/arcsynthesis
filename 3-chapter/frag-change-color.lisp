@@ -69,8 +69,7 @@
   (%gl:enable-vertex-attrib-array 1) ; color array-buffer
   (%gl:vertex-attrib-pointer 0 4 :float :false 0 0)
   ;; this works :I, so does simply '48' as well :x
-  (%gl:vertex-attrib-pointer 1 4 :float :false 0 (cffi:make-pointer 48)) 
-  )
+  (%gl:vertex-attrib-pointer 1 4 :float :false 0 (cffi:make-pointer 48)))
 
 
 (defun rendering-code ()

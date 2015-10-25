@@ -1263,7 +1263,7 @@ Again this wasteful creation of unique combination of repetitive data (each face
 position has the same normal, or even the same color) is needed because we only have a
 single index array to draw a single index value from. See the "layouts" from the
 gl:enable-vertex-attrib-array etc. calls. And this single index needs to associate all
-the unique combinations with eachoter (position, normal, color) to draw the desired
+the unique combinations with eachother (position, normal, color) to draw the desired
 graphic from the mesh data.
 
 --------------------------------------------------------------------------------
@@ -1363,7 +1363,7 @@ materials in reality have this property. We need a refined model that includes
 specular reflection,
 were shiny surfaces will reflect light more strongly in the opposite direction from the
 angle of incidence! Which is the angle between the surface normal and the incoming
-light directoin.
+light direction.
 A mirror has perfect specular reflection!
 
 specular highlights,
@@ -1444,7 +1444,7 @@ its values from the view-direciton and the reflection-direction. But even worse
 is that because this value is dirived from these two direction it completely
 hits a brick wall when the angle between the two exceeds 90-degree, as can
 be seen in the phong-lighting.lisp tutorial forming a clear cut fringe around
-the specular hightlight when the surface roughness high.
+the specular hightlight when the surface roughness is high.
 
 The following model can solve this problem:
 
@@ -1710,3 +1710,15 @@ saving memory yields improved performance.
 
 Use cases of normalized integers are whenever values on the range [0.0,1.0] suffice
 this can be the case for: colors, normals(!) and other coordinates on such a range!
+
+--------------------------------------------------------------------------------
+texture-mapping,
+
+associating the texels in a texture with surface points on a triangle. In effect
+mapping texels to trianlge surface points.
+
+possible solution: use the interpolation of vertex positions in fragment shader
+as texture coordinate in the texture() function.
+
+Another approach: make texture coordinate for texture-mapping part of vertex attribute
+data. (more vertex data!)
