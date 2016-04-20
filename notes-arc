@@ -1236,14 +1236,14 @@ In contrast: Modelling light only from a light-emitting surface is called:
 _local illumination_ or _direction illumination_! Our previous example, hence, employed
 direction illumination.
 
-But doing actuall global illuminatino is very hard, we will instead use a time-tested
+But doing actuall global illumination is very hard, we will instead use a time-tested
 frugal technique called:
 
 Ambient lighting,
 this one is simple: we assume that on each point in the scene there is a certain
 level of lightintensity always present. This is like a crude approximation to the fact
 that light comes from everywhere to some degree. Note that for this model we don't even
-need a angle of incidence!
+need an angle of incidence!
 
 --------------------------------------------------------------------------------
 Mesh Topology,
@@ -1285,7 +1285,7 @@ is steep values from the gound plane corners interpolated => not very bright col
 To solve this problem we need:
 
 Fragment lighting,
-Here we simple apply the lighting model to each fragment of a triangle. Instead
+Here we simply apply the lighting model to each fragment of a triangle. Instead
 of interpolating the result of the model from the three vertices of a triangle we
 apply it to every single fragment by simply putting the formula into the fragment
 shader. The fragment shaders' modus operadi is to be executed for each fragment
@@ -1304,7 +1304,7 @@ Light Attenuation,
 light intensity on a surface ought to weaken with the distance to the light source.
 
 Light attenuation is a well-understood phenonmenon: "light intensity weakens with the
-inverse square of the distance between light source and surface of interest"
+inverse square of the distance between light source and the surface of interest"
 
 The corresponding formula is:          I           <- (light) intensity
                                ------------------
@@ -1321,7 +1321,7 @@ k = 1 / 4.0^2
 k = 1 / 16
 --> put k into above formula:
         I                       I               
-------------------  =>	------------------   now taking an actuall distance of r = 4.0:
+------------------  =>	------------------   now taking an actual distance of r = 4.0:
  (1.0 + k * r^2)  	 (1.0 + 1/16 * r^2)
 
         I                      I                   I            I
@@ -1415,9 +1415,9 @@ Phong model,
 just like Lambertian reflactance is the simplest model of diffuse lighting, the
 Phong model is the simplest model of specular illumination!
 
-Like anticipated, we take the deviation between the perfect reflection angle and
-the viewing angle: (V*R) <- this will get us the cos(theta) angle between the two
-if they're identical cos(0)=1.0. But we're not done yet:
+Like anticipated, we take the deviation between the perfect reflection angle and the
+viewing angle: (V*R) <- this will get us the cos(theta) angle between the two if they're
+identical cos(0)=1.0. But we're not done yet:
 
 (V*R)^s         (This term will be multiplied with the intensity in our lighting
                  model equation!)
@@ -1441,7 +1441,7 @@ smooth/rough surface illumination.
 The Phong model has two major drawbacks: it doesn't take the statistical overall
 distribution and orientations of microfacets into account, as it only derives
 its values from the view-direciton and the reflection-direction. But even worse
-is that because this value is dirived from these two direction it completely
+is that because this value is derived from these two direction it completely
 hits a brick wall when the angle between the two exceeds 90-degree, as can
 be seen in the phong-lighting.lisp tutorial forming a clear cut fringe around
 the specular hightlight when the surface roughness is high.
@@ -1491,7 +1491,7 @@ following function is a simplified version of the Gaussian Term:
 
 e^-(a/m)^2   e = euler number; a = angle between the surface-normal and the half-angle
                                    between the view-direction and the light direction
-				   but, this time not the cos, but the actuall radiant.
+				   but, this time not the cos, but the actual radiant.
 				   yielded using acos(dot(half-angle,surface-normal))!
 				   
 and 'm' again just the surface smoothness/roughness factor, this time though, the
