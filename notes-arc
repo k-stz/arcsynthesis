@@ -1661,16 +1661,15 @@ logarithmic one (by orders of multiplication, not by orders of units/addition).
 There is a remedy to this:
 
 _/perspective-correct interpolation/_,
-we are divulged the final reason why we use clip space coordinates with their
-w-component, which so far was used to perform the perspective divide, an operation
-that is non-linear and hence not be accomplished with matrix multiplication.
-We may be using a projection matrix, but the magic of perspective divide is
-multiplying the positions with the 'w' component being -1, and projecting the
-position down on the "screen" - or retina to be more imaginative.
-While the 'w'-component seems to be the critical part implementation wise, as
-far as we're concerned it is just changing the qualified of output variables
-from "smooth" (= perspective correct interpolation) to "noperspective".
-Finally the author even hints that window space interpolation is rather rare.
+finally to the final reason is uncovered why we use clip space coordinates with their
+w-component, which so far was used to perform the perspective divide, an operation that is
+non-linear and hence not be accomplished with matrix multiplication.  We may be using a
+projection matrix, but the magic of perspective divide is multiplying the positions with
+the 'w' component being -1, and projecting the position down on the "screen" - or retina
+to be more imaginative.  While the 'w'-component seems to be the critical part
+implementation wise, as far as we're concerned it is just changing the qualified of output
+variables from "smooth" (= perspective correct interpolation) to "noperspective".  Finally
+the author even hints that window space interpolation is rather rare.
 
 --------------------------------------------------------------------------------
 _texture mapping_,
