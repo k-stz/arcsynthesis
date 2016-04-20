@@ -138,7 +138,7 @@ of a NULL pointer.
 Hence binding an object to 0 means unbinding the currently bound object!
 --------------------------------------------------------------------------------
 buffer objects, data storages that OpenGL can "see", we fill them with our data
-(triangle vertex, picture on hdd..)
+(triangle vertex, picture on HDD..)
 --------------------------------------------------------------------------------
 Shaders are executed over a set of inputs and converts them into a set of outputs
 Example vertex shader:
@@ -213,9 +213,6 @@ AS EXPECTED/(interesting!!!)
 the ominous parameter to glBufferData() :static-draw tells OpenGL that we only
 intend to set the data in this buffer ONCE.
 Opposite: :stream-draw. API wise THEY MEAN NOTHING though they're just hints for
-<<<<<<< HEAD
-the implementors where to work on performance wise!!!
-=======
 the implementors where to work on performance wise!!!
 --------------------------------------------------------------------------------
 uniforms,
@@ -271,8 +268,8 @@ Interesting: what classifies as back, depends on the vertex data. The outer face
 of any object should have such property when viewed from outside!!!
 --------------------------------------------------------------------------------
 "projection",
-is a term in the rendering pipeline, which describes a way to transform a world from
-one dimensionality to another.
+is a term in the rendering pipeline, which describes a way to transform a world of
+one dimension to another.
 
 "orthographic projection",
 e.g.: project a 2d world perpendicular to a 1d line
@@ -303,7 +300,7 @@ and right. It should be possible now to imagine that the ratio of E/P multiplied
 P will result in that projection!!
 Which is in effect not a resource heavy computation at all!
 
-Which leaves one loose loop: how to attain these perpendidularities!
+Which leaves one loose loop: how to attain these perpendicularities!
 TODO: (I think dot product and the likes are designed for this)
 
 Now comes the super duper awesome part:
@@ -322,7 +319,7 @@ NOW ALL WE NEED TO DO IS SET W to this in EACH vertex:
 and normalized device coordinates will yield a PERSPECTIVE PROJECTION!!!!!!
 
 E is a constant, only Pz can be an unknown if viewed from just any angle
-but I bet there is some mathematical trick to yield proper perpedicularities!
+but I bet there is some mathematical trick to yield proper perpendicularities!
 
 ========================================================================================
 #     This conversion from clip-space to normalized device coordinate is called        #
@@ -857,7 +854,7 @@ the object changes orientation in a quirky manner - we got gimbal lock'd!
 
 Anecdote [from internet],
 spherical coordinates - poorly defined nadir/zenith
-You meet an Eskimo at the northpole and ask for direction to Europe. The Eskimo cheerfully
+You meet an Eskimo at the north pole and ask for direction to Europe. The Eskimo cheerfully
 tells you to go south. You look at your compass. The needle is spinning like crazy while
 whispering: any azimuth is at zenith, this be gimbal lock.
 
@@ -873,7 +870,7 @@ have to think of donuts and coffee, so you get up and go to the kitchen.
 
 As you pass the many curves of your corridor, you imagine being the shadow of a fourth
 dimension that can move freely in the world.. anyway.  You finally get your mug of coffee,
-after some brewin. There is a small cookie in it. As you tilt the mug the cookie remains
+after some brewin'. There is a small cookie in it. As you tilt the mug the cookie remains
 in its orientation - no discontinuous jumps between keyframes (lol).
 
 You think to yourself: If only there was an orientation possible that has the properties
@@ -936,7 +933,7 @@ don't know if it is worth trying to learn that stuff, if I won't encounter it ag
 shouldn't bother as it may be too special to be even worthwhile to know when tackling
 problems related to graphics programming.
 
-Putting it all together intutively:
+Putting it all together intuitively:
 The usage of quaternions is to be understood as a more efficient solution to the gimbal lock problem.
 The gimbal lock problem arises from trying to represent orientation as a sequence of hierarchical
 rotations. This is space efficient, three angles is all you need. But interlocking planes (gimbals)
@@ -949,12 +946,12 @@ This is indeed a solution, but there is a problem to it, it is inefficient:
 1. We need to store a whole matrix,
 2. as we apply multiple transforms per frame rendered, expecting 30 frames per second we can see
    that rounding problems - floating point imprecision - may accumulate.
-3. To fight these imprecisions we want to keep the matrix othonormal, a costly operation: every
+3. To fight these imprecision we want to keep the matrix orthonormal, a costly operation: every
    base-vector needs to stay normalized and, a bit more problematic, the base-vectors must stay
    perpendicular to one another.
 
 This can be certainly done but there is a much more efficient solution that allows easy normalization
-and less values to represent the orientaion:
+and less values to represent the orientation:
 
                                          The Quaternions
 
@@ -963,12 +960,12 @@ angle), we can easily transform a quaternion into a transformation matrix.
 2. We don't need to multiply the resulting matrix, the underlying quaternions, of each matrix, can also
    be multiplied with each other - Quaternion Multiplication - and the result can be, on each frame,
    transformed back into a transformation matrix.
-3. The quternion having a scalar-part (the angle of rotation) and a vector-part (axis to be rotated about)
+3. The quaternion having a scalar-part (the angle of rotation) and a vector-part (axis to be rotated about)
    can be easily normalized using simple vector-normalization.
 
 Transformation matrix need multiple normalization, quaternion only one per transform.
 Transformation matrix take up a lot of space, quaternion being a 4d-vector much less.
-Transformation matrix multiplication is more expensive and involves more multiplicaiton in general
+Transformation matrix multiplication is more expensive and involves more multiplication in general
 wheres quaternion multiplication involves much less.
 
 
@@ -986,7 +983,7 @@ point  ==>     transformation-matrix   ==>   matrix multiplication      ==>    t
 
 OR:              quaternion		     quaternion multiplication         matrix-casting a composite
 	                                     the result being a                quaternion
-					     composite quaterion
+					     composite quaternion
 
 GLSL: note that GLSL doesn't provide types for quaternions or any quaternion arithmetic.
 
@@ -1001,7 +998,7 @@ our shader program:
 3. camera-space (from where we look at the world scene)
 (4.) projection divide
 
-Or as a matrix transformation: C*O*p (dunno why the auther uses O for world space)
+Or as a matrix transformation: C*O*p (dunno why the author uses O for world space)
 
 In the camera-relative.lisp example we're only allowed to change transformations
 changing the C with a right-hand multiplication, this change is the R-matrix:
@@ -1010,16 +1007,16 @@ but we wanted to perform transformation relative to our "eye" the camera
 matrix, so what we really wanted was:
 R*C*O*p
 
-This restriction, of using the R in place C*R*O*p but still achive camera-relative
+This restriction, of using the R in place C*R*O*p but still achieve camera-relative
 orientation: R*C*O*p can be solved by learning about inversion!
 
 Inversions have this cute property that they can be yielded from any matrix (I think
-there are mathematical exception but as far as graphics orientation matricies are
+there are mathematical exception but as far as graphics orientation matrices are
 concerned we always can yield those). This inversion matrix of a matrix M is called
 M^-1 and if we multiply them _in any order_ we get the IDENTITY matrix:
  M*M^-1 = Identity-matrix = M^-1*M
 
-hence, because an identity matrix is the neutral element of matrix multiplicaiton, in our
+hence, because an identity matrix is the neutral element of matrix multiplication, in our
 example C*R*O*p the 'R' can "kill" C by turning into a C^-1:
 
 C*C^-1*O*p = O*p (yay)
@@ -1039,7 +1036,7 @@ and put it in the equation:
 and boooom we have our desired camera-relative transformation, without hardcoding the
 order of multiplications for the whole formula.
 
-From an intuitive perspective an inversion matrix can kill its neighbors left and right,
+From an intuitive perspective an inversion matrix can kill its neighbours left and right,
 and therefore build a bridge to different relative transformations.
 
 In the code example in camera-relative.lisp we could put a "C" inside the R transform
@@ -1112,7 +1109,7 @@ actually "capture" the light and the whole system gets hot - energy input takes 
 RGB,
 we only care about three "wavelengths" the colors red, green and blue.
 
-intensitiy of light and angle of incident,
+intensity of light and angle of incident,
 a light source emits with a certain light intensity. That light can reach a surface at a
 certain angle, the angle of incident. The intensity depends then on the area that is
 covered by that light the steeper the angle the bigger the area covered the more "light is
@@ -1133,7 +1130,7 @@ A lighting model is a function of all these parameters! There are a lot of param
 come in the future like these:
 
 /Diffuse lighting/,
-particualr surface/light interaction where the light is reflected in all directions
+particular surface/light interaction where the light is reflected in all directions
 ("many angles") instead like as if of a perfect mirror. This is another surface property
 
 Lambertian reflectance,
@@ -1148,7 +1145,7 @@ and theta=angle of incidence
 How to compute: angle of incidence, and where to perform the lighting computations
 
 surface normal,
-traingles have this nice property that all its vertices occupy the same plane and
+triangles have this nice property that all its vertices occupy the same plane and
 hence its side has a definite direction it can face: the _surface normal_ or just
 _NORMAL_! Every point along the surface of single triangle has the same geometric
 normal.
@@ -1195,13 +1192,13 @@ considered to be parallel (same angle relative to the surface they shine on, the
 direction relative to each point on the scene's surfaces).
 
 --------------------------------------------------------------------------------
-Transforming Normals Non-Uniformely,
+Transforming Normals Non-Uniformly,
 Normals may not represent the object once non-uniform transformations take place,
-such as: scaling non-uniformely :scale 1.0 2.0 0.2, or other :rotate 45.0 etc.
+such as: scaling non-uniformly :scale 1.0 2.0 0.2, or other :rotate 45.0 etc.
 combinations.
 
 This can be solved by applying an _inverse-transpose_ on the matrix before passing it for
-normals to be transformed by. The explanation will be omittet, not only is it somewhat
+normals to be transformed by. The explanation will be omitted, not only is it somewhat
 hard it also is very rarely used, that's because non-uniform scaling is rarely used! But
 for the arcsynthesis tutorial we will use non-uniform scales to build complex constructs
 from simple primitives, that's why they're briefly introduced. It should be noted though
@@ -1215,7 +1212,7 @@ rotations and other transformations combined.
 (see scale-and-lighting.lisp for an interactive graphics example)
 
 It is still interesting how these operation is derived, just so as to see how matrix
-equations can be solved to yield a simple final operation. Like mathamaticians yearn
+equations can be solved to yield a simple final operation. Like mathematicians yearn
 for short equations, so does the graphics programmer, as the GPU in question will
 have to execute them quite a lot. The bottleneck then is widened through matrix
 arithmetic. Finally note that this operation is still an expensive one, and should be
@@ -1227,7 +1224,7 @@ as anyone can observe themselves: if the sun of the light doesn't hit an object 
 doesn't mean it will be pitch black.
 
 This is due to the property of object reflecting light in all directions thereby the
-shadows are only shadows, not pitch black relms, because light from other object reaches
+shadows are only shadows, not pitch black realms, because light from other object reaches
 it. This property of the world, a phenomenon, is called: _interreflection_!
 
 A lighting model that employs interreflection is said to handle _global illumination_!
@@ -1236,7 +1233,7 @@ In contrast: Modelling light only from a light-emitting surface is called:
 _local illumination_ or _direction illumination_! Our previous example, hence, employed
 direction illumination.
 
-But doing actuall global illumination is very hard, we will instead use a time-tested
+But doing actual global illumination is very hard, we will instead use a time-tested
 frugal technique called:
 
 Ambient lighting,
@@ -1263,24 +1260,24 @@ Again this wasteful creation of unique combination of repetitive data (each face
 position has the same normal, or even the same color) is needed because we only have a
 single index array to draw a single index value from. See the "layouts" from the
 gl:enable-vertex-attrib-array etc. calls. And this single index needs to associate all
-the unique combinations with eachother (position, normal, color) to draw the desired
+the unique combinations with each other (position, normal, color) to draw the desired
 graphic from the mesh data.
 
 --------------------------------------------------------------------------------
 _point light source_,
 the light source is represented by a position in the world, hence the light direction
-is not contant anymore but relative to this position and will be computed now for
+is not constant anymore but relative to this position and will be computed now for
 each point of interest.
 
 Gouroud shading and point light source,
 linear interpolation over the surface of a triangle when the lighting model is only
 applied to the normals, the corners of the triangle, is called gouroud shading. This
-approach is failling us when using point light sources. As can be seen in
+approach is failing us when using point light sources. As can be seen in
 vertex-point-lighting.lisp when the light is close to the ground plane it isn't
-lit lineary intensive from the point of the light source to its corners because
+lit linearly intensive from the point of the light source to its corners because
 the corners of the ground plane apply the lighting model, AT A STEEP ANGLE, and
 then interpolate this value over the surface of the triangle. What we get
-is steep values from the gound plane corners interpolated => not very bright colors.
+is steep values from the ground plane corners interpolated => not very bright colors.
 
 To solve this problem we need:
 
@@ -1295,7 +1292,7 @@ These values can be placed into the lighting model formula directly but the
 light direction must be computed:
 light-source-position - fragment-direction = direction-from-fragment-to-light
 
-Now the angle of incidence can be computed, maried with cosine, clamped etc. and
+Now the angle of incidence can be computed, married with cosine, clamped etc. and
 we get a more photorealistic behaving lighting model!
 
 
@@ -1303,7 +1300,7 @@ we get a more photorealistic behaving lighting model!
 Light Attenuation,
 light intensity on a surface ought to weaken with the distance to the light source.
 
-Light attenuation is a well-understood phenonmenon: "light intensity weakens with the
+Light attenuation is a well-understood phenomenon: "light intensity weakens with the
 inverse square of the distance between light source and the surface of interest"
 
 The corresponding formula is:          I           <- (light) intensity
@@ -1331,7 +1328,7 @@ k = 1 / 16
 
 
 Below is a cl function that takes a, scalar, half-distance, plugs it into the "k = 1/hd^2"
-equation and returns an attentuation light computing function. Use this function to get
+equation and returns an attenuation light computing function. Use this function to get
 a feeling of how a "inverse square" distance influences light intensity
 
 
@@ -1354,7 +1351,7 @@ bodies, but, in its case concerning the gravitational pull on each other "increa
 the inverse square" of the distance between them -- explaining the planets ellipsoid
 trajectories around the sun.
 Indeed the inverse square distance relation is recurring among various phenomena:
-electric, magnetic, light, sound, and radiation (wikipedia: "inverse-square law").
+electric, magnetic, light, sound, and radiation (Wikipedia: "inverse-square law").
 
 --------------------------------------------------------------------------------
 The diffuse lighting model holds true for very smooth surfaces, but only a few
@@ -1386,14 +1383,14 @@ direction.
 Conversely, a smoother surface reflects the light less broadly (microfacets point
 more in the same direction) but therefore at least more strongly.
 
-Analogy: a perfectly smooth suface is a mirror, in which you can see the sun reflected
+Analogy: a perfectly smooth surface is a mirror, in which you can see the sun reflected
 perfectly. Whilst on say a stone wall, an intrinsically rough surface, you just see
 a bright overall surface and note how the sun can be glaring indirectly through a mirror
 but it is not glaring when you look at a wall with the sun in your back.
 
 angle of view, or, viewing angle, 
 this is the angle at which we look at a particular point on a surface. If it is the same
-as the anlge of incidence then we should witness the strongest specular highlight at it:
+as the angle of incidence then we should witness the strongest specular highlight at it:
 This is the angle at which the light would reflect into our eye "directly" from the
 surface -- the shortest distance.
 I guess for now we will model specular highlights lesser the more the surface view angle
@@ -1412,7 +1409,7 @@ of interest may still reflect some light into the eye.
 
 --------------------------------------------------------------------------------
 Phong model,
-just like Lambertian reflactance is the simplest model of diffuse lighting, the
+just like Lambertian reflectance is the simplest model of diffuse lighting, the
 Phong model is the simplest model of specular illumination!
 
 Like anticipated, we take the deviation between the perfect reflection angle and the
@@ -1440,11 +1437,11 @@ smooth/rough surface illumination.
 
 The Phong model has two major drawbacks: it doesn't take the statistical overall
 distribution and orientations of microfacets into account, as it only derives
-its values from the view-direciton and the reflection-direction. But even worse
+its values from the view-direction and the reflection-direction. But even worse
 is that because this value is derived from these two direction it completely
 hits a brick wall when the angle between the two exceeds 90-degree, as can
 be seen in the phong-lighting.lisp tutorial forming a clear cut fringe around
-the specular hightlight when the surface roughness is high.
+the specular highlight when the surface roughness is high.
 
 The following model can solve this problem:
 
@@ -1467,15 +1464,15 @@ at 45-degrees.
 Or: if we add two vectors together we get their half-angle vector!
 
 Now it should be possible to imagine that if the light and reflection vector perfectly
-allign that the half-angle between the light-source and them will be also perfectly
-alligned with the surface-normal.
+align that the half-angle between the light-source and them will be also perfectly
+aligned with the surface-normal.
 
-And this will be the allignment we will be testing for with the Blinn-Phong specular
+And this will be the alignment we will be testing for with the Blinn-Phong specular
 model: the deviation of the half-angle vector of the light source and the view-direction
 from the surface-normal. Yes, we don't need the reflection-direction anymore. This deviation
 will then be raised by our surface roughness/smoothness factor, s:
 
-         H=light-directon+view-direction aka _half-vector_
+         H=light-direction+view-direction aka _half-vector_
 (H*N)^s  N=surface-normal s=surface-roughness
 
 --------------------------------------------------------------------------------
@@ -1486,10 +1483,10 @@ orientation on the surface through the powerful tool of statistics.
 The method of statistics we will use is the most simple and eponymous /Gaussian
 distribution/ (also: "normal distribution) which in essence is a bell-shaped curve
 whose shape can be either flat and broad (roughness) or tall and thin (smooth)
-whith the added benefit of having the curve distribute values along normals. The
+with the added benefit of having the curve distribute values along normals. The
 following function is a simplified version of the Gaussian Term:
 
-e^-(a/m)^2   e = euler number; a = angle between the surface-normal and the half-angle
+e^-(a/m)^2   e = Euler number; a = angle between the surface-normal and the half-angle
                                    between the view-direction and the light direction
 				   but, this time not the cos, but the actual radiant.
 				   yielded using acos(dot(half-angle,surface-normal))!
@@ -1503,7 +1500,7 @@ Also, m, may only range from (0, 1] for the model to not break.
 Specular model performance,
 while Phong needs to compute the reflection direction and Blinn only needs the
 half-vector, it is negligible performance-wise.
-The more interesting fact is that graphics hardware can perform the inversqrt,
+The more interesting fact is that graphics hardware can perform the inverse-sqrt,
 nowadays (!), about as fast as the dot-product itself.
 
 Both these operations, by the way, are always used in normalization (!!):
@@ -1524,7 +1521,7 @@ different surfaces. According to John Carmack the accurate choice of material pr
 is where the rasterization photorealism approach can still do a lot. This is an issue that
 professional modelers have to take into account when creating models.
 
-light clipping, or light clampping,
+light clipping, or light clamping,
 when the light intensity falls outside the [0,1] range. Usually in the positive range.
 It looks somewhat interesting and might have just inspired some effects in various
 media.
@@ -1544,7 +1541,7 @@ filter out some more or some less light.
 
 --------------------------------------------------------------------------------
 gamma correction,
-very intersting, since the times of CRT TVs the color mapping relationship
+very interesting, since the times of CRT TVs the color mapping relationship
 between light intensity and color is non-linear. The modern screens even though
 all don't use CRT still take this assumption when displaying colors. We need to
 counter this assumption by performing gamma correction which in effect simply
@@ -1560,19 +1557,19 @@ See the curve in the tutorial section "Linearity and Gamma" to see how this chan
 the color mapping, how it was behaving until now "fully half of the linearRGB range
 is shoved into the bottom one-fifth of the available light intensity.". Applying
 this correction in our shaders makes the scene colors much more realistic, brighter
-and also imporves the shadow detail considerably.
+and also improves the shadow detail considerably.
 
 The CRT gamma-correction issue is due to cathode rays increasing brightness with
 higher voltage, but in a non-linear way. To counter this issue the images send
-to the TVs via satallites where sending the inverse of this voltage/brightness
-relationship, thereby canceling out this non-linearity! The reason modern monitors
+to the TVs via satellites where sending the inverse of this voltage/brightness
+relationship, thereby cancelling out this non-linearity! The reason modern monitors
 still take this into account is because like the TV-station sending gamma-corrected
 images all sources: media, cameras etc. had to store the images gamma-corrected.
 This legacy today in the form of DVD bluerays etc. forced the new generation of
 monitors to adapt to this forced image property!
 
-Since we de-linearlize the images to make them the "anti-wave" curve to the CRT
-voltage-brighness wave to help them cancel out into a linear one, it is called
+Since we de-linearize the images to make them the "anti-wave" curve to the CRT
+voltage-brightness wave to help them cancel out into a linear one, it is called
 _gamma correction_.
 
  Attention! 
@@ -1595,29 +1592,29 @@ place!!
 
 ray,
 a ray is a direction and a position. It contains infinite position bound
-by its position origin and extends into inifity in its direction. The most
+by its position origin and extends into infinity in its direction. The most
 beautiful thing about a ray is the equation used to express the points within
-this bound inifinite, well, ray: the..
+this bound infinite, well, ray: the..
 
 Ray Equation:
 
 P(t) = Dt + O
 
-O = origin point of th ray
-D = directino of the ray
+O = origin point of the ray
+D = direction of the ray
 where P(t) yields the position of points 
 
-The beatiful thing is that this is very easy to visualize: We simply multiply
+The beautiful thing is that this is very easy to visualise: We simply multiply
 the direction starting at the origin O by the scalar 't', and we get the
 resulting vector to point at any point along the ray!
 
 --------------------------------------------------------------------------------
 interleaving,
-arranging vertex and their attributes next to each other in a datastructure is called
-interleaving. _This data arrangement_ (!) should be used where possible. Trying to lay out the
-datastructure in memory the c-struct comes to mind with two fields
+arranging vertex and their attributes next to each other in a data structure is called
+interleaving. _This data arrangement_ (!) should be used where possible. Trying to lay out
+the data structure in memory the c-struct comes to mind with two fields
 
-a vec-type field, and a some attribut, like arc's example:
+a vec-type field, and a some attribute, like arc's example:
 
 struct VertexData
 {
@@ -1632,7 +1629,7 @@ fragment shader stage. It takes a primitive as inputs and returns a primitive as
 very vivid example would be minecraft blocks: to store them efficiently we could use a
 point, then put the point in the geometry shader and make it return a cube primitive!
 
-This is why a better name for gemoetry shader would be "primitive shader"!
+This is why a better name for geometry shader would be "primitive shader"!
 
 --------------------------------------------------------------------------------
 Textures,  ;;TODO rewrite
@@ -1645,7 +1642,7 @@ data in textures "colors" and many functions dealing with textures contain the
 word "image"!
 
 texture,
-is an object containing 1..n arrays of varying dimensions. The storeage of a texture
+is an object containing 1..n arrays of varying dimensions. The storage of a texture
 is owned by opengl just like with buffer objects' storage.
 
 images,
@@ -1659,7 +1656,7 @@ the images (remember images are arrays; arrays can have varying dimensions).
 We want to associate a texture with locations on the surface of an object. We
 enter the problem of interpolation where perspective projection is non-linear
 that is points move away from each other at a non-linear pace, namely a
-logarithmic one (by orders of mulitplication, not by orders of units/addition).
+logarithmic one (by orders of multiplication, not by orders of units/addition).
 
 There is a remedy to this:
 
@@ -1681,7 +1678,7 @@ so far we've used shaders to lookup returns value for expensive computation
 (e.g. gaussian term), based on the function input alone. 
 In this case we can use it to vary the surface material property "down to the
 texel" were we previously would assign a material property to only a vertex and
-interpolte it over the surface of a triangle. 
+interpolate it over the surface of a triangle. 
 For this to work we need to associate a texel with a point on a triangle, this
 is called texture mapping, and grants much finer granulation of material
 properties for point a surface.
@@ -1715,7 +1712,7 @@ this can be the case for: colors, normals(!) and other coordinates on such a ran
 texture-mapping,
 
 associating the texels in a texture with surface points on a triangle. In effect
-mapping texels to trianlge surface points.
+mapping texels to triangle surface points.
 
 possible solution: use the interpolation of vertex positions in fragment shader
 as texture coordinate in the texture() function.
