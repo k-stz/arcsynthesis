@@ -598,7 +598,7 @@ unit length, this is an intrinsic mathematical property of quaternions."
 	result))))
 
 
-(defgeneric mat4-cast (t))
+(defgeneric mat4-cast (quaternion))
 (defmethod mat4-cast ((q1 quat))
   "Returns the transformation matrix the input quaternion is representing"
   (let ((w (q.w q1))
@@ -634,7 +634,7 @@ unit length, this is an intrinsic mathematical property of quaternions."
 
 
 ;; alpha must be between [0,1] for linear interpolation to work
-(defgeneric mix (obj obj alpha)
+(defgeneric mix (obj1 obj2 alpha)
   (:documentation "linearly interpolate between two values"))
 
 

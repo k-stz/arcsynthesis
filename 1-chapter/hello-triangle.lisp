@@ -72,7 +72,7 @@ outputColor = vec4(0.0f, 1.0f, 1.0f, 1.0f);
             sdl2-ffi:+sdl-patchlevel+)
     ;;SDL_Window *window = SDL_CreateWindow(
     ;; "SDL2 WINDOW", 0, 0, 640, 480, 
-    ;; SDL_WINDOW_OPENGL|SDL_WINDOW_RESIZABLE); ; :resizeable can be used here
+    ;; SDL_WINDOW_OPENGL|SDL_WINDOW_RESIZABLE); ; :resizable can be used here
     (sdl2:with-window (win :w 200 :h 200 :flags '(:shown :opengl)) ;these flags necessary?
       ;; SDL_GLContext glcontext = SDL_GL_CreateContext(window)
       ;; also once its <body> is executed it runs:
@@ -105,6 +105,7 @@ outputColor = vec4(0.0f, 1.0f, 1.0f, 1.0f);
 	       (print "key-pressed: e -- executing experiments...:~%")
 	       ;; clears screen with color set in glClearColor!!
 	       (gl:clear :color-buffer-bit) ;glClear(GL_COLOR_BUFFER_BIT)
+	       (format t "~a ~%" (gl:get-string :version))
 	       )
 
 	     (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-escape)
